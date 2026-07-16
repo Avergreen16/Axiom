@@ -1,0 +1,21 @@
+[submodule "external/asio"]
+	path = external/asio
+	url = https://github.com/chriskohlhoff/asio.git
+[submodule "external/assimp"]
+	path = external/assimp
+	url = https://github.com/assimp/assimp.git
+[submodule "External/glfw"]
+	path = External/glfw
+	url = https://github.com/glfw/glfw.git
+[submodule "external/glm"]
+	path = external/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "External/lua"]
+	path = External/lua
+	url = https://github.com/lua/lua.git
+[submodule "External/xsimd"]
+	path = External/xsimd
+	url = https://github.com/xtensor-stack/xsimd.git
+[submodule "External/stb"]
+	path = External/stb
+	url = https://github.com/nothings/stb.git
