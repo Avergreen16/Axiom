@@ -1,0 +1,58 @@
+#pragma once
+
+#include <array>
+
+#include <glad.h>
+#include <GLFW/glfw3.h>
+
+namespace axiom {
+
+enum class input_code {
+    // numbers
+    KEY_0, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9,
+
+    // letters
+    KEY_A, KEY_B, KEY_C, KEY_D, KEY_E, KEY_F, KEY_G, KEY_H, KEY_I, KEY_J, KEY_K, KEY_L, KEY_M, KEY_N, KEY_O, KEY_P, KEY_Q, KEY_R, KEY_S, KEY_T, KEY_U, KEY_V, KEY_W, KEY_X, KEY_Y, KEY_Z,
+
+    // F keys
+    KEY_ESCAPE,
+    KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10, KEY_F11, KEY_F12, KEY_F13, KEY_F14, KEY_F15, KEY_F16, KEY_F17, KEY_F18, KEY_F19, KEY_F20, KEY_F21, KEY_F22, KEY_F23, KEY_F24, KEY_F25,
+    
+    // navigation
+    KEY_UP_ARROW, KEY_DOWN_ARROW, KEY_LEFT_ARROW, KEY_RIGHT_ARROW, KEY_DELETE, KEY_END, KEY_INSERT, KEY_HOME, KEY_PAGE_UP, KEY_PAGE_DOWN, KEY_SCROLL_LOCK, KEY_PAUSE, KEY_ENTER, KEY_BACKSPACE,
+
+    // symbols
+    KEY_GRAVE, KEY_TAB, KEY_SPACE, KEY_MINUS, KEY_EQUALS, KEY_COMMA, KEY_PERIOD, KEY_SLASH, KEY_SEMICOLON, KEY_QUOTE, KEY_LEFT_BRACKET, KEY_RIGHT_BRACKET, KEY_BACKSLASH,
+    KEY_LEFT_SHIFT, KEY_RIGHT_SHIFT, KEY_LEFT_CTRL, KEY_RIGHT_CTRL, KEY_LEFT_SUPER, KEY_RIGHT_SUPER, KEY_LEFT_ALT, KEY_RIGHT_ALT,
+    KEY_CAPS_LOCK, KEY_PRINT_SCREEN,
+
+    // numpad
+    KEY_PAD_0, KEY_PAD_1, KEY_PAD_2, KEY_PAD_3, KEY_PAD_4, KEY_PAD_5, KEY_PAD_6, KEY_PAD_7, KEY_PAD_8, KEY_PAD_9,
+    KEY_PAD_POINT, KEY_NUM_LOCK, KEY_PAD_ENTER, KEY_PAD_ADD, KEY_PAD_SUBTRACT, KEY_PAD_MULTIPLY, KEY_PAD_DIVIDE,
+    
+    MOUSE_LEFT,
+    MOUSE_RIGHT,
+    MOUSE_CENTER,
+    MOUSE_1,
+    MOUSE_2,
+    MOUSE_3,
+    MOUSE_4,
+    MOUSE_5,
+    MOUSE_6,
+    MOUSE_7,
+    MOUSE_8,
+
+    // unknown
+    UNKNOWN
+};
+
+enum class action {
+    PRESS,
+    RELEASE,
+    REPEAT
+};
+
+extern std::array<axiom::input_code, GLFW_KEY_LAST + 1> glfw_input_map_key;
+extern std::array<axiom::input_code, GLFW_MOUSE_BUTTON_LAST + 1> glfw_input_map_mouse_button;
+
+}

@@ -26,5 +26,6 @@ add_subdirectory(external/xsimd)
 add_subdirectory(external/wrappers/asio)
 add_subdirectory(external/wrappers/lua)
 add_subdirectory(external/wrappers/stb)
+add_subdirectory(external/json)
 
-add_subdirectory(engine)
+add_subdirectory(test)

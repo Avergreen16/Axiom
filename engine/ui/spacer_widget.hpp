@@ -1,0 +1,15 @@
+#pragma once
+
+#include <ui/widget_base.hpp>
+
+namespace axiom {
+
+struct spacer_widget : widget {
+    bool visual = false;
+
+    void mesh();
+
+    static ulong insert(vec2 min_size, vec2 max_size, bool visual = false);
+};
+
+}
