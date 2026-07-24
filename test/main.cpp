@@ -4,7 +4,7 @@
 #include <render.hpp>
 #include <ui.hpp>
 #include <platform.hpp>
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 
 #include <iostream>
 
@@ -135,7 +135,7 @@ int main(int argc, char* argv[]) {
     axiom::ecs ecs;
     ecs.make_active();
 
-    axiom::font_asset default_font = axiom::font_asset::load("resources/fonts/spleen.bdf"); //"resources/fonts/axiom_default.bdf"
+    axiom::font_asset default_font = axiom::font_asset::load("resources/fonts/axiom_default.bdf"); //
 
     axiom::texture font_tex = std::move(axiom::texture(default_font.texture, axiom::texture_format::RGBA8));
     
@@ -154,7 +154,9 @@ int main(int argc, char* argv[]) {
 
         axiom::window_widget::insert("WINDOW", window_size, (vec2(ui_system.window->screen_size) - window_size) * 0.5f, axiom::color_blue);
         
-        axiom::panel_widget::insert(6.0f, true);
+        ui_system.buffer(vec4(0.0f));
+        axiom::panel_widget::insert();
+        axiom::scroll_widget::insert(6.0f, true);
         ui_system.buffer(vec4(2.0f));
 
         axiom::column_widget::insert();
@@ -176,7 +178,7 @@ int main(int argc, char* argv[]) {
 
         axiom::window_widget::insert("WINDOW", window_size, (vec2(ui_system.window->screen_size) - window_size) * 0.5f, axiom::color_blue);
         
-        axiom::panel_widget::insert(6.0f, true);
+        axiom::panel_widget::insert();
     };
 
     
@@ -194,22 +196,41 @@ int main(int argc, char* argv[]) {
 
     std::function<void()> func_chat = [&ui_system]() {
         ui_system.buffer(vec4(0.0f, 0.0f, 0.0f, 2.0f));
-        axiom::panel_widget::insert(2.0f, false);
 
-        ui_system.buffer(vec4(8.0f));
-        ui_system.position(axiom::position_mode::BOTTOM_LEFT);
+        ui_system.position(axiom::position_mode::TOP_LEFT);
 
-        std::string lipsum = R"(Aliquam interdum lectus risus, id efficitur ipsum bibendum vitae. Donec nulla ante, pretium in ullamcorper nec, bibendum ac nunc. Vivamus metus nisl, suscipit ac commodo at, viverra at enim. Pellentesque egestas facilisis sagittis. Duis vel sodales augue. Aliquam erat volutpat. Nam vel lectus at dui congue tincidunt. Phasellus placerat aliquet urna eu congue. Quisque turpis mauris, accumsan at tincidunt ut, dapibus sit amet erat. Nullam enim felis, facilisis nec vulputate eu, congue et nunc. Nunc eros turpis, placerat ac sem eget, pulvinar ultrices arcu. Etiam placerat dui eros, eget commodo metus tempus et. Maecenas volutpat lacinia nisi, eu laoreet sapien ultrices nec.)";
+        axiom::panel_widget::insert();
+        ui_system.buffer(vec4(0.0f));
+        axiom::column_widget::insert();
+        axiom::scroll_widget::insert(6.0f, true);
+        ui_system.buffer(vec4(0.0f));
 
         axiom::column_widget::insert();
-        axiom::text_box_widget::insert(100, vec2(8.0f, 8.0f), lipsum);
+
+        std::string lipsum = R"(Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque at dolor leo. Cras volutpat, dolor vitae venenatis dignissim, nisl tortor semper ex, nec sagittis lorem sem ac lorem. Maecenas non sem vel tortor rhoncus faucibus. Donec eu rutrum tellus. Pellentesque justo ante, bibendum nec hendrerit non, aliquet in elit. Sed a nibh rutrum, tempor elit scelerisque, aliquam urna. Mauris ultrices, metus vel consectetur aliquet, urna tellus eleifend tellus, in iaculis sem ligula at eros. Nulla pretium sed eros id vestibulum. Cras sodales ligula vitae leo vulputate tincidunt eget a nibh. Fusce augue nunc, condimentum non vulputate quis, laoreet vel augue. Interdum et malesuada fames ac ante ipsum primis in faucibus. Nullam efficitur metus eget diam molestie sollicitudin. Mauris hendrerit, ligula a scelerisque viverra, nisi ex venenatis ex, nec hendrerit ante tortor eu ante. Nullam sapien arcu, porta in dictum ac, dignissim ac ex. Nam euismod fermentum molestie.
+
+Aenean cursus a odio in luctus. Integer mollis lacus et nisl vulputate, quis faucibus nisl tristique. Maecenas at sodales elit. Nam ut ex mollis ipsum ultrices aliquet in ut odio. Phasellus pharetra ipsum euismod cursus rutrum. Fusce at ligula iaculis, sodales mauris quis, convallis ex. Pellentesque a iaculis nunc, commodo egestas felis. Quisque pharetra volutpat justo, eu sollicitudin enim vulputate ullamcorper. Nunc dapibus aliquam lacus id sollicitudin. Proin vestibulum feugiat imperdiet. Morbi non nunc at orci tristique lacinia. Pellentesque euismod vestibulum eros ut lacinia. Donec hendrerit est eget metus pharetra semper. Vivamus volutpat leo eu sem porttitor tristique. Suspendisse potenti. Fusce commodo odio vestibulum, accumsan augue sed, egestas arcu.
+
+Suspendisse sit amet consectetur tellus. Nunc ornare scelerisque magna sed gravida. Proin eu condimentum felis. Nunc eu dui quis enim suscipit ornare. Mauris sed nisi enim. Aliquam malesuada interdum lorem, sit amet sodales nisl. In elementum euismod elit non euismod. Nunc tempor erat lacus, quis condimentum mauris aliquam eget. Morbi non hendrerit ex. Duis pharetra commodo lacus ac facilisis. Cras elementum vehicula ante. Duis sodales elementum erat, quis venenatis erat.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus non justo consequat, luctus lectus eu, porta est. Phasellus tincidunt ligula a fringilla semper. Nunc quis diam in dui hendrerit porttitor. Aenean blandit vitae quam feugiat malesuada. Sed non ipsum diam. Sed tincidunt velit non bibendum tincidunt. Morbi et purus metus. Aenean fermentum, elit sed pretium venenatis, nisl leo molestie tellus, ac facilisis metus elit eget orci.
+
+Sed vel augue eu leo gravida dictum. Nullam pharetra turpis sem, sed rhoncus massa hendrerit at. Pellentesque molestie tincidunt mollis. Fusce ipsum mauris, sodales dictum ipsum vel, vulputate pretium tellus. Phasellus odio nisl, pellentesque vitae fermentum sed, blandit non sem. Curabitur eget bibendum ligula, vel dignissim massa. Donec non risus id elit suscipit egestas. Vivamus vel lectus faucibus, porta augue id, viverra purus.)";
+
+        axiom::text_widget::insert(lipsum, axiom::text_alignment::LEFT, true);
+        ui_system.input_step(2);
+        axiom::spacer_widget::insert(vec2(0.0f), vec2(FLT_MAX), false, true);
+        ui_system.buffer(vec4(8.0f));
+        ui_system.position(axiom::position_mode::BOTTOM_LEFT);
+        axiom::column_widget::insert();
+        axiom::text_box_widget::insert(FLT_MAX, vec2(8.0f, 8.0f), "Lorem ipsum dolor sit amet, consectetur adipiscing elit.");
         ui_system.set_attrib(vec2(160, 16), vec2(FLT_MAX, 16), vec2(1.0f));
     };
 
     std::function<void()> func_settings = [&ui_system, &node, &param]() {
         ui_system.buffer(vec4(0.0f, 0.0f, 0.0f, 2.0f));
 
-        axiom::panel_widget::insert(2.0f, false);
+        axiom::panel_widget::insert();
 
         ui_system.buffer(vec4(4.0f));
         ui_system.position(axiom::position_mode::TOP_LEFT);
@@ -279,7 +300,7 @@ int main(int argc, char* argv[]) {
     ui_system.position(axiom::position_mode::TOP_LEFT);
 
     axiom::split_widget::insert(axiom::layout_mode::ROW, {{1.0f, axiom::panel_mode::SCALE}, {1.0f, axiom::panel_mode::SCALE}});
-    axiom::panel_widget::insert(2.0f, false);
+    axiom::panel_widget::insert();
     
     ui_system.buffer(vec4(0.0f, 0.0f, 0.0f, 2.0f));
     axiom::tab_widget::insert(24.0f, 2.0f, {
@@ -293,14 +314,23 @@ int main(int argc, char* argv[]) {
 
     ui_system.input_root(2);
     
-    axiom::panel_widget::insert(2.0f, false);
+    axiom::panel_widget::insert();
 
-    //
+    // json test
 
     json root;
     root["messages"] = json::array();
+    
+    json message;
+    message["sender"] = "Averie";
+    message["text"] = "Hello addie!";
+    message["timestamp"] = axiom::get_timestamp();
 
-    // json test
+    root["messages"].push_back(message);
+
+    //axiom::write_text_to_file("output/message" + std::to_string(axiom::get_timestamp()) + ".json", root.dump(4));
+
+    //
 
     basic_system bsystem(&win, &font_tex);
     ecs.register_system(bsystem);

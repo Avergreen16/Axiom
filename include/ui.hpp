@@ -21,3 +21,4 @@
 #include <ui/relative_widget.hpp>
 #include <ui/input_box_widget.hpp>
 #include <ui/text_box_widget.hpp>
+#include <ui/scroll_widget.hpp>

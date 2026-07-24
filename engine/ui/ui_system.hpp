@@ -27,6 +27,7 @@ struct widget_input_state {
 };
 
 struct ui_system : system {
+    uint32_t iter;
     axiom::window* window;
     std::vector<axiom::font_asset*> font_assets;
 

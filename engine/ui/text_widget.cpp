@@ -29,8 +29,8 @@ void text_widget::mesh() {
         //std::cout << select_vertices.size() << "\n";
 
         for(ui_vertex& v : text_vertices) {
-            v.pos.x += position.x;
-            v.pos.y += position.y;
+            v.pos.x += text[0]->position.x;
+            v.pos.y += text[0]->position.y;
             v.pos.z = z;
 
             v.range = range;

@@ -3,7 +3,7 @@
 
 namespace axiom {
 
-uint64_t spacer_widget::insert(vec2 min_size, vec2 max_size, bool visual) {
+ulong spacer_widget::insert(vec2 min_size, vec2 max_size, bool visual, bool step) {
     axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
 
     spacer_widget widget;
@@ -23,7 +23,75 @@ uint64_t spacer_widget::insert(vec2 min_size, vec2 max_size, bool visual) {
     widget.position_mode = ui_system.input_state.active_position;
     widget.buffer = ui_system.input_state.active_buffer;
 
-    return ui_system.insert_widget(widget);
+    return ui_system.insert_widget(widget, step);
+}
+
+void spacer_widget::init() {
+    axiom::ui_system* ui_system = &axiom::global_core.ecs->get_system<axiom::ui_system>();
+
+    widget_constraint c;
+
+    // target and weights for x and y
+    c.func = [this, ui_system]() {
+        if(children.size()) {
+            float target_min = 0.0f;
+            float target_max = 0.0f;
+            float target_weight = 0.0f;
+            for(int i = 0; i < children.size(); ++i) {
+                auto& c0 = ui_system->widgets[children[(int)children.size() - i - 1]];
+
+                if(c0->min_width != c0->max_width) {
+                    target_min = glm::max(target_min, c0->min_width + c0->buffer.x + c0->buffer.z);
+                    target_max = glm::max(target_max, c0->max_width + c0->buffer.x + c0->buffer.z);
+                    target_weight = glm::max(target_weight, c0->weight_width);
+                } else {
+                    target_min = glm::max(target_min, c0->size.x + c0->buffer.x + c0->buffer.z);
+                    target_max = glm::max(target_max, c0->size.x + c0->buffer.x + c0->buffer.z);
+                    target_weight = glm::max(target_weight, 1.0f);
+                }
+            }
+
+            min_width = target_min;
+            max_width = target_max;
+            weight_width = target_weight;
+
+            //
+
+            target_min = 0.0f;
+            target_max = 0.0f;
+            target_weight = 0.0f;
+            for(int i = 0; i < children.size(); ++i) {
+                auto& c0 = ui_system->widgets[children[(int)children.size() - i - 1]];
+
+                if(c0->min_width != c0->max_width) {
+                    target_min = glm::max(target_min, c0->min_height + c0->buffer.y + c0->buffer.w);
+                    target_max = glm::max(target_max, c0->max_height + c0->buffer.y + c0->buffer.w);
+                    target_weight = glm::max(target_weight, c0->weight_height);
+                } else {
+                    target_min = glm::max(target_min, c0->size.y + c0->buffer.y + c0->buffer.w);
+                    target_max = glm::max(target_max, c0->size.y + c0->buffer.y + c0->buffer.w);
+                    target_weight = glm::max(target_weight, 1.0f);
+                }
+            }
+
+            min_height = target_min;
+            max_height = target_max;
+            weight_height = target_weight;
+        }
+    };
+    after.push_back(c);
+
+    c.func = [this, ui_system]() {
+        float y_pos = position.y;
+        for(int i = 0; i < children.size(); ++i) {
+            auto& c0 = ui_system->widgets[children[(int)children.size() - i - 1]];
+
+            c0->position = position + c0->buffer.xy();
+            c0->size = size - c0->buffer.xy() - c0->buffer.zw();
+        }
+
+    };
+    after.push_back(c);
 }
 
 void spacer_widget::mesh() {

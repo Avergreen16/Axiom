@@ -48,6 +48,7 @@ struct capture_data {
     float z;
     bool capture = false;
     bool text_capture = false;
+    bool overwrite = false;
 };
 
 struct widget {

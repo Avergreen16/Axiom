@@ -23,6 +23,7 @@ add_library(AxiomUI
     relative_widget.cpp
     input_box_widget.cpp
     text_box_widget.cpp
+    scroll_widget.cpp
 )
 
 target_include_directories(AxiomUI

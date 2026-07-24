@@ -16,6 +16,9 @@ void text_box_widget::handle_inputs() {
 
     text[0]->mesh();
     size.y = text[0]->size.y + boundary.y * 2.0f;
+    
+    min_height = size.y;
+    max_height = size.y;
 
     /*
     if(inputting || ui_system.text_selected.size() == 1 && ui_system.text_selected[0].first == self) { // input

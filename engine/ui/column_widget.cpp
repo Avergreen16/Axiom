@@ -72,7 +72,7 @@ void column_widget::init() {
                 auto& c0 = ui_system->widgets[children[(int)children.size() - i - 1]];
                 if(c0->min_height != c0->max_height) {
                     c0->size.y = glm::clamp(c0->min_height + max_x * c0->weight_height / total, c0->min_height, c0->max_height);
-                }
+                } else c0->size.y = c0->min_height;
             }
         }
     };
@@ -136,6 +136,7 @@ void column_widget::init() {
             } else {
                 target_min += c0->size.y;
                 target_max += c0->size.y;
+                target_weight = glm::max(target_weight, 1.0f);
             }
         }
 
@@ -158,6 +159,7 @@ void column_widget::init() {
             } else {
                 target_min = glm::max(target_min, c0->size.x);
                 target_max = glm::max(target_max, c0->size.x);
+                target_weight = glm::max(target_weight, 1.0f);
             }
         }
 

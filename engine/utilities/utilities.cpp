@@ -15,6 +15,10 @@ double get_absolute_time() {
     return (double)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count() / 1000000;
 }
 
+ulong get_timestamp() {
+    return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+}
+
 vec3 hex_color(uint color) {
     vec3 col = vec3((color >> 16) & 0xFF, (color >> 8) & 0xFF, color & 0xFF);
     col /= 0xFF;
@@ -194,6 +198,24 @@ std::vector<byte> get_bytes_from_file(std::string path) {
 
         return {};
     }
+}
+
+void write_text_to_file(std::string path, std::string data) {
+    std::ofstream file;
+    file.open(path, std::ios::out | std::ios::trunc);
+
+    file.write(data.data(), data.size());
+    
+    file.close();
+}
+
+void write_bytes_to_file(std::string path, std::vector<byte> data) {
+    std::ofstream file;
+    file.open(path, std::ios::out | std::ios::trunc | std::ios::binary);
+
+    file.write((const char*)data.data(), data.size());
+
+    file.close();
 }
 
 

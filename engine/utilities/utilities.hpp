@@ -42,8 +42,8 @@ using byte = uint8_t;
 namespace axiom {
 
 double get_time();
-
 double get_absolute_time();
+ulong get_timestamp();
 
 vec3 hex_color(uint color);
 vec3 hsv_color(float hue, float saturation, float value);
@@ -53,6 +53,9 @@ std::string convert_string(std::u32string str);
 
 std::string get_text_from_file(std::string path);
 std::vector<byte> get_bytes_from_file(std::string path);
+
+void write_text_to_file(std::string path, std::string data);
+void write_bytes_to_file(std::string path, std::vector<byte> data);
 
 struct Profiler_Entry {
     double time;

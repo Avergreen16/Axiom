@@ -148,6 +148,8 @@ void ui_system::call() {
     float tolerance = 0.1f;
 
     for(int i = 0; i < 4; ++i) {
+        iter = i;
+        
         solve_constraints();
         
         /*
@@ -166,7 +168,7 @@ void ui_system::call() {
             if(d > tolerance) finish = false;
         }
 
-        if(finish) break;
+        //if(finish) break;
 
         sizes = new_sizes;
     }
@@ -649,7 +651,7 @@ void ui_system::handle_capture() {
                 capture_global = data;
             }
 
-            if(data.text_capture) {
+            if(data.text_capture || data.overwrite) {
                 if(capture_text.z <= data.z) {
                     wt = key;
                     capture_text = data;
@@ -662,7 +664,7 @@ void ui_system::handle_capture() {
 
     if(window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
         click_capture = hover_capture;
-        text_capture = wt;
+        if(capture_text.text_capture) text_capture = wt;
     }
     if(!window->input_map[axiom::input_code::MOUSE_LEFT]) {
         click_capture = NULL_WIDGET;

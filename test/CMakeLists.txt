@@ -20,6 +20,7 @@ target_link_libraries(Game
         AxiomUI
         
         glm
+        nlohmann_json
 )
 
 target_compile_options(Game PRIVATE
