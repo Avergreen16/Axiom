@@ -22,3 +22,4 @@
 #include <ui/input_box_widget.hpp>
 #include <ui/text_box_widget.hpp>
 #include <ui/scroll_widget.hpp>
+#include <ui/message_widget.hpp>

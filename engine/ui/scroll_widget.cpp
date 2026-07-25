@@ -42,25 +42,48 @@ void scroll_widget::init() {
 
         bool o = false;
 
+        /*
+        float new_scroll = scroll_pos;
+        if(anchor_widget != NULL_WIDGET) {
+            auto& widget = ui_system->widgets[ui_system->widgets[children[0]]->children[anchor_widget]];
+
+            float start;
+            float end = widget->position.y + scroll_pos - (position.y + size.y);
+
+            if(anchor_widget != 0) {
+                auto& widget_prev = ui_system->widgets[ui_system->widgets[children[0]]->children[anchor_widget - 1]];
+                start = widget_prev->position.y + scroll_pos - (position.y + size.y);
+            } else start = widget->position.y + widget->size.y + scroll_pos - (position.y + size.y);
+
+            float n = end + (start - end) * anchor_frac;//* (1.0f - anchor_frac); // TOP float new_scroll = -widget->size.y * (1.0f - anchor_frac);
+            float p = scroll_pos;
+            new_scroll = n + size.y;
+        }
+
+        std::cout << scroll_pos << " " << new_scroll << "\n";
+        */
+
         if(current_height != height) {
             height = current_height;
 
+            float new_scroll = scroll_pos;
             if(anchor_widget != NULL_WIDGET) {
                 auto& widget = ui_system->widgets[ui_system->widgets[children[0]]->children[anchor_widget]];
 
                 float start;
-                float end = widget->position.y - scroll_pos;
+                float end = widget->position.y + scroll_pos - (position.y + size.y);
 
                 if(anchor_widget != 0) {
                     auto& widget_prev = ui_system->widgets[ui_system->widgets[children[0]]->children[anchor_widget - 1]];
-                    start = widget_prev->position.y - scroll_pos;
-                } else start = widget->position.y + widget->size.y - scroll_pos;
+                    start = widget_prev->position.y + scroll_pos - (position.y + size.y);
+                } else start = widget->position.y + widget->size.y + scroll_pos - (position.y + size.y);
 
-                float new_scroll = -widget->size.y * (1.0f - anchor_frac) + size.y; // TOP float new_scroll = -widget->size.y * (1.0f - anchor_frac);
-                scroll_pos = new_scroll;
-                
-                //std::cout << widget->size.y << " " << "\n";
+                float n = end + (start - end) * anchor_frac;//* (1.0f - anchor_frac); // TOP float new_scroll = -widget->size.y * (1.0f - anchor_frac);
+                float p = scroll_pos;
+                new_scroll = n + size.y;
             }
+
+            scroll_pos = new_scroll;
         }
 
         float pos = 0.0f;
@@ -77,7 +100,7 @@ void scroll_widget::init() {
             if(index == 0) prev = widget->position.y + widget->size.y;
 
             if(target - end >= 0.0f) {
-                float frac = (target - end) / widget->size.y;
+                float frac = (target - end) / (prev - end);
                 anchor_frac = frac;
                 anchor_widget = index;
                 
@@ -90,7 +113,7 @@ void scroll_widget::init() {
 
             if(index == ui_system->widgets[children[0]]->children.size()) {
                 anchor_widget = index - 1;
-                anchor_frac = 1.0f;
+                anchor_frac = 0.0f;
 
                 break;
             }
