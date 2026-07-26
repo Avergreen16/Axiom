@@ -126,6 +126,45 @@ struct basic_system : axiom::system {
     }
 };
 
+void insert_message(ulong message_root, std::string sender, std::string message, ulong timestamp, vec3 color) {
+    auto& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
+    
+    auto& root = ui_system.widgets[message_root];
+    ulong time_delta = 3.0f * 60.0f * 1000000.0f;
+
+    //
+    
+    bool include_header = false;
+    if(root->children.size() > 1) {
+        axiom::message_widget* last = dynamic_cast<axiom::message_widget*>(ui_system.widgets[root->children.back()].get());
+        if(last->sender != sender || last->timestamp < timestamp - time_delta) {
+            include_header = true;
+        } else {
+            last->tail_size = 0.0f;
+            last->tail_settings = 0;
+        }
+    } else include_header = true;
+
+    ui_system.buffer(vec4(4.0f));
+    if(sender == "Averie") {
+        ui_system.position(axiom::position_mode::TOP_RIGHT);
+    } else {
+        ui_system.position(axiom::position_mode::TOP_LEFT);
+    }
+
+    ui_system.input_set(message_root);
+    if(include_header) {
+        std::string date = axiom::get_date_time_string(timestamp);
+
+        if(root->children.size() > 1) axiom::spacer_widget::insert(vec2(0.0f, 10.0f), vec2(0.0f, 10.0f), false);
+        if(sender == "Averie") axiom::text_widget::insert(sender + " [" + date + "] <", axiom::text_alignment::RIGHT);
+        else axiom::text_widget::insert("> " + sender + " [" + date + "]", axiom::text_alignment::LEFT);
+    }
+
+    if(sender == "Averie") axiom::message_widget::insert(sender, timestamp, message, axiom::text_alignment::LEFT, vec2(160, 10000), color, vec2(8.0f), 2);
+    else axiom::message_widget::insert(sender, timestamp, message, axiom::text_alignment::LEFT, vec2(160, 10000), color, vec2(8.0f), 1);
+}
+
 int main(int argc, char* argv[]) {
     float param = 0.0f;
 
@@ -220,46 +259,157 @@ int main(int argc, char* argv[]) {
         float buffer = 8.0f;
 
         ui_system.buffer(vec4(4.0f));
-        axiom::column_widget::insert();
+        ulong message_root = axiom::column_widget::insert();
 
         axiom::spacer_widget::insert(vec2(0.0f, 0.0f), vec2(FLT_MAX, 0.0f), false);
 
         // messages
+        
+        std::vector<std::string> messages = {
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            "Pellentesque at dolor leo. Cras volutpat, dolor vitae venenatis dignissim, nisl tortor semper ex, nec sagittis lorem sem ac lorem. Maecenas non sem vel tortor rhoncus faucibus. Donec eu rutrum tellus. Pellentesque justo ante, bibendum nec hendrerit non, aliquet in elit. Sed a nibh rutrum, tempor elit scelerisque, aliquam urna.",
+            "Phasellus odio nisl, pellentesque vitae fermentum sed, blandit non sem. Curabitur eget bibendum ligula, vel dignissim massa. Donec non risus id elit suscipit egestas. Vivamus vel lectus faucibus, porta augue id, viverra purus.",
+            "Mauris aliquet felis nibh, eleifend rutrum tellus pellentesque in. Vivamus accumsan velit turpis, sit amet maximus lectus venenatis sed.",
+            "Sed vitae diam sit amet purus porta venenatis ut a justo. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Donec lacinia velit id nunc ullamcorper pulvinar. Maecenas eget enim elementum, cursus urna nec, vehicula justo. Morbi metus magna, consequat non fringilla pulvinar, euismod vitae magna. Nunc et est interdum, viverra est in, finibus dolor. Fusce quis metus mollis, accumsan magna non, aliquam ligula.",
+            "Mauris laoreet lacinia tincidunt.",
+            "Cras placerat, dolor eget tincidunt sollicitudin, ante nibh fringilla tellus, vitae mattis metus mauris sed purus. Nullam mollis eros ac sapien euismod laoreet.",
+            "Etiam viverra dolor ante, et aliquet nisi dapibus at. Aenean est turpis, facilisis ac sapien eu, dictum pellentesque sem. Praesent viverra facilisis tristique.",
+        };
+
+        vec3 player_color = vec3(0.085f);
+        vec3 self_color = axiom::color_rose;
+        vec3 addie_color = axiom::color_blue;
+
+        insert_message(message_root, "Addie", messages[0], axiom::get_timestamp(), addie_color);
+        insert_message(message_root, "Addie", messages[2], axiom::get_timestamp(), addie_color);
+        insert_message(message_root, "Addie", messages[6], axiom::get_timestamp(), addie_color);
+        
+        insert_message(message_root, "Adam", messages[1], axiom::get_timestamp(), player_color);
+        insert_message(message_root, "Adam", messages[6], axiom::get_timestamp(), player_color);
+        insert_message(message_root, "Adam", messages[5], axiom::get_timestamp(), player_color);
+        
+        insert_message(message_root, "Jason", messages[3], axiom::get_timestamp(), player_color);
+        insert_message(message_root, "Jason", messages[7], axiom::get_timestamp(), player_color);
+
+        insert_message(message_root, "Adam", messages[0], axiom::get_timestamp(), player_color);
+        insert_message(message_root, "Adam", messages[3], axiom::get_timestamp(), player_color);
+        
+        insert_message(message_root, "Jason", messages[1], axiom::get_timestamp(), player_color);
+        insert_message(message_root, "Jason", messages[6], axiom::get_timestamp(), player_color);
+        insert_message(message_root, "Jason", messages[5], axiom::get_timestamp(), player_color);
+        
+        insert_message(message_root, "Averie", messages[1], axiom::get_timestamp(), self_color);
+        insert_message(message_root, "Averie", messages[2], axiom::get_timestamp(), self_color);
+        insert_message(message_root, "Averie", messages[6], axiom::get_timestamp(), self_color);
+
+        insert_message(message_root, "Addie", messages[0], axiom::get_timestamp(), addie_color);
+        insert_message(message_root, "Addie", messages[1], axiom::get_timestamp(), addie_color);
+        insert_message(message_root, "Addie", messages[0], axiom::get_timestamp(), addie_color);
+        insert_message(message_root, "Addie", messages[6], axiom::get_timestamp(), addie_color);
+        insert_message(message_root, "Addie", messages[0], axiom::get_timestamp(), addie_color);
+        insert_message(message_root, "Addie", messages[2], axiom::get_timestamp(), addie_color);
+        
+        insert_message(message_root, "Adam", messages[0], axiom::get_timestamp(), player_color);
+        insert_message(message_root, "Adam", messages[3], axiom::get_timestamp(), player_color);
+        
+        insert_message(message_root, "Addie", messages[2], axiom::get_timestamp(), addie_color);
+        insert_message(message_root, "Addie", messages[7], axiom::get_timestamp(), addie_color);
+        insert_message(message_root, "Addie", messages[1], axiom::get_timestamp(), addie_color);
+        
+        insert_message(message_root, "Averie", messages[4], axiom::get_timestamp(), self_color);
+        insert_message(message_root, "Averie", messages[4], axiom::get_timestamp(), self_color);
+        
+        insert_message(message_root, "Addie", messages[0], axiom::get_timestamp(), addie_color);
+        insert_message(message_root, "Addie", messages[1], axiom::get_timestamp(), addie_color);
+        insert_message(message_root, "Addie", messages[0], axiom::get_timestamp(), addie_color);
+
+        /*
+
+        std::string date = axiom::get_date_time_string(axiom::get_timestamp());
 
         // addie
-        axiom::text_widget::insert("> Addie", axiom::text_alignment::LEFT);
-        axiom::message_widget::insert("Lorem ipsum dolor sit amet, consectetur adipiscing elit.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer), axiom::get_timestamp());
-        axiom::message_widget::insert("Pellentesque at dolor leo. Cras volutpat, dolor vitae venenatis dignissim, nisl tortor semper ex, nec sagittis lorem sem ac lorem. Maecenas non sem vel tortor rhoncus faucibus. Donec eu rutrum tellus. Pellentesque justo ante, bibendum nec hendrerit non, aliquet in elit. Sed a nibh rutrum, tempor elit scelerisque, aliquam urna.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer), axiom::get_timestamp());
-        axiom::message_widget::insert("Phasellus odio nisl, pellentesque vitae fermentum sed, blandit non sem. Curabitur eget bibendum ligula, vel dignissim massa. Donec non risus id elit suscipit egestas. Vivamus vel lectus faucibus, porta augue id, viverra purus.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer), axiom::get_timestamp());
-        axiom::message_widget::insert("Lorem ipsum dolor sit amet, consectetur adipiscing elit.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer), axiom::get_timestamp());
-        axiom::message_widget::insert("Pellentesque at dolor leo. Cras volutpat, dolor vitae venenatis dignissim, nisl tortor semper ex, nec sagittis lorem sem ac lorem. Maecenas non sem vel tortor rhoncus faucibus. Donec eu rutrum tellus. Pellentesque justo ante, bibendum nec hendrerit non, aliquet in elit. Sed a nibh rutrum, tempor elit scelerisque, aliquam urna.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer), axiom::get_timestamp());
-        axiom::message_widget::insert("Phasellus odio nisl, pellentesque vitae fermentum sed, blandit non sem. Curabitur eget bibendum ligula, vel dignissim massa. Donec non risus id elit suscipit egestas. Vivamus vel lectus faucibus, porta augue id, viverra purus.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer), axiom::get_timestamp());
-        axiom::message_widget::insert("Lorem ipsum dolor sit amet, consectetur adipiscing elit.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer), axiom::get_timestamp());
-        axiom::message_widget::insert("Pellentesque at dolor leo. Cras volutpat, dolor vitae venenatis dignissim, nisl tortor semper ex, nec sagittis lorem sem ac lorem. Maecenas non sem vel tortor rhoncus faucibus. Donec eu rutrum tellus. Pellentesque justo ante, bibendum nec hendrerit non, aliquet in elit. Sed a nibh rutrum, tempor elit scelerisque, aliquam urna.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer), axiom::get_timestamp());
-        axiom::message_widget::insert("Pellentesque at dolor leo. Cras volutpat, dolor vitae venenatis dignissim, nisl tortor semper ex, nec sagittis lorem sem ac lorem. Maecenas non sem vel tortor rhoncus faucibus. Donec eu rutrum tellus. Pellentesque justo ante, bibendum nec hendrerit non, aliquet in elit. Sed a nibh rutrum, tempor elit scelerisque, aliquam urna.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer), axiom::get_timestamp());
-        axiom::message_widget::insert("Phasellus odio nisl, pellentesque vitae fermentum sed, blandit non sem. Curabitur eget bibendum ligula, vel dignissim massa. Donec non risus id elit suscipit egestas. Vivamus vel lectus faucibus, porta augue id, viverra purus.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer), axiom::get_timestamp());
-        axiom::message_widget::insert("Lorem ipsum dolor sit amet, consectetur adipiscing elit.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer), axiom::get_timestamp());
-        axiom::message_widget::insert("Pellentesque at dolor leo. Cras volutpat, dolor vitae venenatis dignissim, nisl tortor semper ex, nec sagittis lorem sem ac lorem. Maecenas non sem vel tortor rhoncus faucibus. Donec eu rutrum tellus. Pellentesque justo ante, bibendum nec hendrerit non, aliquet in elit. Sed a nibh rutrum, tempor elit scelerisque, aliquam urna.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer), axiom::get_timestamp());
-        axiom::message_widget::insert("Phasellus odio nisl, pellentesque vitae fermentum sed, blandit non sem. Curabitur eget bibendum ligula, vel dignissim massa. Donec non risus id elit suscipit egestas. Vivamus vel lectus faucibus, porta augue id, viverra purus.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer), axiom::get_timestamp());
-        axiom::message_widget::insert("Lorem ipsum dolor sit amet, consectetur adipiscing elit.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer), axiom::get_timestamp());
-        axiom::message_widget::insert("Phasellus odio nisl, pellentesque vitae fermentum sed, blandit non sem. Curabitur eget bibendum ligula, vel dignissim massa. Donec non risus id elit suscipit egestas. Vivamus vel lectus faucibus, porta augue id, viverra purus.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer), axiom::get_timestamp(), 1);
+        axiom::text_widget::insert("> Addie [" + date + "]", axiom::text_alignment::LEFT);
+        axiom::message_widget::insert("Addie", axiom::get_timestamp(), , axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer));
+        axiom::message_widget::insert("Addie", axiom::get_timestamp(), , axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer));
+        axiom::message_widget::insert("Addie", axiom::get_timestamp(), , axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer));
+        axiom::message_widget::insert("Addie", axiom::get_timestamp(), "Lorem ipsum dolor sit amet, consectetur adipiscing elit.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer));
+        axiom::message_widget::insert("Addie", axiom::get_timestamp(), "Pellentesque at dolor leo. Cras volutpat, dolor vitae venenatis dignissim, nisl tortor semper ex, nec sagittis lorem sem ac lorem. Maecenas non sem vel tortor rhoncus faucibus. Donec eu rutrum tellus. Pellentesque justo ante, bibendum nec hendrerit non, aliquet in elit. Sed a nibh rutrum, tempor elit scelerisque, aliquam urna.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer));
+        axiom::message_widget::insert("Addie", axiom::get_timestamp(), "Phasellus odio nisl, pellentesque vitae fermentum sed, blandit non sem. Curabitur eget bibendum ligula, vel dignissim massa. Donec non risus id elit suscipit egestas. Vivamus vel lectus faucibus, porta augue id, viverra purus.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer));
+        axiom::message_widget::insert("Addie", axiom::get_timestamp(), "Lorem ipsum dolor sit amet, consectetur adipiscing elit.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer));
+        axiom::message_widget::insert("Addie", axiom::get_timestamp(), "Pellentesque at dolor leo. Cras volutpat, dolor vitae venenatis dignissim, nisl tortor semper ex, nec sagittis lorem sem ac lorem. Maecenas non sem vel tortor rhoncus faucibus. Donec eu rutrum tellus. Pellentesque justo ante, bibendum nec hendrerit non, aliquet in elit. Sed a nibh rutrum, tempor elit scelerisque, aliquam urna.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer), 1);
+        
+        axiom::spacer_widget::insert(vec2(0.0f, 10.0f), vec2(0.0f, 10.0f), false);
         // averie
 
         ui_system.position(axiom::position_mode::TOP_RIGHT);
-        axiom::text_widget::insert("Averie <", axiom::text_alignment::LEFT);
-        axiom::message_widget::insert("Lorem ipsum dolor sit amet, consectetur adipiscing elit.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_green, vec2(buffer), axiom::get_timestamp());
-        axiom::message_widget::insert("Pellentesque at dolor leo. Cras volutpat, dolor vitae venenatis dignissim, nisl tortor semper ex, nec sagittis lorem sem ac lorem. Maecenas non sem vel tortor rhoncus faucibus. Donec eu rutrum tellus. Pellentesque justo ante, bibendum nec hendrerit non, aliquet in elit. Sed a nibh rutrum, tempor elit scelerisque, aliquam urna.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_green, vec2(buffer), axiom::get_timestamp());
-        axiom::message_widget::insert("Phasellus odio nisl, pellentesque vitae fermentum sed, blandit non sem. Curabitur eget bibendum ligula, vel dignissim massa. Donec non risus id elit suscipit egestas. Vivamus vel lectus faucibus, porta augue id, viverra purus.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_green, vec2(buffer), axiom::get_timestamp());
-        axiom::message_widget::insert("Lorem ipsum dolor sit amet, consectetur adipiscing elit.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_green, vec2(buffer), axiom::get_timestamp());
-        axiom::message_widget::insert("Pellentesque at dolor leo. Cras volutpat, dolor vitae venenatis dignissim, nisl tortor semper ex, nec sagittis lorem sem ac lorem. Maecenas non sem vel tortor rhoncus faucibus. Donec eu rutrum tellus. Pellentesque justo ante, bibendum nec hendrerit non, aliquet in elit. Sed a nibh rutrum, tempor elit scelerisque, aliquam urna.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_green, vec2(buffer), axiom::get_timestamp(), 2);
+        axiom::text_widget::insert("Averie [" + date + "] <", axiom::text_alignment::LEFT);
+        axiom::message_widget::insert("Averie", axiom::get_timestamp(), "Lorem ipsum dolor sit amet, consectetur adipiscing elit.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_green, vec2(buffer));
+        axiom::message_widget::insert("Averie", axiom::get_timestamp(), "Pellentesque at dolor leo. Cras volutpat, dolor vitae venenatis dignissim, nisl tortor semper ex, nec sagittis lorem sem ac lorem. Maecenas non sem vel tortor rhoncus faucibus. Donec eu rutrum tellus. Pellentesque justo ante, bibendum nec hendrerit non, aliquet in elit. Sed a nibh rutrum, tempor elit scelerisque, aliquam urna.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_green, vec2(buffer));
+        axiom::message_widget::insert("Averie", axiom::get_timestamp(), "Phasellus odio nisl, pellentesque vitae fermentum sed, blandit non sem. Curabitur eget bibendum ligula, vel dignissim massa. Donec non risus id elit suscipit egestas. Vivamus vel lectus faucibus, porta augue id, viverra purus.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_green, vec2(buffer), 2);
+        
+        axiom::spacer_widget::insert(vec2(0.0f, 10.0f), vec2(0.0f, 10.0f), false);
 
+        //
+
+        ui_system.position(axiom::position_mode::TOP_LEFT);
+        axiom::text_widget::insert("> Addie [" + date + "]", axiom::text_alignment::LEFT);
+        axiom::message_widget::insert("Addie", axiom::get_timestamp(), "Pellentesque at dolor leo. Cras volutpat, dolor vitae venenatis dignissim, nisl tortor semper ex, nec sagittis lorem sem ac lorem. Maecenas non sem vel tortor rhoncus faucibus. Donec eu rutrum tellus. Pellentesque justo ante, bibendum nec hendrerit non, aliquet in elit. Sed a nibh rutrum, tempor elit scelerisque, aliquam urna.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer), 1);
+        
+        axiom::spacer_widget::insert(vec2(0.0f, 10.0f), vec2(0.0f, 10.0f), false);
+
+        //
+
+        ui_system.position(axiom::position_mode::TOP_RIGHT);
+        axiom::text_widget::insert("Averie [" + date + "] <", axiom::text_alignment::LEFT);
+        axiom::message_widget::insert("Averie", axiom::get_timestamp(), "Lorem ipsum dolor sit amet, consectetur adipiscing elit.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_green, vec2(buffer));
+        axiom::message_widget::insert("Averie", axiom::get_timestamp(), "Pellentesque at dolor leo. Cras volutpat, dolor vitae venenatis dignissim, nisl tortor semper ex, nec sagittis lorem sem ac lorem. Maecenas non sem vel tortor rhoncus faucibus. Donec eu rutrum tellus. Pellentesque justo ante, bibendum nec hendrerit non, aliquet in elit. Sed a nibh rutrum, tempor elit scelerisque, aliquam urna.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_green, vec2(buffer), 2);
+        
+        axiom::spacer_widget::insert(vec2(0.0f, 10.0f), vec2(0.0f, 10.0f), false);
+
+        //
+
+        ui_system.position(axiom::position_mode::TOP_LEFT);
+        axiom::text_widget::insert("> Jason [" + date + "]", axiom::text_alignment::LEFT);
+        axiom::message_widget::insert("Jason", axiom::get_timestamp(), "Phasellus odio nisl, pellentesque vitae fermentum sed, blandit non sem. Curabitur eget bibendum ligula, vel dignissim massa. Donec non risus id elit suscipit egestas. Vivamus vel lectus faucibus, porta augue id, viverra purus.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_blue, vec2(buffer));
+        axiom::message_widget::insert("Jason", axiom::get_timestamp(), "Lorem ipsum dolor sit amet, consectetur adipiscing elit.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_blue, vec2(buffer));
+        axiom::message_widget::insert("Jason", axiom::get_timestamp(), "Pellentesque at dolor leo. Cras volutpat, dolor vitae venenatis dignissim, nisl tortor semper ex, nec sagittis lorem sem ac lorem. Maecenas non sem vel tortor rhoncus faucibus. Donec eu rutrum tellus. Pellentesque justo ante, bibendum nec hendrerit non, aliquet in elit. Sed a nibh rutrum, tempor elit scelerisque, aliquam urna.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_blue, vec2(buffer));
+        axiom::message_widget::insert("Jason", axiom::get_timestamp(), "Phasellus odio nisl, pellentesque vitae fermentum sed, blandit non sem. Curabitur eget bibendum ligula, vel dignissim massa. Donec non risus id elit suscipit egestas. Vivamus vel lectus faucibus, porta augue id, viverra purus.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_blue, vec2(buffer));
+        axiom::message_widget::insert("Jason", axiom::get_timestamp(), "Lorem ipsum dolor sit amet, consectetur adipiscing elit.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_blue, vec2(buffer));
+        axiom::message_widget::insert("Jason", axiom::get_timestamp(), "Phasellus odio nisl, pellentesque vitae fermentum sed, blandit non sem. Curabitur eget bibendum ligula, vel dignissim massa. Donec non risus id elit suscipit egestas. Vivamus vel lectus faucibus, porta augue id, viverra purus.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_blue, vec2(buffer), 1);
+        
+        axiom::spacer_widget::insert(vec2(0.0f, 10.0f), vec2(0.0f, 10.0f), false);
+
+        //
+
+        axiom::text_widget::insert("> Addie [" + date + "]", axiom::text_alignment::LEFT);
+        axiom::message_widget::insert("Addie", axiom::get_timestamp(), "Phasellus odio nisl, pellentesque vitae fermentum sed, blandit non sem. Curabitur eget bibendum ligula, vel dignissim massa. Donec non risus id elit suscipit egestas. Vivamus vel lectus faucibus, porta augue id, viverra purus.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer));
+        axiom::message_widget::insert("Addie", axiom::get_timestamp(), "Lorem ipsum dolor sit amet, consectetur adipiscing elit.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer));
+        axiom::message_widget::insert("Addie", axiom::get_timestamp(), "Pellentesque at dolor leo. Cras volutpat, dolor vitae venenatis dignissim, nisl tortor semper ex, nec sagittis lorem sem ac lorem. Maecenas non sem vel tortor rhoncus faucibus. Donec eu rutrum tellus. Pellentesque justo ante, bibendum nec hendrerit non, aliquet in elit. Sed a nibh rutrum, tempor elit scelerisque, aliquam urna.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer));
+        axiom::message_widget::insert("Addie", axiom::get_timestamp(), "Phasellus odio nisl, pellentesque vitae fermentum sed, blandit non sem. Curabitur eget bibendum ligula, vel dignissim massa. Donec non risus id elit suscipit egestas. Vivamus vel lectus faucibus, porta augue id, viverra purus.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer));
+        axiom::message_widget::insert("Addie", axiom::get_timestamp(), "Lorem ipsum dolor sit amet, consectetur adipiscing elit.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer));
+        axiom::message_widget::insert("Addie", axiom::get_timestamp(), "Phasellus odio nisl, pellentesque vitae fermentum sed, blandit non sem. Curabitur eget bibendum ligula, vel dignissim massa. Donec non risus id elit suscipit egestas. Vivamus vel lectus faucibus, porta augue id, viverra purus.", axiom::text_alignment::LEFT, vec2(160, 10000), axiom::color_red, vec2(buffer), 1);
+        */
         //
         ui_system.input_step(2);
         axiom::spacer_widget::insert(vec2(0.0f), vec2(FLT_MAX), false, true);
         ui_system.buffer(vec4(8.0f));
         ui_system.position(axiom::position_mode::BOTTOM_LEFT);
         axiom::column_widget::insert();
-        axiom::text_box_widget::insert(FLT_MAX, vec2(8.0f, 8.0f), "Lorem ipsum dolor sit amet, consectetur adipiscing elit.");
+        axiom::text_box_widget::insert(FLT_MAX, vec2(8.0f, 8.0f), "", 
+            [&ui_system, buffer, message_root, self_color](axiom::text_box_widget& self) {
+                auto& root = ui_system.widgets[message_root];
+                ulong time_delta = 2.0f * 60.0f * 1000000.0f;
+
+                if(self.text[0]->string.size()) {
+                    insert_message(message_root, "Averie", self.text[0]->string, axiom::get_timestamp(), self_color);
+                    axiom::scroll_widget* parent = dynamic_cast<axiom::scroll_widget*>(ui_system.widgets[root->parent].get());
+                    parent->scroll_pos = -FLT_MAX * 0.5f;
+                    parent->anchor_widget = 0xFFFFFFFFFFFFFFFD;
+
+                    self.text[0]->string = "";
+                }
+            }
+        );
         ui_system.set_attrib(vec2(160, 16), vec2(FLT_MAX, 16), vec2(1.0f));
     };
 

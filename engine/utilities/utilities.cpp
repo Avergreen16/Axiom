@@ -19,6 +19,35 @@ ulong get_timestamp() {
     return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
+auto get_date_time(ulong timestamp) {
+    std::chrono::system_clock::time_point tp = std::chrono::system_clock::time_point(std::chrono::microseconds(timestamp));
+    std::time_t t = std::chrono::system_clock::to_time_t(tp);
+    std::tm local = *std::localtime(&t);
+    return local;
+}
+
+std::string get_date_time_string(ulong timestamp) {
+    auto time_data = get_date_time(timestamp);
+    std::string date;
+    
+    date += std::to_string(time_data.tm_mon + 1) + "/" + std::to_string(time_data.tm_mday) + "/" + std::to_string(time_data.tm_year + 1900)  + " ";
+
+    std::string time;
+    int hour = time_data.tm_hour;
+    if(hour > 11) {
+        time = "PM";
+        hour -= 12;
+    } else time = "AM";
+    if(hour == 0) hour = 12;
+    std::string minute = std::to_string(time_data.tm_min);
+    if(minute.length() == 1) minute = "0" + minute;
+    time = std::to_string(hour) + ":" + minute + " " + time;
+
+    date += time;
+
+    return date;
+}
+
 vec3 hex_color(uint color) {
     vec3 col = vec3((color >> 16) & 0xFF, (color >> 8) & 0xFF, color & 0xFF);
     col /= 0xFF;

@@ -57,6 +57,11 @@ std::vector<byte> get_bytes_from_file(std::string path);
 void write_text_to_file(std::string path, std::string data);
 void write_bytes_to_file(std::string path, std::vector<byte> data);
 
+
+auto get_date_time(ulong timestamp);
+
+std::string get_date_time_string(ulong timestamp);
+
 struct Profiler_Entry {
     double time;
     std::string name;

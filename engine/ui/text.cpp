@@ -81,7 +81,7 @@ std::vector<ui_vertex> mesh_text(font_asset& f, std::string str, text_data& data
     std::vector<ui_vertex> line_ret;
 
     auto insert_line = [&]() {
-        text_lines.push_back(line_start);
+        text_line_data s = line_start;
         line_len = 0;
         
         wrap_limits.x = glm::max(wrap_limits.x, pos.x);
@@ -107,12 +107,15 @@ std::vector<ui_vertex> mesh_text(font_asset& f, std::string str, text_data& data
         ret.insert(ret.end(), line_ret.begin(), line_ret.end());
         
         line_ret.clear();
-
+        
         max_x = glm::max(max_x, pos.x);
 
         pos.x = 0;
         pos.y -= f.line_height;
         ++num_lines;
+
+        s.offset = offset;
+        text_lines.push_back(s);
     };
     
     uint end = pos.x + word_pos.x;
@@ -126,7 +129,7 @@ std::vector<ui_vertex> mesh_text(font_asset& f, std::string str, text_data& data
             float min_v = pos.x;
             float max_v = end;
             
-            max_x = glm::max(max_x, float(width));
+            //max_x = glm::max(max_x, float(width));
 
             wrap_limits.x = glm::max(wrap_limits.x, min_v);
             wrap_limits.y = glm::min(wrap_limits.y, max_v);
@@ -181,14 +184,6 @@ std::vector<ui_vertex> mesh_text(font_asset& f, std::string str, text_data& data
     };
 
     auto insert_char = [&](uint codepoint) {
-        if(word_len == 0) {
-            word_start.bold = bold;
-            word_start.italic = italic;
-            word_start.color = color.xyz();
-            word_start.start_index = i;
-        }
-        ++word_len;
-
         //
 
         glyph_data& gd = f.at(codepoint);
@@ -204,24 +199,51 @@ std::vector<ui_vertex> mesh_text(font_asset& f, std::string str, text_data& data
             word_ret.push_back(v);
 
             if(alignment == axiom::text_alignment::LEFT) {
-                //if(i >= select_range.x && i < select_range.y) insert_selection(word_pos, {gd.advance, f.line_height});
+                if(word_len == 0) {
+                    word_start.bold = bold;
+                    word_start.italic = italic;
+                    word_start.color = color.xyz();
+                    word_start.start_index = i;
+                }
+                ++word_len;
+                
                 word_pos.x += stride;
                 
                 insert_word();
             } else if(alignment == axiom::text_alignment::CENTER) {
-                insert_word();
+                if(word_len == 0) {
+                    word_start.bold = bold;
+                    word_start.italic = italic;
+                    word_start.color = color.xyz();
+                    word_start.start_index = i;
+                }
+                ++word_len;
 
-                //if(i >= select_range.x && i < select_range.y) insert_selection(word_pos, {gd.advance, f.line_height});
                 word_pos.x += stride;
 
                 insert_word();
             } else if(alignment == axiom::text_alignment::RIGHT) {
                 insert_word();
+                
+                if(word_len == 0) {
+                    word_start.bold = bold;
+                    word_start.italic = italic;
+                    word_start.color = color.xyz();
+                    word_start.start_index = i;
+                }
+                ++word_len;
 
-                //if(i >= select_range.x && i < select_range.y) insert_selection(word_pos, {gd.advance, f.line_height});
                 word_pos.x += stride;
             }
         } else {
+            if(word_len == 0) {
+                word_start.bold = bold;
+                word_start.italic = italic;
+                word_start.color = color.xyz();
+                word_start.start_index = i;
+            }
+            ++word_len;
+            
             std::vector<ui_vertex> vs = create_char(gd);
 
             for(ui_vertex& v : vs) {
@@ -375,6 +397,8 @@ std::vector<ui_vertex> mesh_text(font_asset& f, std::string str, text_data& data
         v.pos *= float(text_size);
     }
 
+    for(auto& line : text_lines) line.offset -= min_offset;
+
     for(ui_vertex& v : ret) {
         range.x = glm::min(range.x, v.pos.x);
         range.y = glm::min(range.y, v.pos.y);
@@ -439,7 +463,7 @@ std::vector<ui_vertex> mesh_text_select(font_asset& f, ivec2 selection, std::str
     std::vector<ui_vertex> line_ret;
 
     auto insert_line = [&]() {
-        text_lines.push_back(line_start);
+        auto s = line_start;
         
         wrap_limits.x = glm::max(wrap_limits.x, pos.x);
         max_width += pos.x;
@@ -469,6 +493,9 @@ std::vector<ui_vertex> mesh_text_select(font_asset& f, ivec2 selection, std::str
         pos.x = 0;
         pos.y -= f.line_height;
         ++num_lines;
+        
+        s.offset = offset;
+        text_lines.push_back(s);
     };
 
     auto insert_word = [&]() {
@@ -486,7 +513,7 @@ std::vector<ui_vertex> mesh_text_select(font_asset& f, ivec2 selection, std::str
             float min_v = pos.x;
             float max_v = end;
             
-            max_x = glm::max(max_x, float(width));
+            //max_x = glm::max(max_x, float(width));
 
             wrap_limits.x = glm::max(wrap_limits.x, min_v);
             wrap_limits.y = glm::min(wrap_limits.y, max_v);
@@ -527,14 +554,6 @@ std::vector<ui_vertex> mesh_text_select(font_asset& f, ivec2 selection, std::str
     };
 
     auto insert_char = [&](uint codepoint) {
-        if(word_len == 0) {
-            word_start.bold = bold;
-            word_start.italic = italic;
-            word_start.color = color.xyz();
-            word_start.start_index = i;
-        }
-        ++word_len;
-
         //
 
         glyph_data& gd = f.at(codepoint);
@@ -550,12 +569,26 @@ std::vector<ui_vertex> mesh_text_select(font_asset& f, ivec2 selection, std::str
             word_ret.push_back(v);
 
             if(alignment == axiom::text_alignment::LEFT) {
+                if(word_len == 0) {
+                    word_start.bold = bold;
+                    word_start.italic = italic;
+                    word_start.color = color.xyz();
+                    word_start.start_index = i;
+                }
+                ++word_len;
+                
                 if(i >= selection.x && i < selection.y) insert_selection(word_pos, {gd.advance, f.line_height});
                 word_pos.x += stride;
                 
                 insert_word();
             } else if(alignment == axiom::text_alignment::CENTER) {
-                insert_word();
+                if(word_len == 0) {
+                    word_start.bold = bold;
+                    word_start.italic = italic;
+                    word_start.color = color.xyz();
+                    word_start.start_index = i;
+                }
+                ++word_len;
 
                 if(i >= selection.x && i < selection.y) insert_selection(word_pos, {gd.advance, f.line_height});
                 word_pos.x += stride;
@@ -564,10 +597,26 @@ std::vector<ui_vertex> mesh_text_select(font_asset& f, ivec2 selection, std::str
             } else if(alignment == axiom::text_alignment::RIGHT) {
                 insert_word();
 
+                if(word_len == 0) {
+                    word_start.bold = bold;
+                    word_start.italic = italic;
+                    word_start.color = color.xyz();
+                    word_start.start_index = i;
+                }
+                ++word_len;
+
                 if(i >= selection.x && i < selection.y) insert_selection(word_pos, {gd.advance, f.line_height});
                 word_pos.x += stride;
             }
         } else {
+            if(word_len == 0) {
+                word_start.bold = bold;
+                word_start.italic = italic;
+                word_start.color = color.xyz();
+                word_start.start_index = i;
+            }
+            ++word_len;
+            
             if(i >= selection.x && i < selection.y) insert_selection(word_pos, {gd.advance + ((bold) ? bold_factor : 0.0f), f.line_height});
 
             word_pos.x += stride;
@@ -797,6 +846,8 @@ std::pair<int, bool> compute_cursor_index(vec2 cursor_pos, axiom::text& text, bo
     float pos = 0.0f;
     float advance = 0.0f;
     
+    cursor_x -= data.offset;
+    
     if(pos - start_buffer < cursor_x || line_index != 0 || cl0) {
         for(int i = line_start; i < line_end; ++i) {
             uint32_t c = str[i];
@@ -889,6 +940,8 @@ std::pair<int, bool> compute_cursor_index(vec2 cursor_pos, axiom::text& text, bo
 
             advance = glyph.advance;
             if(bold && glyph.visible) advance += bold_factor;
+
+            if(pos - advance * 0.5f > cursor_x && i == line_start) return {-1, false};
 
             if(pos + advance * 0.5f > cursor_x) {
                 return {i, false};

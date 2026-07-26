@@ -224,8 +224,8 @@ void ui_system::call() {
                 }
             } else {
                 for(auto& text : widget->text) {
-                    text->v_select.clear();
-                    text->select_range = vec2(-1);
+                    //text->v_select.clear();
+                    //text->select_range = vec2(-1);
                     //text->select(vec4(-1));
                 }
             }

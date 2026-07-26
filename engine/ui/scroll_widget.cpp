@@ -36,45 +36,38 @@ void scroll_widget::init() {
     before.push_back(c);
 
     c.func = [this, ui_system]() {
-        static float height = -1.0f;
+        static float child_height = -1.0f;
+        static float self_height = -1.0f;
 
-        float current_height = ui_system->widgets[children[0]]->size.y;
+        float new_child_height = ui_system->widgets[children[0]]->size.y;
+        float new_self_height = size.y;
 
         bool o = false;
 
-        /*
-        float new_scroll = scroll_pos;
-        if(anchor_widget != NULL_WIDGET) {
-            auto& widget = ui_system->widgets[ui_system->widgets[children[0]]->children[anchor_widget]];
-
-            float start;
-            float end = widget->position.y + scroll_pos - (position.y + size.y);
-
-            if(anchor_widget != 0) {
-                auto& widget_prev = ui_system->widgets[ui_system->widgets[children[0]]->children[anchor_widget - 1]];
-                start = widget_prev->position.y + scroll_pos - (position.y + size.y);
-            } else start = widget->position.y + widget->size.y + scroll_pos - (position.y + size.y);
-
-            float n = end + (start - end) * anchor_frac;//* (1.0f - anchor_frac); // TOP float new_scroll = -widget->size.y * (1.0f - anchor_frac);
-            float p = scroll_pos;
-            new_scroll = n + size.y;
-        }
-
-        std::cout << scroll_pos << " " << new_scroll << "\n";
-        */
-
-        if(current_height != height) {
-            height = current_height;
+        if(child_height != new_child_height || self_height != new_self_height) {
+            child_height = new_child_height;
+            self_height = new_self_height;
 
             float new_scroll = scroll_pos;
-            if(anchor_widget != NULL_WIDGET) {
-                auto& widget = ui_system->widgets[ui_system->widgets[children[0]]->children[anchor_widget]];
+            if(anchor_widget == 0xFFFFFFFFFFFFFFFE) {
+                new_scroll = 0.0f;
+            } else if(anchor_widget == 0xFFFFFFFFFFFFFFFD) {
+                new_scroll = -1000000.0f;
+            } else if(anchor_widget != NULL_WIDGET) {
+                auto& parent_widget = ui_system->widgets[children[0]];
+                uint32_t index = 0;
+                while(true) {
+                    if(parent_widget->children[index] == anchor_widget) break;
+                    ++index;
+                }
+                
+                auto& widget = ui_system->widgets[ui_system->widgets[children[0]]->children[index]];
 
                 float start;
                 float end = widget->position.y + scroll_pos - (position.y + size.y);
 
                 if(anchor_widget != 0) {
-                    auto& widget_prev = ui_system->widgets[ui_system->widgets[children[0]]->children[anchor_widget - 1]];
+                    auto& widget_prev = ui_system->widgets[ui_system->widgets[children[0]]->children[index - 1]];
                     start = widget_prev->position.y + scroll_pos - (position.y + size.y);
                 } else start = widget->position.y + widget->size.y + scroll_pos - (position.y + size.y);
 
@@ -91,31 +84,33 @@ void scroll_widget::init() {
 
         float prev = 0.0f;
         uint32_t index = 0;
+        if(scroll_pos == 0.0f) anchor_widget = 0xFFFFFFFFFFFFFFFE;
+        else {
+            while(true) {
+                auto& widget = ui_system->widgets[ui_system->widgets[children[0]]->children[index]];
 
-        while(true) {
-            auto& widget = ui_system->widgets[ui_system->widgets[children[0]]->children[index]];
+                float end = widget->position.y;
 
-            float end = widget->position.y;
+                if(index == 0) prev = widget->position.y + widget->size.y;
 
-            if(index == 0) prev = widget->position.y + widget->size.y;
+                if(target - end >= 0.0f) {
+                    float frac = (target - end) / (prev - end);
+                    anchor_frac = frac;
+                    anchor_widget = ui_system->widgets[children[0]]->children[index];
+                    
+                    break;
+                } else {
+                    prev = end;
+                }
 
-            if(target - end >= 0.0f) {
-                float frac = (target - end) / (prev - end);
-                anchor_frac = frac;
-                anchor_widget = index;
-                
-                break;
-            } else {
-                prev = end;
-            }
+                ++index;
 
-            ++index;
+                if(index >= ui_system->widgets[children[0]]->children.size()) {
+                    anchor_widget = 0xFFFFFFFFFFFFFFFD;
+                    anchor_frac = 0.0f;
 
-            if(index == ui_system->widgets[children[0]]->children.size()) {
-                anchor_widget = index - 1;
-                anchor_frac = 0.0f;
-
-                break;
+                    break;
+                }
             }
         }
     };

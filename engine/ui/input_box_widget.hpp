@@ -154,7 +154,7 @@ void input_box_widget<type>::mesh() {
         for(axiom::ui_vertex& v : ret) {
             v.pos = vec3(range.xy() + v.pos.xy() * range.zw(), z);
             v.tex_pos = vec2(1.0f, 63.0f);
-            v.color = vec4(0.0f, 0.0f, 0.0f, 0.5f);
+            v.color = vec4(0.0625f, 0.0625f, 0.0625f, 1.0f);
             v.data = 0x1;
         }
         vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());

@@ -46,6 +46,7 @@ struct text_line_data {
     bool bold = false;
     bool italic = false;
     vec3 color = vec3(1.0f);
+    float offset = 0.0f;
 };
 
 struct text_data {
@@ -69,11 +70,10 @@ std::vector<ui_vertex> mesh_text_select(font_asset& f, ivec2 selection, std::str
 //std::vector<float> compute_text_bounds(font_asset& f, std::string text, uint text_size, uint width, bool wrap, ALIGNMENT alignment);
 
 class text {
-    private:
-    double time = 0.0;
-
     public:
     
+    double time = 0.0;
+
     font_asset* font;
     
     std::string string;

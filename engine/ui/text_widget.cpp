@@ -37,6 +37,29 @@ void text_widget::mesh() {
         }
 
         vertices_before = text_vertices;
+
+        //
+
+        /*
+        ui_vertex a = {vec3(0.0f, 0.0f, 0.0f), vec2(0.0f, 0.0f), vec4(1.0f)};
+        ui_vertex b = {vec3(1.0f, 0.0f, 0.0f), vec2(1.0f, 0.0f), vec4(1.0f)};
+        ui_vertex c = {vec3(0.0f, 1.0f, 0.0f), vec2(0.0f, 1.0f), vec4(1.0f)};
+        ui_vertex d = {vec3(1.0f, 1.0f, 0.0f), vec2(1.0f, 1.0f), vec4(1.0f)};
+
+        vec4 panel_range = vec4(position, size);
+        
+        std::vector<ui_vertex> ret = {a, b, d, a, d, c};
+        
+        for(ui_vertex& v : ret) {
+            v.pos = vec3(panel_range.xy() + v.pos.xy() * panel_range.zw(), z);
+            v.tex_pos = vec2(1.0f, 63.0f);
+            v.color = vec4(1.0f, 0.0f, 0.0f, 0.5f);
+            v.data = 0x1;
+
+            v.range = view_range;
+        }
+        vertices_before.insert(vertices_before.begin(), ret.begin(), ret.end());
+        */
     }
 }
 
@@ -97,7 +120,7 @@ void text_widget::init() {
     widget_constraint c;
     c.func = [this, ui_system]() {
         //text[0]->click_range = ivec4(position, position + size);
-        if(size.x < text[0]->wrap_limits.x || size.x > text[0]->wrap_limits.y || size.x == 0.0f) {
+        if(size.x <= text[0]->wrap_limits.x || size.x >= text[0]->wrap_limits.y || size.x == 0.0f) {
             text[0]->size.x = size.x;
             text[0]->width = size.x;
             //text[0]->dirty = true;
@@ -115,12 +138,16 @@ void text_widget::init() {
         size.y = text[0]->size.y;
         
         max_width = text[0]->max_width;
+        min_width = 0;
     };
 
     before.push_back(c);
     
     c.func = [this, ui_system]() {
-        position = round(position);
+        float offset = 0.0f;
+        if(text[0]->alignment == axiom::text_alignment::RIGHT) offset = (size.x - text[0]->size.x);
+
+        position = round(position + vec2(offset, 0.0f));
 
         text[0]->position = position;
     };

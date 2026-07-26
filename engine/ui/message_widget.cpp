@@ -1,11 +1,53 @@
 #include <ui/message_widget.hpp>
 #include <ui/ui_system.hpp>
+#include <ui/text_widget.hpp>
 
 namespace axiom {
 
 void message_widget::handle_inputs() {
     axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
     vec4 range = ui_system.get_range(self);
+
+    bool prev_hover = hover;
+
+    vec4 include_range = vec4(position, position + size + vec2(0.0f, buffer.w));
+    if(inserted) include_range.w += ui_system.font_assets[0]->line_height + buffer.y;
+
+    if(includes(ui_system.window->cursor_pos, include_range) && ui_system.hover_capture == self) {
+        hover = true;
+    } else {
+        hover = false;
+    }
+
+    if(prev_hover != hover) {
+        auto& parent_widget = ui_system.widgets[parent];
+        uint32_t index = 0;
+        while(true) {
+            if(parent_widget->children[index] == self) break;
+            ++index;
+        }
+
+        if(hover) {
+            bool is_text_widget = dynamic_cast<axiom::text_widget*>(ui_system.widgets[parent_widget->children[index - 1]].get());
+            if(!is_text_widget) {
+                ui_system.input_set(parent);
+                ui_system.position(position_mode);
+                ui_system.buffer(buffer);
+
+                std::string time_text = axiom::get_date_time_string(timestamp);
+                ulong time_label = axiom::text_widget::insert(time_text, axiom::text_alignment::LEFT);
+                parent_widget->children.pop_back();
+                parent_widget->children.insert(parent_widget->children.begin() + index, time_label);
+                inserted = true;
+            }
+        } else {
+            bool is_text_widget = dynamic_cast<axiom::text_widget*>(ui_system.widgets[parent_widget->children[index - 1]].get());
+            if(is_text_widget && inserted) {
+                inserted = false;
+                parent_widget->children.erase(parent_widget->children.begin() + (index - 1));
+            }
+        }
+    }
 }
 
 void message_widget::mesh() {
@@ -106,7 +148,7 @@ void message_widget::set_str(std::string str) {
     */
 }
 
-uint64_t message_widget::insert(std::string str, axiom::text_alignment alg, vec2 width, vec3 color, vec2 border, ulong timestamp, uint tail_settings) {
+uint64_t message_widget::insert(std::string sender, ulong timestamp, std::string message, axiom::text_alignment alg, vec2 width, vec3 color, vec2 border, uint tail_settings) {
     axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
     
     message_widget widget;
@@ -115,7 +157,7 @@ uint64_t message_widget::insert(std::string str, axiom::text_alignment alg, vec2
 
     std::shared_ptr<axiom::text> text(new axiom::text);
     
-    text->string = str;
+    text->string = message;
     text->wrap = true;
     text->alignment = alg;
     text->font = ui_system.font_assets[0];
@@ -124,6 +166,7 @@ uint64_t message_widget::insert(std::string str, axiom::text_alignment alg, vec2
 
     widget.min_width = width.x;
     widget.max_width = width.y;
+    widget.sender = sender;
 
     widget.tail_settings = tail_settings;
     if(tail_settings) widget.tail_size = 8.0f;
@@ -156,7 +199,7 @@ void message_widget::init() {
     widget_constraint c;
     c.func = [this, ui_system]() {
         //text[0]->click_range = ivec4(position, position + size);
-        if(size.x - border.x * 2.0f < text[0]->wrap_limits.x || size.x - border.x * 2.0f > text[0]->wrap_limits.y || size.x == 0.0f) {
+        if(size.x - border.x * 2.0f <= text[0]->wrap_limits.x + 1 || size.x - border.x * 2.0f >= text[0]->wrap_limits.y || size.x == 0.0f) {
             text[0]->size.x = size.x - border.x * 2.0f;
             text[0]->width = size.x - border.x * 2.0f;
             //text[0]->dirty = true;
@@ -170,7 +213,7 @@ void message_widget::init() {
         if(f == FLT_MAX) {
             f = text[0]->wrap_limits.x + border.x * 2.0f;
         }
-        size.x = glm::min(size.x, text[0]->wrap_limits.x + border.x * 2.0f);
+        size.x = glm::min(size.x, text[0]->wrap_limits.x + + border.x * 2.0f);
         //size.x = glm::clamp(size.x, text[0]->wrap_limits.x + border.x * 2.0f, f);
         size.y = text[0]->size.y + border.y * 2.0f + tail_size;
         
@@ -184,6 +227,17 @@ void message_widget::init() {
         text[0]->position = position + border + vec2(0.0f, tail_size);
     };
     after.push_back(c);
+}
+
+axiom::capture_data message_widget::handle_capture() {
+    axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
+
+    vec4 hover_range = vec4(position, position + size + vec2(0.0f, buffer.w));
+    if(inserted) hover_range.w += ui_system.font_assets[0]->line_height + buffer.y;
+
+    if(includes(ui_system.window->cursor_pos, hover_range)) return {z, true};
+
+    return {z, false};
 }
 
 }

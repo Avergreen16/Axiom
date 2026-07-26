@@ -7,6 +7,23 @@ void text_box_widget::handle_inputs() {
     axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
 
     view_range = vec4(position, position + size);
+
+    if(ui_system.window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
+        if(includes(ui_system.window->cursor_pos, view_range)) {
+            vec2 clamped_cursor = vec2(glm::clamp(ui_system.window->cursor_pos.x, text[0]->position.x + 1, text[0]->position.x + text[0]->size.x - 1), glm::clamp(ui_system.window->cursor_pos.y, text[0]->position.y + 1, text[0]->position.y + text[0]->size.y - 1));
+
+            ui_system.cursor_anchor = clamped_cursor;
+
+            text[0]->select(vec4(clamped_cursor, clamped_cursor), true);
+        }
+    }
+
+    if(ui_system.window->char_delta.size()) {
+        bool insert = false;
+        if(text[0]->select_range == ivec2(-1)) text[0]->string += ui_system.window->char_delta;
+        text[0]->time = get_time();
+        text[0]->select_range = ivec2(text[0]->string.size());
+    }
     
     text[0]->z = z;
 
@@ -98,6 +115,12 @@ void text_box_widget::handle_inputs() {
 
     vec2 text_pos = position + vec2(boundary.x, boundary.y);
     text[0]->position = round(text_pos);
+
+    if(ui_system.window->pressed_buttons.contains(axiom::input_code::KEY_ENTER) && !ui_system.window->input_map[axiom::input_code::KEY_LEFT_SHIFT]) {
+        callback(*this);
+    }
+    
+    std::cout << text[0]->select_range.x << " " << text[0]->select_range.y << "\n";
 }
 
 void text_box_widget::mesh() {
@@ -119,7 +142,7 @@ void text_box_widget::mesh() {
         for(axiom::ui_vertex& v : ret) {
             v.pos = vec3(range.xy() + v.pos.xy() * range.zw(), z);
             v.tex_pos = vec2(1.0f, 63.0f);
-            v.color = vec4(0.0f, 0.0f, 0.0f, 0.5f);
+            v.color = vec4(0.0625f, 0.0625f, 0.0625f, 1.0f);
             v.data = 0x1;
         }
         vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
@@ -153,7 +176,7 @@ void text_box_widget::init() {
     after.push_back(c);
 }
 
-ulong text_box_widget::insert(float width, vec2 boundary, std::string start) {
+ulong text_box_widget::insert(float width, vec2 boundary, std::string start, std::function<void(text_box_widget&)> callback) {
     axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
 
     axiom::text_box_widget widget;
@@ -173,6 +196,7 @@ ulong text_box_widget::insert(float width, vec2 boundary, std::string start) {
 
     //
 
+    widget.callback = callback;
     widget.boundary = boundary;
 
     widget.size = {width, widget.text[0]->font->line_height + 2.0f * boundary.y};
@@ -196,7 +220,7 @@ axiom::capture_data text_box_widget::handle_capture() {
     };
 
     for(vec4 range : ranges) {
-        if(includes(ui_system.window->cursor_pos, range)) return {z, true};
+        if(includes(ui_system.window->cursor_pos, range)) return {z, true, true};
     }
 
     return {z, false};
