@@ -13,10 +13,12 @@ struct scroll_widget : widget {
 
     float scroll_pos = 0.0f;
 
-    ulong anchor_widget = NULL_WIDGET;
+    ulong anchor_widget = 0xFFFFFFFFFFFFFFFD;//NULL_WIDGET;
     float anchor_frac = 0.0f;
 
     bool capture_scroll = false;
+
+    std::vector<ulong> prev_order;
 
     void handle_inputs();
     void mesh();

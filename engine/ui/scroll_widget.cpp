@@ -36,6 +36,20 @@ void scroll_widget::init() {
     before.push_back(c);
 
     c.func = [this, ui_system]() {
+        // update total scrollable
+
+        float new_total_scrollable = 0.0f;
+        if(children.size()) {
+            new_total_scrollable = ui_system->widgets[children[0]]->size.y - size.y + ui_system->widgets[children[0]]->buffer.y + ui_system->widgets[children[0]]->buffer.w;
+        }
+
+        if(new_total_scrollable != total_scrollable) {
+            total_scrollable = new_total_scrollable;
+            dirty = true;
+        }
+
+        //
+
         static float child_height = -1.0f;
         static float self_height = -1.0f;
 
@@ -43,6 +57,8 @@ void scroll_widget::init() {
         float new_self_height = size.y;
 
         bool o = false;
+
+        float delta_scroll = 0.0f;
 
         if(child_height != new_child_height || self_height != new_self_height) {
             child_height = new_child_height;
@@ -52,21 +68,81 @@ void scroll_widget::init() {
             if(anchor_widget == 0xFFFFFFFFFFFFFFFE) {
                 new_scroll = 0.0f;
             } else if(anchor_widget == 0xFFFFFFFFFFFFFFFD) {
-                new_scroll = -1000000.0f;
+                new_scroll = FLT_MAX * -0.5f;
             } else if(anchor_widget != NULL_WIDGET) {
+
                 auto& parent_widget = ui_system->widgets[children[0]];
+
                 uint32_t index = 0;
+                bool found = false;
+                while(true) {
+                    if(index >= parent_widget->children.size()) break;
+                    if(parent_widget->children[index] == anchor_widget) {
+                        found = true;
+                        break;
+                    }
+
+                    ++index;
+                }
+
+                if(!found) {
+                    std::cout << "NOT FOUND";
+                    int index = 0;
+                    while(true) {
+                        if(prev_order[index] == anchor_widget) break;
+                        ++index;
+                    }
+
+                    int down_index = index - 1;
+                    bool found = false;
+                    while(true) {
+                        if(down_index < 0) break;
+                        if(ui_system->widgets.contains(prev_order[down_index])) {
+                            found = true;
+                            break;
+                        }
+
+                        --down_index;
+                    }
+
+                    if(found) {
+                        anchor_widget = prev_order[down_index];
+                        anchor_frac = 1.0f;
+                        
+                        std::cout << " " << ui_system->widgets.contains(anchor_widget) << " FOUND-A";
+                    } else {
+                        int up_index = index - 1;
+                        while(true) {
+                            if(up_index >= prev_order.size()) break;
+                            if(ui_system->widgets.contains(prev_order[up_index])) {
+                                found = true;
+                                break;
+                            }
+
+                            ++up_index;
+                        }
+
+                        if(found) {
+                            anchor_widget = prev_order[up_index];
+                            anchor_frac = 0.0f;
+                            
+                            std::cout << " " << ui_system->widgets.contains(anchor_widget) << " FOUND-B";
+                        }
+                    }
+                }
+
+                index = 0;
                 while(true) {
                     if(parent_widget->children[index] == anchor_widget) break;
                     ++index;
                 }
                 
-                auto& widget = ui_system->widgets[ui_system->widgets[children[0]]->children[index]];
+                auto& widget = ui_system->widgets[parent_widget->children[index]];
 
                 float start;
                 float end = widget->position.y + scroll_pos - (position.y + size.y);
 
-                if(anchor_widget != 0) {
+                if(index != 0) {
                     auto& widget_prev = ui_system->widgets[ui_system->widgets[children[0]]->children[index - 1]];
                     start = widget_prev->position.y + scroll_pos - (position.y + size.y);
                 } else start = widget->position.y + widget->size.y + scroll_pos - (position.y + size.y);
@@ -74,28 +150,46 @@ void scroll_widget::init() {
                 float n = end + (start - end) * anchor_frac;//* (1.0f - anchor_frac); // TOP float new_scroll = -widget->size.y * (1.0f - anchor_frac);
                 float p = scroll_pos;
                 new_scroll = n + size.y;
+                
+                //std::cout << start << " " << end << " " << new_scroll << " | " << widget->position.y << " " << ui_system->widgets[children[0]]->position.y << " " << ui_system->widgets[children[0]]->size.y << " " << ui_system->widgets[children[0]]->max_width << " " << ui_system->widgets[children[0]]->min_width << " " << ui_system->widgets[children[0]]->max_height << " " << ui_system->widgets[children[0]]->min_height << " " << scroll_pos << "\n";
+
+                //std::cout << index << " " << start << " " << end << " " << new_scroll << "\n";
             }
 
+            delta_scroll = scroll_pos - new_scroll;
             scroll_pos = new_scroll;
         }
 
         float pos = 0.0f;
-        float target = position.y; // TOP float target = position.y + size.y;
+        float target = position.y - delta_scroll; // TOP float target = position.y + size.y;
 
         float prev = 0.0f;
         uint32_t index = 0;
         if(scroll_pos == 0.0f) anchor_widget = 0xFFFFFFFFFFFFFFFE;
         else {
             while(true) {
+                if(index >= ui_system->widgets[children[0]]->children.size()) {
+                    anchor_widget = 0xFFFFFFFFFFFFFFFD;
+                    anchor_frac = 0.0f;
+
+                    break;
+                }
+
+                //
+
                 auto& widget = ui_system->widgets[ui_system->widgets[children[0]]->children[index]];
 
                 float end = widget->position.y;
 
                 if(index == 0) prev = widget->position.y + widget->size.y;
 
-                if(target - end >= 0.0f) {
+                if(target - end > 0.0f) {
                     float frac = (target - end) / (prev - end);
+
                     anchor_frac = frac;
+
+                    ulong prev2 = anchor_widget;
+
                     anchor_widget = ui_system->widgets[children[0]]->children[index];
                     
                     break;
@@ -104,14 +198,13 @@ void scroll_widget::init() {
                 }
 
                 ++index;
-
-                if(index >= ui_system->widgets[children[0]]->children.size()) {
-                    anchor_widget = 0xFFFFFFFFFFFFFFFD;
-                    anchor_frac = 0.0f;
-
-                    break;
-                }
             }
+        }
+
+        prev_order.clear();
+        prev_order.reserve(ui_system->widgets[children[0]]->children.size());
+        for(auto child : ui_system->widgets[children[0]]->children) {
+            prev_order.push_back(child);
         }
     };
     after.push_back(c);
@@ -122,21 +215,6 @@ void scroll_widget::handle_inputs() {
     axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
 
     float height = size.y;
-
-    float new_total_scrollable = 0.0f;
-    if(children.size()) {
-        new_total_scrollable = ui_system.widgets[children[0]]->size.y - height + ui_system.widgets[children[0]]->buffer.y + ui_system.widgets[children[0]]->buffer.w;
-    }
-
-    if(new_total_scrollable != total_scrollable) {
-        child_offset.y = child_offset.y + total_scrollable - new_total_scrollable;
-        if(new_total_scrollable < 0.0f) child_offset.y = -new_total_scrollable;
-        else if(child_offset.y > 0.0f) child_offset.y = 0.0f;
-        total_scrollable = new_total_scrollable;
-        dirty = true;
-    }
-
-
 
     int scroll_speed = 60;
 
@@ -217,6 +295,21 @@ void scroll_widget::mesh() {
         bool scrollbar = false;
         float scrollbar_height;
         float scrollbar_pos;
+
+        /*
+        {
+            ret = {a, b, d, a, d, c};
+            vec4 area = vec4(position, size);
+
+            for(ui_vertex& v : ret) {
+                v.pos = vec3(area.xy() + v.pos.xy() * area.zw(), z);
+                v.tex_pos = vec2(1.0f, 63.0f);
+                v.color = vec4(1.0f, 0.0f, 0.0f, 0.5f);
+                v.data = 1;
+            }
+            total_ret.insert(total_ret.end(), ret.begin(), ret.end());
+        }
+        */
 
         if(reserve) {
             ret = {a, b, d, a, d, c};

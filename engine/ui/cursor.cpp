@@ -19,9 +19,9 @@ std::vector<ui_vertex> mesh_cursor(cursor_mode mode, ivec2 position) {
             rel_pos = {-5, 0};
             break;
         case axiom::cursor_mode::DRAG_T: 
-            size = {9, 17};
-            tex_range = {112, 0, 9, 17};
-            rel_pos = {-4, 8};
+            size = {11, 17};
+            tex_range = {112, 0, 11, 17};
+            rel_pos = {-5, 8};
             break;
         case axiom::cursor_mode::DRAG_TR: 
             size = {13, 13};
@@ -29,9 +29,9 @@ std::vector<ui_vertex> mesh_cursor(cursor_mode mode, ivec2 position) {
             rel_pos = {-6, 6};
             break;
         case axiom::cursor_mode::DRAG_R: 
-            size = {17, 9};
-            tex_range = {80, 16, 17, 9};
-            rel_pos = {-8, 4};
+            size = {17, 11};
+            tex_range = {80, 16, 17, 11};
+            rel_pos = {-8, 5};
             break;
         case axiom::cursor_mode::DRAG_BR: 
             size = {13, 13};
@@ -39,9 +39,9 @@ std::vector<ui_vertex> mesh_cursor(cursor_mode mode, ivec2 position) {
             rel_pos = {-6, 6};
             break;
         case axiom::cursor_mode::DRAG_B: 
-            size = {9, 17};
-            tex_range = {112, 0, 9, 17};
-            rel_pos = {-4, 8};
+            size = {11, 17};
+            tex_range = {112, 0, 11, 17};
+            rel_pos = {-5, 8};
             break;
         case axiom::cursor_mode::DRAG_BL: 
             size = {13, 13};
@@ -49,9 +49,9 @@ std::vector<ui_vertex> mesh_cursor(cursor_mode mode, ivec2 position) {
             rel_pos = {-6, 6};
             break;
         case axiom::cursor_mode::DRAG_L: 
-            size = {17, 9};
-            tex_range = {80, 16, 17, 9};
-            rel_pos = {-8, 4};
+            size = {17, 11};
+            tex_range = {80, 16, 17, 11};
+            rel_pos = {-8, 5};
             break;
         case axiom::cursor_mode::DRAG_TL:
             size = {13, 13};

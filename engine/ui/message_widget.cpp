@@ -41,10 +41,12 @@ void message_widget::handle_inputs() {
                 inserted = true;
             }
         } else {
-            bool is_text_widget = dynamic_cast<axiom::text_widget*>(ui_system.widgets[parent_widget->children[index - 1]].get());
-            if(is_text_widget && inserted) {
-                inserted = false;
-                parent_widget->children.erase(parent_widget->children.begin() + (index - 1));
+            if(inserted) {
+                bool is_text_widget = dynamic_cast<axiom::text_widget*>(ui_system.widgets[parent_widget->children[index - 1]].get());
+                if(is_text_widget) {
+                    inserted = false;
+                    parent_widget->children.erase(parent_widget->children.begin() + (index - 1));
+                }
             }
         }
     }

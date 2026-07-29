@@ -88,8 +88,8 @@ class text {
     bool selectable = true;
     bool editable = false;
 
-    vec2 position;
-    vec2 size;
+    vec2 position = vec2(0.0f);
+    vec2 size = vec2(0.0f);
 
     std::vector<text_line_data> lines;
 

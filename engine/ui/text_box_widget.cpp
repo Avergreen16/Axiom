@@ -119,8 +119,6 @@ void text_box_widget::handle_inputs() {
     if(ui_system.window->pressed_buttons.contains(axiom::input_code::KEY_ENTER) && !ui_system.window->input_map[axiom::input_code::KEY_LEFT_SHIFT]) {
         callback(*this);
     }
-    
-    std::cout << text[0]->select_range.x << " " << text[0]->select_range.y << "\n";
 }
 
 void text_box_widget::mesh() {
@@ -135,9 +133,26 @@ void text_box_widget::mesh() {
         axiom::ui_vertex b = {vec3(1.0f, 0.0f, 0.0f), vec2(1.0f, 0.0f), vec4(1.0f)};
         axiom::ui_vertex c = {vec3(0.0f, 1.0f, 0.0f), vec2(0.0f, 1.0f), vec4(1.0f)};
         axiom::ui_vertex d = {vec3(1.0f, 1.0f, 0.0f), vec2(1.0f, 1.0f), vec4(1.0f)};
+        
+        //
+
         std::vector<axiom::ui_vertex> ret = {a, b, d, a, d, c};
 
         vec4 range = vec4(position, size);
+        
+        for(axiom::ui_vertex& v : ret) {
+            v.pos = vec3(range.xy() + v.pos.xy() * range.zw(), z);
+            v.tex_pos = vec2(1.0f, 63.0f);
+            v.color = vec4(1.0f);
+            v.data = 0x1;
+        }
+        vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
+
+        //
+
+        ret = {a, b, d, a, d, c};
+
+        range = vec4(position + 1.0f, size - 2.0f);
         
         for(axiom::ui_vertex& v : ret) {
             v.pos = vec3(range.xy() + v.pos.xy() * range.zw(), z);

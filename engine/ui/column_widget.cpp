@@ -104,9 +104,9 @@ void column_widget::init() {
             float C0 = rows[i] - c0->size.y;
             rows[i] -= C0;
 
-            if(i != children.size() - 1) {
+            if(i != 0) {
                 float max_buffer = glm::max(c0->buffer.y, prev);
-                row_buffers[i] = max_buffer;
+                row_buffers[i - 1] = max_buffer;
             }
             prev = c0->buffer.w;
 
@@ -132,10 +132,16 @@ void column_widget::init() {
             if(c0->min_height != c0->max_height) {
                 target_min += c0->min_height;
                 target_max += c0->max_height;
+                
+                if(c0->max_height > 1000000.0f && children.size() > 50) std::cout << "MAX CHILD HEIGHT " << max_height << "\n";
+
                 target_weight += c0->weight_height;
             } else {
                 target_min += c0->size.y;
                 target_max += c0->size.y;
+                
+                if(c0->size.y > 1000000.0f && children.size() > 50) std::cout << "MAX SIZE " << c0->size.y << "\n";
+
                 target_weight = glm::max(target_weight, 1.0f);
             }
         }
@@ -143,6 +149,8 @@ void column_widget::init() {
         min_height = target_min;
         max_height = target_max;
         weight_height = target_weight;
+        
+        if(max_height > 1000000.0f && children.size() > 50) std::cout << "MAX HEIGHT " << max_height << "\n";
 
         //
 
@@ -176,7 +184,7 @@ void column_widget::init() {
 
         for(int i = 0; i < rows.size(); ++i) {
             true_size.y += rows[i];
-            if(i != rows.size() - 1) true_size.y += row_buffers[i];
+            if(i != 0) true_size.y += row_buffers[i - 1];
         }
 
         switch(position_mode) {
@@ -232,11 +240,12 @@ void column_widget::init() {
         for(int i = 0; i < children.size(); ++i) {
             auto& c0 = ui_system->widgets[children[(int)children.size() - i - 1]];
 
+            if(i != 0) y_pos += row_buffers[i - 1];
+            
             // y positioning
             c0->position.y = y_pos;
             
             y_pos += rows[i];
-            if(i != children.size() - 1) y_pos += row_buffers[i];
 
             // x positioning
             switch(c0->position_mode) {
