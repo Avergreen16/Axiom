@@ -1,5 +1,6 @@
 add_library(AxiomRender
     wrapper.cpp
+    target.cpp
 )
 
 target_link_libraries(AxiomRender

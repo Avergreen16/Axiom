@@ -65,9 +65,9 @@ void scroll_widget::init() {
             self_height = new_self_height;
 
             float new_scroll = scroll_pos;
-            if(anchor_widget == 0xFFFFFFFFFFFFFFFE) {
+            if(anchor_mode == 1) {
                 new_scroll = 0.0f;
-            } else if(anchor_widget == 0xFFFFFFFFFFFFFFFD) {
+            } else if(anchor_mode == 2) {
                 new_scroll = FLT_MAX * -0.5f;
             } else if(anchor_widget != NULL_WIDGET) {
 
@@ -86,7 +86,6 @@ void scroll_widget::init() {
                 }
 
                 if(!found) {
-                    std::cout << "NOT FOUND";
                     int index = 0;
                     while(true) {
                         if(prev_order[index] == anchor_widget) break;
@@ -107,9 +106,7 @@ void scroll_widget::init() {
 
                     if(found) {
                         anchor_widget = prev_order[down_index];
-                        anchor_frac = 1.0f;
-                        
-                        std::cout << " " << ui_system->widgets.contains(anchor_widget) << " FOUND-A";
+                        anchor_frac = 0.0f;
                     } else {
                         int up_index = index - 1;
                         while(true) {
@@ -124,9 +121,7 @@ void scroll_widget::init() {
 
                         if(found) {
                             anchor_widget = prev_order[up_index];
-                            anchor_frac = 0.0f;
-                            
-                            std::cout << " " << ui_system->widgets.contains(anchor_widget) << " FOUND-B";
+                            anchor_frac = 1.0f;
                         }
                     }
                 }
@@ -165,41 +160,48 @@ void scroll_widget::init() {
 
         float prev = 0.0f;
         uint32_t index = 0;
-        if(scroll_pos == 0.0f) anchor_widget = 0xFFFFFFFFFFFFFFFE;
-        else {
-            while(true) {
-                if(index >= ui_system->widgets[children[0]]->children.size()) {
-                    anchor_widget = 0xFFFFFFFFFFFFFFFD;
-                    anchor_frac = 0.0f;
+        
+        //
+    
+        while(true) {
+            if(index >= ui_system->widgets[children[0]]->children.size()) {
+                anchor_mode = 2;
+                anchor_widget = ui_system->widgets[children[0]]->children.back();
+                anchor_frac = 0.0f;
 
-                    break;
-                }
-
-                //
-
-                auto& widget = ui_system->widgets[ui_system->widgets[children[0]]->children[index]];
-
-                float end = widget->position.y;
-
-                if(index == 0) prev = widget->position.y + widget->size.y;
-
-                if(target - end > 0.0f) {
-                    float frac = (target - end) / (prev - end);
-
-                    anchor_frac = frac;
-
-                    ulong prev2 = anchor_widget;
-
-                    anchor_widget = ui_system->widgets[children[0]]->children[index];
-                    
-                    break;
-                } else {
-                    prev = end;
-                }
-
-                ++index;
+                break;
             }
+
+            //
+
+            auto& widget = ui_system->widgets[ui_system->widgets[children[0]]->children[index]];
+
+            float end = widget->position.y;
+
+            if(index == 0) prev = widget->position.y + widget->size.y;
+
+            if(target - end > 0.0f) {
+                float frac = (target - end) / (prev - end);
+
+                anchor_frac = frac;
+
+                ulong prev2 = anchor_widget;
+
+                anchor_widget = ui_system->widgets[children[0]]->children[index];
+                anchor_mode = 0;
+                
+                break;
+            } else {
+                prev = end;
+            }
+
+            ++index;
         }
+        if(scroll_pos == 0.0f) {
+            anchor_mode = 1;
+        }
+
+        //
 
         prev_order.clear();
         prev_order.reserve(ui_system->widgets[children[0]]->children.size());

@@ -28,6 +28,8 @@ void text_widget::mesh() {
 
         //std::cout << select_vertices.size() << "\n";
 
+        if(abs(text[0]->position.y - position.y) > 1.0f) std::cout << "ERROR: TEXT MISALIGNED (text_widget.cpp) -> " << text[0]->position.y - position.y << "\n"; 
+
         for(ui_vertex& v : text_vertices) {
             v.pos.x += text[0]->position.x;
             v.pos.y += text[0]->position.y;

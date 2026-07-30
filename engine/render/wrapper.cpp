@@ -748,6 +748,7 @@ framebuffer::framebuffer(glm::ivec2 size_, std::vector<fb_tex_params>&& tp, uint
     glBindFramebuffer(GL_FRAMEBUFFER, id);
 
     for(int i = 0; i < tex_params.size(); ++i) {
+
         fb_tex_params& p = tex_params[i];
 
         textures.emplace_back(texture());
@@ -784,7 +785,7 @@ framebuffer::framebuffer(glm::ivec2 size_, std::vector<fb_tex_params>&& tp, uint
             t.type = GL_TEXTURE_2D;
         }
 
-        glFramebufferTexture(GL_FRAMEBUFFER, p.attachment, t.id, 0);
+        glFramebufferTexture(GL_FRAMEBUFFER, get_texture_attachment(p.attachment), t.id, 0);
 
         if(p.binding != -1) {
             int buffers_size = draw_buffers.size();
@@ -795,7 +796,7 @@ framebuffer::framebuffer(glm::ivec2 size_, std::vector<fb_tex_params>&& tp, uint
                 }
             }
 
-            draw_buffers[p.binding] = p.attachment;
+            draw_buffers[p.binding] = get_texture_attachment(p.attachment);
         }
     }
 
@@ -813,10 +814,22 @@ framebuffer::framebuffer(framebuffer&& a) noexcept {
     draw_buffers = a.draw_buffers;
 }
 
+framebuffer& framebuffer::operator=(framebuffer&& a) noexcept {
+    id = a.id;
+    a.id = 0;
+    textures = std::move(a.textures);
+    tex_params = std::move(a.tex_params);
+    size = a.size;
+
+    draw_buffers = a.draw_buffers;
+
+    return *this;
+}
+
 void framebuffer::bind() {
     glBindFramebuffer(GL_FRAMEBUFFER, id);
     
-    glDrawBuffers(draw_buffers.size(), draw_buffers.data());
+    //glDrawBuffers(draw_buffers.size(), draw_buffers.data());
 
     glViewport(0, 0, size.x, size.y);
 }
@@ -842,7 +855,7 @@ void framebuffer::resize(glm::ivec2 new_size) {
         glTexParameteri(t.type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(t.type, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-        glFramebufferTexture(GL_FRAMEBUFFER, p.attachment, t.id, 0);
+        glFramebufferTexture(GL_FRAMEBUFFER, get_texture_attachment(p.attachment), t.id, 0);
 
         t.size = glm::ivec3(size, 1);
     }
@@ -911,43 +924,60 @@ texture_asset texture::retrieve() {
 
 texture_desc get_texture_desc(texture_format f) {
     switch(f) {
-        case R8: {
+        case axiom::texture_format::R8: {
             return {GL_R8, GL_RED, GL_UNSIGNED_BYTE};
         }
-        case RG8: {
+        case axiom::texture_format::RG8: {
             return {GL_RG8, GL_RG, GL_UNSIGNED_BYTE};
         }
-        case RGB8: {
+        case axiom::texture_format::RGB8: {
             return {GL_RGB8, GL_RGB, GL_UNSIGNED_BYTE};
         }
-        case RGBA8: {
+        case axiom::texture_format::RGBA8: {
             return {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE};
         }
 
-        case R16: {
+        case axiom::texture_format::R16: {
             return {GL_R16, GL_RED, GL_UNSIGNED_SHORT};
         }
-        case RG16: {
+        case axiom::texture_format::RG16: {
             return {GL_RG16, GL_RG, GL_UNSIGNED_SHORT};
         }
-        case RGB16: {
+        case axiom::texture_format::RGB16: {
             return {GL_RGB16, GL_RGB, GL_UNSIGNED_SHORT};
         }
-        case RGBA16: {
+        case axiom::texture_format::RGBA16: {
             return {GL_RGBA16, GL_RGBA, GL_UNSIGNED_SHORT};
         }
 
-        case RF: {
+        case axiom::texture_format::RF: {
             return {GL_R32F, GL_RED, GL_FLOAT};
         }
-        case RGF: {
+        case axiom::texture_format::RGF: {
             return {GL_RG32F, GL_RG, GL_FLOAT};
         }
-        case RGBF: {
+        case axiom::texture_format::RGBF: {
             return {GL_RGB32F, GL_RGB, GL_FLOAT};
         }
-        case RGBAF: {
+        case axiom::texture_format::RGBAF: {
             return {GL_RGBA32F, GL_RGBA, GL_FLOAT};
+        }
+    }
+}
+
+GLenum get_texture_attachment(axiom::texture_attachment attachment) {
+    if(attachment >= axiom::texture_attachment::COLOR0 && attachment <= axiom::texture_attachment::COLOR31) {
+        uint i = (uint)attachment - (uint)axiom::texture_attachment::COLOR0;
+
+        return GL_COLOR_ATTACHMENT0 + i;
+    } else {
+        switch(attachment) {
+            case axiom::texture_attachment::DEPTH:
+                return GL_DEPTH_ATTACHMENT;
+            case axiom::texture_attachment::STENCIL:
+                return GL_STENCIL_ATTACHMENT;
+            case axiom::texture_attachment::DEPTH_STENCIL:
+                return GL_DEPTH_STENCIL_ATTACHMENT;
         }
     }
 }

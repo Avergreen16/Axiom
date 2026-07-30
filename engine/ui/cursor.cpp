@@ -74,7 +74,7 @@ std::vector<ui_vertex> mesh_cursor(cursor_mode mode, ivec2 position) {
 
     for(ui_vertex& vv : v) {
         vv.pos += vec3(position + rel_pos, 0.0f);
-        vv.data = 0xf0000001;
+        vv.data = 0x1;
     }
 
     v = {v[0], v[1], v[3], v[0], v[3], v[2]};

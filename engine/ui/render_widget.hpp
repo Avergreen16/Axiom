@@ -7,14 +7,15 @@ namespace axiom {
 struct render_target;
 
 struct render_widget : widget {
-    uint target;
+    axiom::render_target* target;
+    uint texture;
 
     void mesh();
     void init();
     void handle_inputs();
-    bool handle_capture();
+    axiom::capture_data handle_capture();
 
-    static ulong insert();
+    static ulong insert(axiom::render_target* target, uint texture);
 };
 
 }

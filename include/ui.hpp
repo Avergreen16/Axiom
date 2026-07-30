@@ -23,3 +23,4 @@
 #include <ui/text_box_widget.hpp>
 #include <ui/scroll_widget.hpp>
 #include <ui/message_widget.hpp>
+#include <ui/render_widget.hpp>

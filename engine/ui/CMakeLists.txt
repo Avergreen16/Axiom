@@ -25,6 +25,7 @@ add_library(AxiomUI
     text_box_widget.cpp
     scroll_widget.cpp
     message_widget.cpp
+    render_widget.cpp
 )
 
 target_include_directories(AxiomUI
@@ -38,6 +39,7 @@ target_link_libraries(AxiomUI
         AxiomUtilities
         AxiomAssets
         AxiomWindow
+        AxiomRender
 
         glfw
 

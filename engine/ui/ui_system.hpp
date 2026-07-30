@@ -4,6 +4,7 @@
 #include <window/window.hpp>
 #include <ui/text.hpp>
 #include <ui/cursor.hpp>
+#include <render/target.hpp>
 
 namespace axiom {
 
@@ -28,6 +29,7 @@ struct widget_input_state {
 
 struct ui_system : system {
     uint32_t iter;
+    
     axiom::window* window;
     std::vector<axiom::font_asset*> font_assets;
 
@@ -39,6 +41,11 @@ struct ui_system : system {
     std::map<ulong, std::unique_ptr<widget>> widgets;
 
     widget_input_state input_state;
+
+    //
+    
+    uint32_t target;
+    std::vector<axiom::texture*> target_textures;
 
     //
 

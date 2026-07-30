@@ -4,6 +4,7 @@
 #include <render.hpp>
 #include <ui.hpp>
 #include <platform.hpp>
+#include <utilities.hpp>
 #include <nlohmann/json.hpp>
 
 #include <iostream>
@@ -257,11 +258,8 @@ struct chat_system : axiom::system {
             int change = 32;
 
 
-            if(abs(bottom_diff) < scroll_root->size.y) {
+            if(abs(bottom_diff) < scroll_root->size.y && !scroll_root->capture_scroll) {
                 if(message_range.y != messages.size()) {
-                    std::cout << "CHANGE RANGE ";
-                    std::cout << bottom_diff << "\n";
-
                     ivec2 new_range = message_range + change;
                     if(new_range.y > messages.size()) {
                         int delta = messages.size() - new_range.y;
@@ -270,6 +268,7 @@ struct chat_system : axiom::system {
 
                     //std::cout << message_range.x << " " << message_range.y << " ";
 
+                    scroll_root->anchor_mode = 0;
                     change_range(new_range);
                     rebuild();
 
@@ -278,9 +277,8 @@ struct chat_system : axiom::system {
                     //std::cout << message_range.x << " " << message_range.y << "\n";
                 }
             } 
-            if(abs(top_diff) < scroll_root->size.y) {
+            if(abs(top_diff) < scroll_root->size.y && !scroll_root->capture_scroll) {
                 if(message_range.x != 0) {
-                    std::cout << "CHANGE RANGE \n";
                     ivec2 new_range = message_range - change;
                     if(new_range.x < 0) {
                         int delta = new_range.y;
@@ -288,6 +286,7 @@ struct chat_system : axiom::system {
                     }
                     //std::cout << message_range.x << " " << message_range.y << " ";
                     
+                    scroll_root->anchor_mode = 0;
                     change_range(new_range);
                     rebuild();
                     
@@ -570,7 +569,7 @@ void chat_system::remove_message(ulong message_root, ulong id, ulong map_index) 
 
         rebuild_flag = true;
     }
-    
+
     ui_system.widgets.erase(id);
 }
 
@@ -593,7 +592,7 @@ struct basic_system : axiom::system {
         
         axiom::texture_asset texasset = axiom::texture_asset::load("resources/textures/ui.png");
 
-        tex = std::move(axiom::texture(texasset, axiom::RGBA8));
+        tex = std::move(axiom::texture(texasset, axiom::texture_format::RGBA8));
         font_texture = texture;
 
         /*
@@ -622,6 +621,8 @@ struct basic_system : axiom::system {
     }
 
     void call() {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
         if(win->pressed_buttons.contains(axiom::input_code::KEY_F11)) {
             if(win->is_fullscreen()) win->make_windowed();
             else {
@@ -649,6 +650,9 @@ struct basic_system : axiom::system {
         tex.bind(1);
 
         axiom::ui_system& ui_system = ecs->get_system<axiom::ui_system>();
+        for(int i = 0; i < ui_system.target_textures.size(); ++i) {
+            ui_system.target_textures[i]->bind(i + 2);
+        }
 
         //std::cout << win->is_fullscreen() << " " << win->screen_size.x << " " << win->screen_size.y << " " << win->viewport_size.x << " " << win->viewport_size.y << "\n";
 
@@ -898,34 +902,91 @@ int main(int argc, char* argv[]) {
     ui_system.input_root(2);
     
     axiom::panel_widget::insert();
+    
+    //
+    
+    axiom::text_asset vert_asset = axiom::text_asset::load("resources/shaders/test.vert");
+    axiom::text_asset frag_asset = axiom::text_asset::load("resources/shaders/test.frag");
+    axiom::shader shad = std::move(axiom::shader(vert_asset, frag_asset));
+    
+    axiom::texture_asset tex_asset = axiom::texture_asset::load("resources/textures/test.png");
+    axiom::texture tex = std::move(axiom::texture(tex_asset, axiom::texture_format::RGBA8));
+    
+    ui_system.buffer(vec4(0.0f, 0.0f, 0.0f, 0.0f));
+    axiom::render_target target;
+    {
+        std::function<void(axiom::render_target&)> render_func = [&shad, &tex](axiom::render_target& f) {
+            static axiom::vertices vertices;
+            static double rotation = 0.0f;
+
+            vec2 scale = vec2(f.size) / float(glm::min(f.size.x, f.size.y));
+            mat4 matrix = glm::scale(vec3(1.0f / scale, 1.0f));
+            matrix = matrix * glm::rotate((float)rotation, vec3(0.0f, 0.0f, 1.0f));
+
+            if(axiom::global_core.ecs->delta_time < 1.0f) rotation += axiom::global_core.ecs->delta_time;
+
+            struct color_vertex {
+                vec3 position;
+                vec3 color;
+                vec2 tex_coord;
+            };
+
+            float r = 0.75f;
+
+            std::vector<color_vertex> vs = {
+                color_vertex({0.0f, r, 0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}),
+                color_vertex({-sqrt(3.0f) * 0.5f * r, -0.5f * r, 0.5f}, {0.0f, 1.0f, 0.0f}, {0.5f, 1.0f}),
+                color_vertex({sqrt(3.0f) * 0.5f * r, -0.5f * r, 0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f})
+            };
+
+            if(!vertices.initialized) vertices.init();
+
+            vertices.vertex_buffer_data(vs.data(), 3, sizeof(color_vertex), GL_STATIC_DRAW);
+
+            vertices.add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(color_vertex), 0);
+            vertices.add_vertex_attribute(1, 3, GL_FLOAT, false, sizeof(color_vertex), sizeof(float) * 3);
+            vertices.add_vertex_attribute(2, 2, GL_FLOAT, false, sizeof(color_vertex), sizeof(float) * 6);
+
+            shad.use();
+            tex.bind(0);
+            vertices.bind();
+
+            glUniformMatrix4fv(0, 1, false, &matrix[0][0]);
+
+            vertices.draw_vertices(GL_TRIANGLES);
+        };
+        std::vector<axiom::texture_format> formats = {axiom::texture_format::RGBA8};
+        std::vector<axiom::texture_attachment> attachments = {axiom::texture_attachment::COLOR0};
+
+        target = axiom::render_target::create(render_func, ivec2(400, 400), formats, attachments);
+    }
+
+    axiom::render_widget::insert(&target, 0);
 
     //
 
     basic_system bsystem(&win, &font_tex);
     ecs.register_system(bsystem);
 
+    double prev_time = axiom::get_time();
+    double frame_rate = 1;
+    
+
+    //
+
     while(!win.should_close) {
+        double current_time = axiom::get_time();
+        double delta_time = current_time - prev_time;
+        prev_time = current_time;
+
+        if(win.input_map[axiom::input_code::KEY_F1]) {
+            double sleep_for = (1.0f / frame_rate) - delta_time;
+            prev_time += sleep_for;
+            if(sleep_for > 0.0f) std::this_thread::sleep_for(std::chrono::microseconds(int(sleep_for * 1000000.0f)));
+        }
+
         win.poll_events();
 
         ecs.do_frame();
     }
 }
-
-/*
-ui_system.position(axiom::position_mode::CENTER_LEFT);
-axiom::text_widget::insert("button 0", axiom::text_alignment::LEFT, false);
-axiom::spacer_widget::insert(vec2(0, 0), vec2(FLT_MAX, 0), false);
-axiom::row_widget::insert();
-ui_system.set_attrib(vec2(160, 16), vec2(160, 16), vec2(1.0f));
-axiom::button_widget::insert(vec2(120, 16), axiom::color_blue, "BUTTON", 
-    [](axiom::button_widget& self) {
-        if(self.pressed) std::cout << "PRESSED" << "\n";
-    }
-);
-ui_system.set_attrib(vec2(0, 16), vec2(FLT_MAX, 16), vec2(1.0f));
-axiom::input_box_widget<float>::insert(vec2(40, 16), 0.0f);
-ui_system.input_step();
-
-ui_system.position(axiom::position_mode::TOP_LEFT);
-axiom::spacer_widget::insert(vec2(0, 16), vec2(FLT_MAX, 16), true);
-*/

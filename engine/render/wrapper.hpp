@@ -181,7 +181,7 @@ struct texture_desc {
     uint bits;
 };
 
-enum texture_format {
+enum class texture_format {
     R8,
     RG8,
     RGB8,
@@ -196,7 +196,49 @@ enum texture_format {
     RGBAF
 };
 
+enum class texture_attachment {
+    COLOR0 = 0,
+    COLOR1 = 1,
+    COLOR2 = 2,
+    COLOR3 = 3,
+    COLOR4 = 4,
+    COLOR5 = 5,
+    COLOR6 = 6,
+    COLOR7 = 7,
+    COLOR8 = 8,
+    COLOR9 = 9,
+    COLOR10 = 10,
+    COLOR11 = 11,
+    COLOR12 = 12,
+    COLOR13 = 13,
+    COLOR14 = 14,
+    COLOR15 = 15,
+    COLOR16 = 16,
+    COLOR17 = 17,
+    COLOR18 = 18,
+    COLOR19 = 19,
+    COLOR20 = 20,
+    COLOR21 = 21,
+    COLOR22 = 22,
+    COLOR23 = 23,
+    COLOR24 = 24,
+    COLOR25 = 25,
+    COLOR26 = 26,
+    COLOR27 = 27,
+    COLOR28 = 28,
+    COLOR29 = 29,
+    COLOR30 = 30,
+    COLOR31 = 31,
+
+    //
+
+    DEPTH,
+    STENCIL,
+    DEPTH_STENCIL
+};
+
 texture_desc get_texture_desc(texture_format f);
+GLenum get_texture_attachment(axiom::texture_attachment attachment);
 
 struct texture {
     uint id;
@@ -241,10 +283,11 @@ struct texture {
 };
 
 struct fb_tex_params {
-    texture_format format;
-    uint attachment;
-    int32_t binding = -1;
-    int32_t layers = 1;
+    axiom::texture_format format;
+    axiom::texture_attachment attachment;
+
+    int binding = -1;
+    int layers = 1;
 };
 
 struct framebuffer {
@@ -258,7 +301,7 @@ struct framebuffer {
     
     framebuffer() = default;
     framebuffer(framebuffer&& a) noexcept;
-    framebuffer& operator=(framebuffer&& a) noexcept = default;
+    framebuffer& operator=(framebuffer&& a) noexcept;
 
     framebuffer(glm::ivec2 size_, std::vector<fb_tex_params>&& tp, uint filter = GL_NEAREST);
 

@@ -130,6 +130,8 @@ void ui_system::input_set(ulong w) {
 void ui_system::call() {
     handle_capture();
 
+    target = 0;
+
     copy = false;
     paste = false;
     copy_strings.clear();
@@ -147,7 +149,47 @@ void ui_system::call() {
 
     float tolerance = 0.1f;
 
-    for(int i = 0; i < 4; ++i) {
+    std::vector<ulong> roots;
+    for(auto& [key, widget] : widgets) if(widget->parent == NULL_WIDGET) roots.push_back(key);
+
+    target_textures.clear();
+    
+    for(ulong root : roots) {
+        std::vector<ulong> path = {root};
+        std::vector<ulong> child_ids = {0};
+        //
+
+        std::vector<ulong> widget_ids;
+
+        path = {root};
+        child_ids = {0};
+        while(true) {
+            if (path.size() == 0) break;
+
+            auto& widget = widgets[path.back()];
+            if(child_ids.back() == 0) widget_ids.push_back(path.back());
+
+            if (widget->children.size() <= child_ids.back()) {
+                // go up
+                path.pop_back();
+                child_ids.pop_back();
+            } else {
+                path.push_back(widget->children[child_ids.back()]);
+
+                ++child_ids.back();
+                child_ids.push_back(0);
+            }
+        }
+
+        for(ulong i : widget_ids) {
+            if(widgets.contains(i)) {
+                auto& widget = widgets[i];
+                widget->handle_inputs();
+            }
+        }
+    }
+
+    for(int i = 0; i < 8; ++i) {
         iter = i;
         
         solve_constraints();
@@ -237,7 +279,7 @@ void ui_system::call() {
 
     //
     
-    std::vector<ulong> roots;
+    roots.clear();
     for(auto& [key, widget] : widgets) if(widget->parent == NULL_WIDGET) roots.push_back(key);
 
     for(ulong root : roots) {
@@ -267,41 +309,6 @@ void ui_system::call() {
 
                 ++child_ids.back();
                 child_ids.push_back(0);
-            }
-        }
-    }
-
-    for(ulong root : roots) {
-        std::vector<ulong> path = {root};
-        std::vector<ulong> child_ids = {0};
-        //
-
-        std::vector<ulong> widget_ids;
-
-        path = {root};
-        child_ids = {0};
-        while(true) {
-            if (path.size() == 0) break;
-
-            auto& widget = widgets[path.back()];
-            if(child_ids.back() == 0) widget_ids.push_back(path.back());
-
-            if (widget->children.size() <= child_ids.back()) {
-                // go up
-                path.pop_back();
-                child_ids.pop_back();
-            } else {
-                path.push_back(widget->children[child_ids.back()]);
-
-                ++child_ids.back();
-                child_ids.push_back(0);
-            }
-        }
-
-        for(ulong i : widget_ids) {
-            if(widgets.contains(i)) {
-                auto& widget = widgets[i];
-                widget->handle_inputs();
             }
         }
     }
