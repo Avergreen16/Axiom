@@ -8,6 +8,7 @@ struct message_widget : widget {
     vec3 color;
     vec2 border;
     ulong timestamp;
+    ulong index;
     std::string sender;
 
     float tail_size = 0.0f;

@@ -14,7 +14,8 @@ using json = nlohmann::json;
 struct message {
     std::string sender;
     std::string message;
-    uint64_t timestamp;
+    ulong timestamp;
+    ulong index;
 };
 
 struct chat_system : axiom::system {
@@ -42,15 +43,8 @@ struct chat_system : axiom::system {
     void insert_message(ulong message_root, std::string sender, std::string message, ulong timestamp, vec3 color, ulong map_index, int index = -1);
     void remove_message(ulong message_root, ulong id, ulong map_index);
 
-    void change_range(ivec2 new_range) {
+    void change_range() {
         auto& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
-
-        auto headers = pop_headers();
-
-        std::vector<ulong> new_messages;
-        for(ulong i = new_range.x; i < new_range.y; ++i) {
-            new_messages.push_back(i);
-        }
 
         std::vector<ulong> existing_messages;
         for(auto [message_id, widget_id] : message_map) existing_messages.push_back(message_id);
@@ -58,6 +52,307 @@ struct chat_system : axiom::system {
         std::sort(existing_messages.begin(), existing_messages.end());
 
         //
+
+        auto& root_w = ui_system.widgets[root_id];
+        axiom::scroll_widget* scroll_w = dynamic_cast<axiom::scroll_widget*>(ui_system.widgets[root_w->parent].get());
+
+        //
+
+        float bottom;
+        float top;
+        float start_height;
+        
+        float buf = 100.0f;
+        float extents = 600.0f;
+
+        float bottom_target = scroll_w->size.y + extents;
+        float top_target = extents;
+
+        float start_scroll = scroll_w->scroll_pos;
+        float start_size = root_w->size.y;
+        
+        //std::cout << "TOP ADD\n";
+
+        bottom = scroll_w->scroll_pos + root_w->size.y;
+        top = -scroll_w->scroll_pos;
+        start_height = root_w->size.y;
+
+        if(top < top_target - buf) { // add top
+            float delta;
+            int message_id;
+            if(existing_messages.size()) message_id = existing_messages[0];
+            else message_id = messages.size();
+
+            while(true) {
+                message_id -= 1;
+                message& mes = messages[message_id];
+                
+                //
+
+                auto headers = pop_headers();
+
+                vec3 color = player_color;
+                if(mes.sender == "Averie") color = self_color;
+                else if(mes.sender == "Addie") color = addie_color;
+
+                insert_message(root_id, mes.sender, mes.message, mes.timestamp, color, message_id, 0);
+
+                push_headers(headers);
+
+                //
+
+                for(int i = 0; i < 2; ++i) ui_system.measure(root_id);
+
+                float new_height = root_w->size.y;
+                float delta = new_height - start_height;
+                start_height = new_height;
+                
+                float new_top = top + delta;
+                top = new_top;
+
+                if(new_top > top_target + buf) break;
+
+                scroll_w->anchor_mode = 0;
+            }
+        }
+        
+        //std::cout << "TOP REMOVE\n";
+        
+        bottom = scroll_w->scroll_pos + root_w->size.y;
+        top = -scroll_w->scroll_pos;
+        start_height = root_w->size.y;
+
+        if(top > top_target + buf) { // remove top
+            float delta;
+            int message_index = 0;
+
+            while(true) {
+                int message_id = existing_messages[message_index];
+                ulong widget_id = message_map[message_id];
+
+                auto& widget = ui_system.widgets[widget_id];
+
+                //
+
+                auto headers = pop_headers();
+
+                remove_message(root_id, widget_id, message_id);
+                existing_messages.erase(existing_messages.begin());
+
+                push_headers(headers);
+                
+                for(int i = 0; i < 2; ++i) ui_system.measure(root_id);
+
+                //
+                
+                float new_height = root_w->size.y;
+                
+                float delta = new_height - start_height;
+                start_height = new_height;
+                
+                float new_top = top + delta;
+                top = new_top;
+
+                if(new_top <= top_target - buf) {
+                    message& mes = messages[message_id];
+                    
+                    auto headers = pop_headers();
+
+                    vec3 color = player_color;
+                    if(mes.sender == "Averie") color = self_color;
+                    else if(mes.sender == "Addie") color = addie_color;
+
+                    insert_message(root_id, mes.sender, mes.message, mes.timestamp, color, message_id, 0);
+
+                    push_headers(headers);
+                
+                    for(int i = 0; i < 2; ++i) ui_system.measure(root_id);
+
+                    break;
+                }
+
+                scroll_w->anchor_mode = 0;
+            }
+        }
+
+        //std::cout << "BOTTOM ADD\n";
+        
+        bottom = scroll_w->scroll_pos + root_w->size.y;
+        top = -scroll_w->scroll_pos;
+        start_height = root_w->size.y;
+
+        if(bottom < bottom_target - buf) { // add bottom
+            float delta;
+            int message_id;
+            if(existing_messages.size()) message_id = existing_messages.back();
+            else message_id = messages.size() - 1;
+
+            while(true) {
+                message_id += 1;
+                if(message_id >= messages.size()) break;
+
+                message& mes = messages[message_id];
+                
+                //
+
+                auto headers = pop_headers();
+
+                vec3 color = player_color;
+                if(mes.sender == "Averie") color = self_color;
+                else if(mes.sender == "Addie") color = addie_color;
+
+                insert_message(root_id, mes.sender, mes.message, mes.timestamp, color, message_id, root_w->children.size());
+                existing_messages.push_back(message_id);
+
+                push_headers(headers);
+
+                //
+
+                for(int i = 0; i < 2; ++i) ui_system.measure(root_id);
+                
+                float new_height = root_w->size.y;
+                float delta = new_height - start_height;
+                start_height = new_height;
+
+                float new_bottom = bottom + delta;
+                bottom = new_bottom;
+
+                if(new_bottom > bottom_target + buf) break;
+
+                scroll_w->anchor_mode = 0;
+            }   
+        }
+        
+        //std::cout << "BOTTOM REMOVE\n";
+
+        bottom = scroll_w->scroll_pos + root_w->size.y;
+        top = -scroll_w->scroll_pos;
+        start_height = root_w->size.y;
+
+        if(bottom > bottom_target + buf) { // remove bottom
+            std::cout << bottom << " " << bottom_target << "\n";
+            float delta;
+
+            while(true) {
+                if(existing_messages.size() == 0) break;
+
+                int message_id = existing_messages.back();
+
+                ulong widget_id = message_map[message_id];
+
+                auto& widget = ui_system.widgets[widget_id];
+
+                auto headers = pop_headers();
+
+                remove_message(root_id, widget_id, message_id);
+
+                existing_messages.erase(existing_messages.end() - 1);
+
+                push_headers(headers);
+                
+                for(int i = 0; i < 2; ++i) ui_system.measure(root_id);
+
+                //
+                
+                float new_height = root_w->size.y;
+                float delta = new_height - start_height;
+                start_height = new_height;
+                
+                float new_bottom = bottom + delta;
+                bottom = new_bottom;
+                
+                if(new_bottom < bottom_target - buf) {
+                    message& mes = messages[message_id];
+                    
+                    auto headers = pop_headers();
+
+                    vec3 color = player_color;
+                    if(mes.sender == "Averie") color = self_color;
+                    else if(mes.sender == "Addie") color = addie_color;
+
+                    insert_message(root_id, mes.sender, mes.message, mes.timestamp, color, message_id, root_w->children.size());
+                    existing_messages.push_back(message_id);
+
+                    push_headers(headers);
+                
+                    for(int i = 0; i < 2; ++i) ui_system.measure(root_id);
+
+                    break;
+                }
+
+                scroll_w->anchor_mode = 0;
+            }
+        }
+
+        //
+
+        if(std::find(root_w->children.begin(), root_w->children.end(), scroll_w->anchor_widget) == root_w->children.end()) {
+            scroll_w->anchor_mode = 2;
+            std::cout << "NOT FOUND\n";
+        }
+        
+
+        /* else if(top < top_target - buf) { // add top
+            float delta;
+            int message_id;
+            if(existing_messages.size()) message_id = existing_messages[0];
+            else message_id = messages.size() - 1;
+
+            while(true) {
+                message& mes = messages[message_id];
+                message_id -= 1;
+                
+                //
+
+                auto headers = pop_headers();
+
+                vec3 color = player_color;
+                if(mes.sender == "Averie") color = self_color;
+                else if(mes.sender == "Addie") color = addie_color;
+
+                insert_message(root_id, mes.sender, mes.message, mes.timestamp, color, message_id, 0);
+
+                push_headers(headers);
+
+                //
+
+                for(int i = 0; i < 2; ++i) ui_system.measure(root_id);
+                float new_height = root_w->size.y;
+
+                float delta = new_height - start_height;
+                float new_top = top + delta;
+
+                std::cout << " SIZE -> " << top << " " << new_top << "\n";
+
+                if(new_top > top_target + buf) break;
+
+                scroll_w->anchor_mode = 0;
+            }
+        }*/
+
+        //while(true) {
+            //auto headers = pop_headers();
+
+
+            //std::cout << bottom << " " << top << "\n";
+            /*
+            message& mes = messages[add];
+
+            vec3 color = player_color;
+            if(mes.sender == "Averie") color = self_color;
+            else if(mes.sender == "Addie") color = addie_color;
+
+            if(new_range.x < message_range.x) { // insert at top
+                insert_message(root_id, mes.sender, mes.message, mes.timestamp, color, add, pos);
+                ++pos;
+            } else { // insert at bottom
+                insert_message(root_id, mes.sender, mes.message, mes.timestamp, color, add);
+            }
+            */
+        //}
+
+
+        /*
 
         std::vector<ulong> to_add;
         std::vector<ulong> to_remove;
@@ -104,6 +399,7 @@ struct chat_system : axiom::system {
         push_headers(headers);
 
         message_range = new_range;
+        */
     }
 
     void generate_placeholder() {
@@ -125,22 +421,22 @@ struct chat_system : axiom::system {
             "Kael",
             "Mira",
             "Rowan",
-            "Lyra",
-            "Orion",
+            "Lyra12",
+            "RigelOrion",
             "Violet",
             "Atlas",
             "Ember",
             "Jasper",
             "Willow",
             "Phoenix",
-            "Skye",
+            "xXSkyeXx",
             "Echo",
             "Aria",
             "Finn",
             "Cora",
             "Riven",
-            "NovaByte",
-            "PixelFox",
+            "NovaByte86",
+            "PixelFox3",
             "Solaris",
             "Zenith",
             "Nyx",
@@ -148,7 +444,7 @@ struct chat_system : axiom::system {
             "Vale",
             "Axel",
             "Maris",
-            "Cypher",
+            "Cypher50",
             "Elara"
         };
 
@@ -187,8 +483,8 @@ struct chat_system : axiom::system {
             "See you again soon! Hopefully next time we can finish the rest of the adventure and discover what happens next."
         };
 
-        int num_messages = 1000;
-        ivec2 num_per_person = {1, 5};
+        int num_messages = 5000;
+        ivec2 num_per_person = {1, 6};
 
         int counter = 0;
         int person_num = 0;
@@ -209,8 +505,17 @@ struct chat_system : axiom::system {
 
             message m;
             m.sender = name;
-            m.message = messages[floor((rand() * 0.5f + 0.5f) * messages.size())];
+
+            uint n = floor((rand() * 0.5f + 0.5f) * 3) + 1;
+            std::string str;
+            for(int i = 0; i < n; ++i) {
+                str += messages[floor((rand() * 0.5f + 0.5f) * messages.size())];
+                if(i < n - 1) str += "\n";
+            }
+            m.message = str;
+
             m.timestamp = time;
+            m.index = i;
 
             ++counter;
 
@@ -246,59 +551,7 @@ struct chat_system : axiom::system {
             axiom::widget* column_root = ui_system.widgets[root_id].get();
             axiom::scroll_widget* scroll_root = dynamic_cast<axiom::scroll_widget*>(ui_system.widgets[column_root->parent].get());
 
-            int num_children = column_root->children.size();
-
-            float size = scroll_root->total_scrollable + scroll_root->size.y;
-            float scroll_pos_top = -scroll_root->scroll_pos;
-            float scroll_pos_bottom = -(scroll_root->scroll_pos - scroll_root->size.y);
-
-            float bottom_diff = scroll_pos_bottom - size;
-            float top_diff = scroll_pos_top;
-
-            int change = 32;
-
-
-            if(abs(bottom_diff) < scroll_root->size.y && !scroll_root->capture_scroll) {
-                if(message_range.y != messages.size()) {
-                    ivec2 new_range = message_range + change;
-                    if(new_range.y > messages.size()) {
-                        int delta = messages.size() - new_range.y;
-                        new_range += delta;
-                    }
-
-                    //std::cout << message_range.x << " " << message_range.y << " ";
-
-                    scroll_root->anchor_mode = 0;
-                    change_range(new_range);
-                    rebuild();
-
-                    //std::cout << ui_system.widgets.contains(scroll_root->anchor_widget) << "\n";
-                    
-                    //std::cout << message_range.x << " " << message_range.y << "\n";
-                }
-            } 
-            if(abs(top_diff) < scroll_root->size.y && !scroll_root->capture_scroll) {
-                if(message_range.x != 0) {
-                    ivec2 new_range = message_range - change;
-                    if(new_range.x < 0) {
-                        int delta = new_range.y;
-                        new_range += delta;
-                    }
-                    //std::cout << message_range.x << " " << message_range.y << " ";
-                    
-                    scroll_root->anchor_mode = 0;
-                    change_range(new_range);
-                    rebuild();
-                    
-                    //std::cout << ui_system.widgets.contains(scroll_root->anchor_widget) << "\n";
-
-                    //std::cout << message_range.x << " " << message_range.y << "\n";
-                }
-            }
-
-            //std::cout << size << " " << scroll_pos_top << " " << scroll_pos_bottom << "\n";
-
-            //if(rebuild_flag) rebuild();
+            if(!scroll_root->capture_scroll) change_range();
         }
     }
 
@@ -324,8 +577,8 @@ struct chat_system : axiom::system {
 
             //insert_message(root_id, sender, content, timestamp, color, false);
         }
-        
-        change_range(ivec2(1000 - 128, 1000));
+
+        change_range();
 
         ivec2 total_range = ivec2(0, json_files[0]["messages"].size());
 
@@ -421,7 +674,7 @@ void chat_system::push_headers(std::unordered_map<ulong, ulong> headers) {
 
                     //
                     
-                    std::string L = "[" + axiom::get_date_time_string(message->timestamp) + "] " + message->sender + " <"; 
+                    std::string L = "[" + std::to_string(message->index) + "] " + message->sender + " <"; // axiom::get_date_time_string(message->timestamp)
                     label = axiom::text_widget::insert(L, axiom::text_alignment::RIGHT);
                 } else {
                     ui_system.position(axiom::position_mode::TOP_LEFT);
@@ -429,7 +682,7 @@ void chat_system::push_headers(std::unordered_map<ulong, ulong> headers) {
 
                     //
 
-                    std::string L = "> " + message->sender + " [" + axiom::get_date_time_string(message->timestamp) + "]"; 
+                    std::string L = "> " + message->sender + " [" + std::to_string(message->index) + "]"; 
                     label = axiom::text_widget::insert(L, axiom::text_alignment::LEFT);
                 }
 
@@ -457,7 +710,7 @@ void chat_system::push_headers(std::unordered_map<ulong, ulong> headers) {
                     
                     //
 
-                    std::string L = "[" + axiom::get_date_time_string(message->timestamp) + "] " + message->sender + " <"; 
+                    std::string L = "[" + std::to_string(message->index) + "] " + message->sender + " <"; 
                     label = axiom::text_widget::insert(L, axiom::text_alignment::RIGHT);
                 } else {
                     ui_system.position(axiom::position_mode::TOP_LEFT);
@@ -465,7 +718,7 @@ void chat_system::push_headers(std::unordered_map<ulong, ulong> headers) {
 
                     //
 
-                    std::string L = "> " + message->sender + " [" + axiom::get_date_time_string(message->timestamp) + "]"; 
+                    std::string L = "> " + message->sender + " [" + std::to_string(message->index) + "]"; 
                     label = axiom::text_widget::insert(L, axiom::text_alignment::LEFT);
                 }
 
@@ -512,7 +765,9 @@ void chat_system::push_headers(std::unordered_map<ulong, ulong> headers) {
     }
     
     ui_system.buffer(vec4(0.0f));
-    axiom::spacer_widget::insert(vec2(0.0f, 0.0f), vec2(FLT_MAX, 0.0f), false);
+    ulong spacer = axiom::spacer_widget::insert(vec2(0.0f, 0.0f), vec2(FLT_MAX, 0.0f), false);
+    root->children.erase(root->children.end() - 1, root->children.end());
+    root->children.insert(root->children.begin(), spacer);
 
     for(auto [k, i] : headers) {
         if(!del_map.contains(k)) {
@@ -535,6 +790,9 @@ void chat_system::insert_message(ulong message_root, std::string sender, std::st
     //
 
     ulong w = axiom::message_widget::insert(sender, timestamp, message, axiom::text_alignment::LEFT, vec2(160, 10000), color, vec2(8.0f), 0);
+    
+    auto ww = dynamic_cast<axiom::message_widget*>(ui_system.widgets[w].get());
+    ww->index = map_index;
     
     message_map.emplace(map_index, w);
 
@@ -780,7 +1038,7 @@ int main(int argc, char* argv[]) {
         axiom::panel_widget::insert();
         ui_system.buffer(vec4(0.0f));
         axiom::column_widget::insert();
-        axiom::scroll_widget::insert(6.0f, true);
+        axiom::scroll_widget::insert(8.0f, true);
         ui_system.buffer(vec4(0.0f));
 
         float buffer = 8.0f;
@@ -934,9 +1192,9 @@ int main(int argc, char* argv[]) {
             float r = 0.75f;
 
             std::vector<color_vertex> vs = {
-                color_vertex({0.0f, r, 0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}),
-                color_vertex({-sqrt(3.0f) * 0.5f * r, -0.5f * r, 0.5f}, {0.0f, 1.0f, 0.0f}, {0.5f, 1.0f}),
-                color_vertex({sqrt(3.0f) * 0.5f * r, -0.5f * r, 0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f})
+                color_vertex({-sqrt(3.0f) * 0.5f * r, -0.5f * r, 0.5f}, {1.0f, 0.0f, 0.0f}, vec2(-sqrt(3.0f) * 0.5f, -0.5f)),
+                color_vertex({0.0f, r, 0.5f}, {0.0f, 1.0f, 0.0f}, vec2(0.0f, 1.0f)),
+                color_vertex({sqrt(3.0f) * 0.5f * r, -0.5f * r, 0.5f}, {0.0f, 0.0f, 1.0f}, vec2(sqrt(3.0f) * 0.5f, -0.5f))
             };
 
             if(!vertices.initialized) vertices.init();

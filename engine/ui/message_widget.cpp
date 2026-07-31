@@ -21,31 +21,31 @@ void message_widget::handle_inputs() {
 
     if(prev_hover != hover) {
         auto& parent_widget = ui_system.widgets[parent];
-        uint32_t index = 0;
+        uint32_t i = 0;
         while(true) {
-            if(parent_widget->children[index] == self) break;
-            ++index;
+            if(parent_widget->children[i] == self) break;
+            ++i;
         }
 
         if(hover) {
-            bool is_text_widget = dynamic_cast<axiom::text_widget*>(ui_system.widgets[parent_widget->children[index - 1]].get());
+            bool is_text_widget = dynamic_cast<axiom::text_widget*>(ui_system.widgets[parent_widget->children[i - 1]].get());
             if(!is_text_widget) {
                 ui_system.input_set(parent);
                 ui_system.position(position_mode);
                 ui_system.buffer(buffer);
 
-                std::string time_text = axiom::get_date_time_string(timestamp);
+                std::string time_text = std::to_string(index);//axiom::get_date_time_string(timestamp);
                 ulong time_label = axiom::text_widget::insert(time_text, axiom::text_alignment::LEFT);
                 parent_widget->children.pop_back();
-                parent_widget->children.insert(parent_widget->children.begin() + index, time_label);
+                parent_widget->children.insert(parent_widget->children.begin() + i, time_label);
                 inserted = true;
             }
         } else {
             if(inserted) {
-                bool is_text_widget = dynamic_cast<axiom::text_widget*>(ui_system.widgets[parent_widget->children[index - 1]].get());
+                bool is_text_widget = dynamic_cast<axiom::text_widget*>(ui_system.widgets[parent_widget->children[i - 1]].get());
                 if(is_text_widget) {
                     inserted = false;
-                    parent_widget->children.erase(parent_widget->children.begin() + (index - 1));
+                    parent_widget->children.erase(parent_widget->children.begin() + (i - 1));
                 }
             }
         }

@@ -97,10 +97,25 @@ class text {
     int select_line = 0;
     ivec2 select_range = ivec2(-1);
 
-    std::vector<ui_vertex> v_select;
+    // vertices
+    std::vector<ui_vertex> glyph_vertices;
+    std::vector<ui_vertex> select_vertices;
 
+    // state
+
+    bool dirty = false;
+    float state_width = 0.0f;
+    std::string state_string = "";
+    int state_select_line = 0;
+    ivec2 state_select_range = ivec2(-1);
+
+    //
+
+    std::vector<ui_vertex> v_select;
+    
     std::vector<ui_vertex> mesh();
     std::vector<ui_vertex> mesh_select();
+    void measure();
 
     void select(vec4 cursor_range, bool anchor = false);
     ivec2 select(vec2 cursor, uint wrap_mode);

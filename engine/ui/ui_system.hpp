@@ -90,13 +90,15 @@ struct ui_system : system {
 
     vec4 get_range(ulong v, bool include_self = false);
     void call();
-    void solve_constraints();
     std::vector<ulong> get_children(ulong root);
     void erase(std::vector<ulong> ws);
 
     void set_attrib(vec2 min_size, vec2 max_size, vec2 weights);
     
     void handle_capture();
+
+    void solve_constraints();
+    void measure(ulong root);
 };
 
 template<typename Type>

@@ -29,10 +29,7 @@ void text_box_widget::handle_inputs() {
 
     bool inputting = text[0]->select_range.x != -1 && text[0]->select_range.y != -1;
 
-    text[0]->width = size.x - boundary.x * 2.0f;
-
     text[0]->mesh();
-    size.y = text[0]->size.y + boundary.y * 2.0f;
     
     min_height = size.y;
     max_height = size.y;
@@ -186,6 +183,8 @@ void text_box_widget::init() {
     //
     axiom::widget_constraint c;
     c.func = [this, ui_system]() {
+        text[0]->width = size.x - boundary.x * 2.0f;
+        size.y = text[0]->size.y + boundary.y * 2.0f;
         //text[0]->click_range = ivec4(position, position + size);
     };
     after.push_back(c);

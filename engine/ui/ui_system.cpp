@@ -84,28 +84,33 @@ void ui_system::solve_constraints() {
     }
 
     for(ulong root : roots) {
-        std::vector<ulong> path = {root};
-        std::vector<ulong> child_ids = {0};
-        while(true) {
-            if (path.size() == 0) break;
+        measure(root);
+    }
+}
 
-            auto& widget = widgets[path.back()];
-            if(child_ids.back() == 0) {
-                for(auto& f : widget->before) f.func();
-            }
 
-            if (widget->children.size() <= child_ids.back()) {
-                for(auto& f : widget->after) f.func();
+void ui_system::measure(ulong root) {
+    std::vector<ulong> path = {root};
+    std::vector<ulong> child_ids = {0};
+    while(true) {
+        if (path.size() == 0) break;
 
-                // go up
-                path.pop_back();
-                child_ids.pop_back();
-            } else {
-                path.push_back(widget->children[child_ids.back()]);
+        auto& widget = widgets[path.back()];
+        if(child_ids.back() == 0) {
+            for(auto& f : widget->before) f.func();
+        }
 
-                ++child_ids.back();
-                child_ids.push_back(0);
-            }
+        if (widget->children.size() <= child_ids.back()) {
+            for(auto& f : widget->after) f.func();
+
+            // go up
+            path.pop_back();
+            child_ids.pop_back();
+        } else {
+            path.push_back(widget->children[child_ids.back()]);
+
+            ++child_ids.back();
+            child_ids.push_back(0);
         }
     }
     
@@ -193,6 +198,10 @@ void ui_system::call() {
         iter = i;
         
         solve_constraints();
+        
+        for(auto& t : text) {
+            t->measure();
+        }
         
         /*
         for(auto& [key, widget] : widgets) {

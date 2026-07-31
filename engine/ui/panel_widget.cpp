@@ -27,8 +27,15 @@ void panel_widget::init() {
 
             p0->position.y = position.y + p0->buffer.y;
         }
+        
+        view_range = vec4(position, position + size);
     };
     before.push_back(c);
+    
+    c.func = [this, ui_system]() {
+        view_range = vec4(position, position + size);
+    };
+    after.push_back(c);
 }
 
 
@@ -41,8 +48,6 @@ void panel_widget::handle_inputs() {
     if(children.size()) {
         new_total_scrollable = ui_system.widgets[children[0]]->size.y - height + ui_system.widgets[children[0]]->buffer.y + ui_system.widgets[children[0]]->buffer.w;
     }
-
-    view_range = vec4(position, position + size);
 }
 
 void panel_widget::mesh() {

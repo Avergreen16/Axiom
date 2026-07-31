@@ -269,8 +269,6 @@ std::vector<ui_vertex> mesh_text(font_asset& f, std::string str, text_data& data
                 word_ret.insert(word_ret.end(), vs.begin(), vs.end());
             }
             
-            //if(i >= select_range.x && i < select_range.y) insert_selection(word_pos, {gd.advance + ((bold) ? bold_factor : 0.0f), f.line_height});
-
             word_pos.x += stride;
         }
     };
@@ -287,14 +285,6 @@ std::vector<ui_vertex> mesh_text(font_asset& f, std::string str, text_data& data
             word_start.color = color.xyz();
             word_start.start_index = i;
             line_start = word_start;
-            
-            /*
-            if(i >= select_range.x && i < select_range.y && (text[i + 1] == '\n' || i == text.size() - 1)) {
-                if(alignment == axiom::text_alignment::LEFT) insert_selection(word_pos, {6, f.line_height});
-                else if(alignment == axiom::text_alignment::CENTER) insert_selection(word_pos - vec2(3, 0), {6, f.line_height});
-                else if(alignment == axiom::text_alignment::RIGHT) insert_selection(word_pos - vec2(6, 0), {6, f.line_height});
-            }
-            */
 
             continue;
         } else {
@@ -416,6 +406,301 @@ std::vector<ui_vertex> mesh_text(font_asset& f, std::string str, text_data& data
     return ret;
 }
 
+void measure_text(font_asset& f, std::string str, text_data& data, uint text_size, uint width, axiom::text_alignment alignment, bool show_debug, std::vector<text_line_data>* lines) {
+    data = text_data();
+
+    vec2 wrap_limits = vec2(-FLT_MAX, FLT_MAX);
+    float max_width = 0;
+
+    std::vector<text_line_data> text_lines;
+    //std::vector<uint> text_line_origins;
+    int word_len = 0;
+    int line_len = 0;
+    text_line_data word_start = {0};
+    text_line_data line_start = {0};
+
+    //
+    
+    float max_x = 0.0f;
+    text_start.clear();
+
+    float italic_factor = 1.0f / 3.5f;
+    float bold_factor = 1.0f;
+
+    std::u32string text = convert_string(str);
+
+    bool accept_index = false;
+
+    int num_escape_seq = 0;
+    int i = 0;
+
+    vec2 pos = vec2(0.0f);
+    vec4 range = vec4(FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX);
+
+    vec4 color = vec4(1.0f);
+    bool bold = false;
+    bool italic = false;
+    bool hex = false;
+    float min_offset = 0.0;
+
+    uint num_lines = 0;
+
+    std::vector<ui_vertex> word_ret;
+    vec2 word_pos = vec2(0.0f);
+    
+    std::vector<ui_vertex> line_ret;
+
+    auto insert_line = [&]() {
+        text_line_data s = line_start;
+        line_len = 0;
+        
+        wrap_limits.x = glm::max(wrap_limits.x, pos.x);
+
+        max_width += pos.x;
+
+        //
+
+        int line_width = pos.x;
+        int offset;
+
+        if(alignment == axiom::text_alignment::LEFT) offset = 0.0f;
+        else if(alignment == axiom::text_alignment::CENTER) {
+            offset = round(float(-line_width) / 2);
+        }
+        else if(alignment == axiom::text_alignment::RIGHT) offset = float(-line_width);
+
+        //
+        //
+        
+        max_x = glm::max(max_x, pos.x);
+
+        pos.x = 0;
+        pos.y -= f.line_height;
+        ++num_lines;
+
+        s.offset = offset;
+        text_lines.push_back(s);
+    };
+    
+    uint end = pos.x + word_pos.x;
+    
+    auto insert_word = [&]() {   
+        //
+
+        uint end = pos.x + word_pos.x;
+
+        if(end > width && pos.x != 0.0f) {
+            float min_v = pos.x;
+            float max_v = end;
+            
+            //max_x = glm::max(max_x, float(width));
+
+            wrap_limits.x = glm::max(wrap_limits.x, min_v);
+            wrap_limits.y = glm::min(wrap_limits.y, max_v);
+            
+            insert_line();
+        } else {
+            float min_v = end;
+            wrap_limits.x = glm::max(wrap_limits.x, min_v + 1);
+        }
+
+        // insert word
+        for(ui_vertex& v : word_ret) {
+            v.pos += vec3(pos, 0.0f);
+        }
+        
+        line_ret.insert(line_ret.end(), word_ret.begin(), word_ret.end());
+
+        word_ret.clear();
+        
+        pos.x += word_pos.x;
+        word_pos = vec2(0.0f);  
+             
+        if(line_len == 0) {
+            line_start = word_start;
+        }
+        ++line_len;
+        word_len = 0;
+    };
+
+    auto insert_char = [&](uint codepoint) {
+        glyph_data& gd = f.at(codepoint);
+
+        float stride = gd.advance;
+
+        if(!gd.visible) {
+            if(alignment == axiom::text_alignment::LEFT) {
+                if(word_len == 0) {
+                    word_start.bold = bold;
+                    word_start.italic = italic;
+                    word_start.color = color.xyz();
+                    word_start.start_index = i;
+                }
+                ++word_len;
+                
+                word_pos.x += stride;
+                
+                insert_word();
+            } else if(alignment == axiom::text_alignment::CENTER) {
+                if(word_len == 0) {
+                    word_start.bold = bold;
+                    word_start.italic = italic;
+                    word_start.color = color.xyz();
+                    word_start.start_index = i;
+                }
+                ++word_len;
+
+                word_pos.x += stride;
+
+                insert_word();
+            } else if(alignment == axiom::text_alignment::RIGHT) {
+                insert_word();
+                
+                if(word_len == 0) {
+                    word_start.bold = bold;
+                    word_start.italic = italic;
+                    word_start.color = color.xyz();
+                    word_start.start_index = i;
+                }
+                ++word_len;
+
+                word_pos.x += stride;
+            }
+        } else {
+            if(word_len == 0) {
+                word_start.bold = bold;
+                word_start.italic = italic;
+                word_start.color = color.xyz();
+                word_start.start_index = i;
+            }
+            ++word_len;
+            
+            //
+
+            if(bold) {
+                stride += bold_factor;
+            }
+    
+            word_pos.x += stride;
+        }
+    };
+
+    for(i = 0; i < text.size(); ++i) {
+        uint c = text[i];
+
+        if(c == '\n') {
+            insert_word();
+            insert_line();
+            
+            word_start.bold = bold;
+            word_start.italic = italic;
+            word_start.color = color.xyz();
+            word_start.start_index = i;
+            line_start = word_start;
+
+            continue;
+        } else {
+            if(c == '\\') {
+                if(i + 1 < text.size()) {
+                    uint next = text[i + 1];
+
+                    if(next == 'c') {
+                        if(i + 1 + 3 < text.size()) {
+                            std::string s(text.begin() + (i + 2), text.begin() + (i + 5));
+
+                            std::size_t i0 = integers_letters.find(s[0]);
+                            std::size_t i1 = integers_letters.find(s[1]);
+                            std::size_t i2 = integers_letters.find(s[2]);
+
+                            if(i0 != std::string::npos && i1 != std::string::npos && i2 != std::string::npos) {
+                                color = vec4(float(i0) / 15.0f, float(i1) / 15.0f, float(i2) / 15.0f, 1.0f);
+                                
+                                num_escape_seq += 5;
+                                if(!show_debug) {    
+                                    i += 4;
+                                    continue;   
+                                }
+                            }
+                        }
+                    } else if(next == 'b') {
+                        bold = true;
+
+                        num_escape_seq += 2;
+                        if(!show_debug) {
+                            i += 1;
+                            continue;
+                        }
+                    } else if(next == 'i') {
+                        italic = true;
+                        
+                        num_escape_seq += 2;
+                        if(!show_debug) {
+                            i += 1;
+                            continue;
+                        }
+
+                    } else if(next == 'r') {
+                        bold = false;
+                        italic = false;
+                        
+                        num_escape_seq += 2;
+                        if(!show_debug) {
+                            i += 1;
+                            continue;
+                        }
+                    } else if(next == 'h') {
+                        hex = !hex;
+                        
+                        num_escape_seq += 2;
+                        if(!show_debug) {
+                            i += 1;
+                            continue;
+                        }
+                    }
+                }
+            } 
+            
+            if(show_debug) {
+                if(num_escape_seq > 0) {
+                    color.w = 0.5f;
+                    --num_escape_seq;
+
+                    if(c == 'A') c = 0x80;
+                    else if(c == 'B') c = 0x81;
+                    else if(c == 'C') c = 0x82;
+                    else if(c == 'D') c = 0x83;
+                    else if(c == 'E') c = 0x84;
+                    else if(c == 'F') c = 0x85;
+                } else color.w = 1.0f;
+            }
+
+            if(hex) {
+                if(c == 'A') c = 0x80;
+                else if(c == 'B') c = 0x81;
+                else if(c == 'C') c = 0x82;
+                else if(c == 'D') c = 0x83;
+                else if(c == 'E') c = 0x84;
+                else if(c == 'F') c = 0x85;
+            }
+            
+            insert_char(c);
+        }
+    }
+
+    insert_word();
+    insert_line();
+
+    float offset = (num_lines - 1) * f.line_height;
+
+    for(auto& line : text_lines) line.offset -= min_offset;
+    
+    data.size = {max_x, num_lines * f.line_height};
+    data.lines = line_data;
+    data.wrap_limits = wrap_limits;
+    data.max_width = max_width;
+
+    if(lines != nullptr) *lines = text_lines;
+}
 
 std::vector<ui_vertex> mesh_text_select(font_asset& f, ivec2 selection, std::string str, text_data& data, uint text_size, uint width = 0xFFFFFFFF, axiom::text_alignment alignment, bool show_debug) {    
     data = text_data();
@@ -759,55 +1044,94 @@ std::vector<ui_vertex> mesh_text_select(font_asset& f, ivec2 selection, std::str
 }
 
 std::vector<ui_vertex> text::mesh() {
-    if(!wrap) width = 0xFFFFFFFF;
-    
-    text_data data;
-    auto ret = mesh_text(*font, string, data, 1, width, alignment, false, &lines);
-    size = data.size;
-    wrap_limits = data.wrap_limits;
-    max_width = data.max_width;
+    //if(dirty) {
+        if(!wrap) width = 0xFFFFFFFF;
+        
+        text_data data;
+        glyph_vertices = mesh_text(*font, string, data, 1, width, alignment, false, &lines);
+        size = data.size;
+        wrap_limits = data.wrap_limits;
+        max_width = data.max_width;
+    //}
 
-    return ret;
+    return glyph_vertices;
 }
 
 std::vector<ui_vertex> text::mesh_select() {
-    if(!wrap) width = 0xFFFFFFFF;
+    //if(dirty) {
+        if(!wrap) width = 0xFFFFFFFF;
 
-    ivec2 abs_select = ivec2(glm::min(select_range.x, select_range.y), glm::max(select_range.x, select_range.y));
-    
-    text_data data;
-    auto ret = axiom::mesh_text_select(*font, abs_select, string, data, 1, width, alignment, false);
-    size = data.size;
-    wrap_limits = data.wrap_limits;
-    max_width = data.max_width;
-
-    if(editable && select_range.x == select_range.y && select_range.x != -1) {
-        vec2 pos = axiom::compute_cursor_pos(select_range.x, *this);
-
-        vec4 range = vec4(pos, pos + vec2(1.0f, font->line_height));
+        ivec2 abs_select = ivec2(glm::min(select_range.x, select_range.y), glm::max(select_range.x, select_range.y));
         
-        ui_vertex a = {vec3(0.0f, 0.0f, 0.0f), vec2(0.0f, 0.0f), vec4(1.0f)};
-        ui_vertex b = {vec3(1.0f, 0.0f, 0.0f), vec2(1.0f, 0.0f), vec4(1.0f)};
-        ui_vertex c = {vec3(0.0f, 1.0f, 0.0f), vec2(0.0f, 1.0f), vec4(1.0f)};
-        ui_vertex d = {vec3(1.0f, 1.0f, 0.0f), vec2(1.0f, 1.0f), vec4(1.0f)};
+        text_data data;
+        select_vertices = axiom::mesh_text_select(*font, abs_select, string, data, 1, width, alignment, false);
+        size = data.size;
+        wrap_limits = data.wrap_limits;
+        max_width = data.max_width;
 
-        std::vector<ui_vertex> ret2 = {a, b, d, a, d, c};
-        vec4 color = vec4(1.0f);
-        if(glm::mod(get_time() - time, 1.0) > 0.5) color = vec4(0.0f);
+        if(editable && select_range.x == select_range.y && select_range.x != -1) {
+            vec2 pos = axiom::compute_cursor_pos(select_range.x, *this);
 
-        for(ui_vertex& v : ret2) {
-            v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
-            v.tex_pos = vec2(1.0f, 63.0f);
-            v.color = color;
-            v.data = 0x1;
+            vec4 range = vec4(pos, pos + vec2(1.0f, font->line_height));
+            
+            ui_vertex a = {vec3(0.0f, 0.0f, 0.0f), vec2(0.0f, 0.0f), vec4(1.0f)};
+            ui_vertex b = {vec3(1.0f, 0.0f, 0.0f), vec2(1.0f, 0.0f), vec4(1.0f)};
+            ui_vertex c = {vec3(0.0f, 1.0f, 0.0f), vec2(0.0f, 1.0f), vec4(1.0f)};
+            ui_vertex d = {vec3(1.0f, 1.0f, 0.0f), vec2(1.0f, 1.0f), vec4(1.0f)};
+
+            std::vector<ui_vertex> ret2 = {a, b, d, a, d, c};
+            vec4 color = vec4(1.0f);
+            if(glm::mod(get_time() - time, 1.0) > 0.5) color = vec4(0.0f);
+
+            for(ui_vertex& v : ret2) {
+                v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
+                v.tex_pos = vec2(1.0f, 63.0f);
+                v.color = color;
+                v.data = 0x1;
+            }
+            
+            select_vertices = ret2;
         }
-        
-        ret = ret2;
-    }
+    //}
 
-    return ret;
+    return select_vertices;
 }
 
+
+void text::measure() {
+    // state 
+    if(state_width != width) {
+        state_width = width;
+        if(width <= wrap_limits.x || width >= wrap_limits.y) {
+            dirty = true;
+        }
+    }
+    if(string != state_string) {
+        state_string = string;
+        dirty = true;
+    }
+
+    if(state_select_line != select_line) {
+        state_select_line = select_line;
+        dirty = true;
+    }
+    if(state_select_range != select_range) {
+        state_select_range = select_range;
+        dirty = true;
+    }
+
+    if(dirty) {
+        if(!wrap) width = 0xFFFFFFFF;
+        
+        text_data data;
+        measure_text(*font, string, data, 1, width, alignment, false, &lines);
+        size = data.size;
+        wrap_limits = data.wrap_limits;
+        max_width = data.max_width;
+
+        dirty = false;
+    }
+}
 
 std::pair<int, bool> compute_cursor_index(vec2 cursor_pos, axiom::text& text, bool cl0, bool cl1, bool cl2) {
     int line_index = (int)text.lines.size() - glm::floor(cursor_pos.y / text.font->line_height) - 1;
@@ -1190,6 +1514,8 @@ std::string text::retrieve() {
 }
 
 void text::call() {
+    //
+
     axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
 
     if(collide(ui_system.window->cursor_pos)) ui_system.cursor.cursor_mode = axiom::cursor_mode::TEXT;
