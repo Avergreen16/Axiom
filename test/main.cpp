@@ -56,14 +56,16 @@ struct chat_system : axiom::system {
         auto& root_w = ui_system.widgets[root_id];
         axiom::scroll_widget* scroll_w = dynamic_cast<axiom::scroll_widget*>(ui_system.widgets[root_w->parent].get());
 
+        bool found_before = std::find(root_w->children.begin(), root_w->children.end(), scroll_w->anchor_widget) != root_w->children.end();
+
         //
 
         float bottom;
         float top;
         float start_height;
         
-        float buf = 100.0f;
-        float extents = 600.0f;
+        float buf = 400.0f;
+        float extents = 1600.0f;
 
         float bottom_target = scroll_w->size.y + extents;
         float top_target = extents;
@@ -73,11 +75,16 @@ struct chat_system : axiom::system {
         
         //std::cout << "TOP ADD\n";
 
+        float delta_scroll = 0.0f;
+
         bottom = scroll_w->scroll_pos + root_w->size.y;
         top = -scroll_w->scroll_pos;
-        start_height = root_w->size.y;
 
-        if(top < top_target - buf) { // add top
+        uint removed = 0;
+        uint added = 0;
+        uint readded = 0;
+
+        if(top < top_target) { // add top
             float delta;
             int message_id;
             if(existing_messages.size()) message_id = existing_messages[0];
@@ -85,6 +92,8 @@ struct chat_system : axiom::system {
 
             while(true) {
                 message_id -= 1;
+                if(message_id < 0) break;
+
                 message& mes = messages[message_id];
                 
                 //
@@ -96,21 +105,18 @@ struct chat_system : axiom::system {
                 else if(mes.sender == "Addie") color = addie_color;
 
                 insert_message(root_id, mes.sender, mes.message, mes.timestamp, color, message_id, 0);
+                ++added;
 
                 push_headers(headers);
+                
+                for(int i = 0; i < 2; ++i) ui_system.measure(scroll_w->self);
 
                 //
 
-                for(int i = 0; i < 2; ++i) ui_system.measure(root_id);
+                bottom = scroll_w->scroll_pos + root_w->size.y;
+                top = -scroll_w->scroll_pos;
 
-                float new_height = root_w->size.y;
-                float delta = new_height - start_height;
-                start_height = new_height;
-                
-                float new_top = top + delta;
-                top = new_top;
-
-                if(new_top > top_target + buf) break;
+                if(top > top_target) break;
 
                 scroll_w->anchor_mode = 0;
             }
@@ -120,13 +126,14 @@ struct chat_system : axiom::system {
         
         bottom = scroll_w->scroll_pos + root_w->size.y;
         top = -scroll_w->scroll_pos;
-        start_height = root_w->size.y;
 
         if(top > top_target + buf) { // remove top
             float delta;
             int message_index = 0;
 
             while(true) {
+                if(!existing_messages.size()) break;
+                
                 int message_id = existing_messages[message_index];
                 ulong widget_id = message_map[message_id];
 
@@ -137,23 +144,19 @@ struct chat_system : axiom::system {
                 auto headers = pop_headers();
 
                 remove_message(root_id, widget_id, message_id);
+                ++removed;
                 existing_messages.erase(existing_messages.begin());
 
                 push_headers(headers);
                 
-                for(int i = 0; i < 2; ++i) ui_system.measure(root_id);
+                for(int i = 0; i < 2; ++i) ui_system.measure(scroll_w->self);
 
                 //
                 
-                float new_height = root_w->size.y;
-                
-                float delta = new_height - start_height;
-                start_height = new_height;
-                
-                float new_top = top + delta;
-                top = new_top;
+                bottom = scroll_w->scroll_pos + root_w->size.y;
+                top = -scroll_w->scroll_pos;
 
-                if(new_top <= top_target - buf) {
+                if(top < top_target + buf) {
                     message& mes = messages[message_id];
                     
                     auto headers = pop_headers();
@@ -163,10 +166,11 @@ struct chat_system : axiom::system {
                     else if(mes.sender == "Addie") color = addie_color;
 
                     insert_message(root_id, mes.sender, mes.message, mes.timestamp, color, message_id, 0);
+                    ++readded;
 
                     push_headers(headers);
-                
-                    for(int i = 0; i < 2; ++i) ui_system.measure(root_id);
+
+                    for(int i = 0; i < 2; ++i) ui_system.measure(scroll_w->self);
 
                     break;
                 }
@@ -176,12 +180,11 @@ struct chat_system : axiom::system {
         }
 
         //std::cout << "BOTTOM ADD\n";
-        
+
         bottom = scroll_w->scroll_pos + root_w->size.y;
         top = -scroll_w->scroll_pos;
-        start_height = root_w->size.y;
 
-        if(bottom < bottom_target - buf) { // add bottom
+        if(bottom < bottom_target) { // add bottom
             float delta;
             int message_id;
             if(existing_messages.size()) message_id = existing_messages.back();
@@ -202,22 +205,19 @@ struct chat_system : axiom::system {
                 else if(mes.sender == "Addie") color = addie_color;
 
                 insert_message(root_id, mes.sender, mes.message, mes.timestamp, color, message_id, root_w->children.size());
+                ++added;
                 existing_messages.push_back(message_id);
 
                 push_headers(headers);
 
                 //
 
-                for(int i = 0; i < 2; ++i) ui_system.measure(root_id);
+                for(int i = 0; i < 2; ++i) ui_system.measure(scroll_w->self);
                 
-                float new_height = root_w->size.y;
-                float delta = new_height - start_height;
-                start_height = new_height;
+                bottom = scroll_w->scroll_pos + root_w->size.y;
+                top = -scroll_w->scroll_pos;
 
-                float new_bottom = bottom + delta;
-                bottom = new_bottom;
-
-                if(new_bottom > bottom_target + buf) break;
+                if(bottom > bottom_target) break;
 
                 scroll_w->anchor_mode = 0;
             }   
@@ -227,10 +227,8 @@ struct chat_system : axiom::system {
 
         bottom = scroll_w->scroll_pos + root_w->size.y;
         top = -scroll_w->scroll_pos;
-        start_height = root_w->size.y;
 
         if(bottom > bottom_target + buf) { // remove bottom
-            std::cout << bottom << " " << bottom_target << "\n";
             float delta;
 
             while(true) {
@@ -245,23 +243,20 @@ struct chat_system : axiom::system {
                 auto headers = pop_headers();
 
                 remove_message(root_id, widget_id, message_id);
+                ++removed;
 
                 existing_messages.erase(existing_messages.end() - 1);
 
                 push_headers(headers);
                 
-                for(int i = 0; i < 2; ++i) ui_system.measure(root_id);
+                for(int i = 0; i < 2; ++i) ui_system.measure(scroll_w->self);
 
                 //
                 
-                float new_height = root_w->size.y;
-                float delta = new_height - start_height;
-                start_height = new_height;
+                bottom = scroll_w->scroll_pos + root_w->size.y;
+                top = -scroll_w->scroll_pos;
                 
-                float new_bottom = bottom + delta;
-                bottom = new_bottom;
-                
-                if(new_bottom < bottom_target - buf) {
+                if(bottom < bottom_target + buf) {
                     message& mes = messages[message_id];
                     
                     auto headers = pop_headers();
@@ -271,11 +266,13 @@ struct chat_system : axiom::system {
                     else if(mes.sender == "Addie") color = addie_color;
 
                     insert_message(root_id, mes.sender, mes.message, mes.timestamp, color, message_id, root_w->children.size());
+                    ++readded;
                     existing_messages.push_back(message_id);
 
                     push_headers(headers);
-                
-                    for(int i = 0; i < 2; ++i) ui_system.measure(root_id);
+                    
+
+                    for(int i = 0; i < 2; ++i) ui_system.measure(scroll_w->self);
 
                     break;
                 }
@@ -288,9 +285,15 @@ struct chat_system : axiom::system {
 
         if(std::find(root_w->children.begin(), root_w->children.end(), scroll_w->anchor_widget) == root_w->children.end()) {
             scroll_w->anchor_mode = 2;
-            std::cout << "NOT FOUND\n";
+            //std::cout << "NOT FOUND\n";
+
+            if(found_before) std::cout << "FOUND BEFORE\n";
+            else std::cout << "NOT FOUND BEFORE\n";
         }
+
+        if(added != 0 || removed != 0 || readded != 0) std::cout << "added " << added << " removed " << removed << " readded " << readded << "\n";
         
+        //std::cout << scroll_w->scroll_pos << " " << root_w->size.y << "\n";
 
         /* else if(top < top_target - buf) { // add top
             float delta;
@@ -316,13 +319,13 @@ struct chat_system : axiom::system {
 
                 //
 
-                for(int i = 0; i < 2; ++i) ui_system.measure(root_id);
+                for(int i = 0; i < 2; ++i) ui_system.measure(scroll_w->self);
                 float new_height = root_w->size.y;
 
                 float delta = new_height - start_height;
                 float new_top = top + delta;
 
-                std::cout << " SIZE -> " << top << " " << new_top << "\n";
+                //std::cout << " SIZE -> " << top << " " << new_top << "\n";
 
                 if(new_top > top_target + buf) break;
 
@@ -415,7 +418,27 @@ struct chat_system : axiom::system {
 
         std::vector<std::string> names = {
             "Averie",
+            "Averie",
+            "Averie",
+            "Averie",
+            "Averie",
+            "Averie",
+            "Averie",
+            "Averie",
+
+            //
+
             "Addie",
+            "Addie",
+            "Addie",
+            "Addie",
+            "Addie",
+            "Addie",
+            "Addie",
+            "Addie",
+
+            //
+
             "Luna",
             "Nova",
             "Kael",
@@ -483,7 +506,7 @@ struct chat_system : axiom::system {
             "See you again soon! Hopefully next time we can finish the rest of the adventure and discover what happens next."
         };
 
-        int num_messages = 5000;
+        int num_messages = 500;
         ivec2 num_per_person = {1, 6};
 
         int counter = 0;
@@ -551,7 +574,7 @@ struct chat_system : axiom::system {
             axiom::widget* column_root = ui_system.widgets[root_id].get();
             axiom::scroll_widget* scroll_root = dynamic_cast<axiom::scroll_widget*>(ui_system.widgets[column_root->parent].get());
 
-            if(!scroll_root->capture_scroll) change_range();
+            if(!scroll_root->capture_scroll && scroll_root->size.y != 0.0f) change_range();
         }
     }
 
@@ -578,11 +601,13 @@ struct chat_system : axiom::system {
             //insert_message(root_id, sender, content, timestamp, color, false);
         }
 
-        change_range();
+        //change_range();
 
-        ivec2 total_range = ivec2(0, json_files[0]["messages"].size());
+        //ivec2 total_range = ivec2(0, json_files[0]["messages"].size());
 
-        ivec2 target_range = ivec2(glm::max(0, total_range.y - 64), total_range.y);
+        //ivec2 target_range = ivec2(glm::max(0, total_range.y - 64), total_range.y);
+
+        push_headers({});
     }
 
     void disable() {
@@ -672,9 +697,9 @@ void chat_system::push_headers(std::unordered_map<ulong, ulong> headers) {
                     ui_system.position(axiom::position_mode::TOP_RIGHT);
                     ui_system.buffer(vec4(4.0f, 4.0f, 4.0f, 14.0f));
 
-                    //
+                    //axiom::get_date_time_string(message->timestamp)
                     
-                    std::string L = "[" + std::to_string(message->index) + "] " + message->sender + " <"; // axiom::get_date_time_string(message->timestamp)
+                    std::string L = "[" + std::to_string(message->index) + "] " + message->sender + " <";
                     label = axiom::text_widget::insert(L, axiom::text_alignment::RIGHT);
                 } else {
                     ui_system.position(axiom::position_mode::TOP_LEFT);
@@ -911,9 +936,7 @@ struct basic_system : axiom::system {
         for(int i = 0; i < ui_system.target_textures.size(); ++i) {
             ui_system.target_textures[i]->bind(i + 2);
         }
-
-        //std::cout << win->is_fullscreen() << " " << win->screen_size.x << " " << win->screen_size.y << " " << win->viewport_size.x << " " << win->viewport_size.y << "\n";
-
+        
         /*
         struct ui_vertex {
             vec3 pos;
@@ -962,11 +985,11 @@ int main(int argc, char* argv[]) {
     axiom::ui_system ui_system(&win);
     ui_system.font_assets = {&default_font};
 
+    ecs.register_system(ui_system);
+    
     chat_system csystem;
     csystem.generate_placeholder();
-
     ecs.register_system(csystem);
-    ecs.register_system(ui_system);
 
     std::function<void()> lipsum_func = [&ui_system]() {
         ui_system.position(axiom::position_mode::TOP_LEFT);

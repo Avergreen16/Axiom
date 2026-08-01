@@ -29,4 +29,5 @@ target_compile_options(Game PRIVATE
     -march=native
     -static
     -Wtemplate-body
+    -g
 )

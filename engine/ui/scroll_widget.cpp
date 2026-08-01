@@ -64,6 +64,13 @@ void scroll_widget::init() {
             child_height = new_child_height;
             self_height = new_self_height;
 
+            auto& child = ui_system->widgets[children[0]];
+
+            if(anchor_widget == NULL_WIDGET || std::find(child->children.begin(), child->children.end(), anchor_widget) == child->children.end()) {
+                std::cout << "NOT FOUND\n";
+                anchor_mode = 2;
+            }
+
             float new_scroll = scroll_pos;
             if(anchor_mode == 1) {
                 new_scroll = 0.0f;
@@ -138,8 +145,6 @@ void scroll_widget::init() {
                 float end = widget->position.y + scroll_pos - (position.y + size.y);
 
                 if(index != 0) {
-                    std::cout << "X " << index << " " << ui_system->widgets[children[0]]->children.size() << "\n";
-
                     auto& widget_prev = ui_system->widgets[ui_system->widgets[children[0]]->children[index - 1]];
                     start = widget_prev->position.y + scroll_pos - (position.y + size.y);
                 } else start = widget->position.y + widget->size.y + scroll_pos - (position.y + size.y);
