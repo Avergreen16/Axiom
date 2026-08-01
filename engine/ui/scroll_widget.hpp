@@ -7,7 +7,7 @@ namespace axiom {
 
 struct scroll_widget : widget {
     float total_scrollable = 0.0f;
-    float scroll_width;
+    float scroll_width = FLT_MAX;
     bool reserve = false;
     float scroll_anchor = 0.0f;
 
@@ -28,6 +28,10 @@ struct scroll_widget : widget {
     //
 
     std::vector<ulong> prev_order;
+    
+    // state
+    float state_child_height = -1.0f;
+    float state_self_height = -1.0f;
 
     void handle_inputs();
     void mesh();

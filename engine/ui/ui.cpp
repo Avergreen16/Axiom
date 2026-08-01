@@ -8,14 +8,15 @@ namespace axiom {
 vec2 text_range;
 std::vector<uint> text_start;
 
-vec3 color_red = hsv_color(0.0f, 0.65f, 0.9f);
-vec3 color_orange = hsv_color(0.375f, 0.65f, 0.9f);
-vec3 color_yellow = hsv_color(0.75f, 0.65f, 0.9f);
-vec3 color_green = hsv_color(2.0f, 0.65f, 0.5); 
-vec3 color_blue = hsv_color(4.0f, 0.65f, 0.9f);
-vec3 color_purple = hsv_color(4.5f, 0.65f, 0.9f);
-vec3 color_magenta = hsv_color(5.0f, 0.65f, 0.9f);
-vec3 color_rose = hsv_color(5.75f, 0.65f, 0.9f);
+vec3 color_red = hsv_color(0.0f, 0.675f, 0.9f);
+vec3 color_orange = hsv_color(0.375f, 0.675f, 0.9f);
+vec3 color_yellow = hsv_color(1.0f, 0.675f, 0.9f);
+vec3 color_green = hsv_color(2.0f, 0.675f, 0.5f); 
+vec3 color_cyan = hsv_color(3.0f, 0.675f, 0.9f);
+vec3 color_blue = hsv_color(4.0f, 0.675f, 0.9f);
+vec3 color_purple = hsv_color(4.5f, 0.675f, 0.9f);
+vec3 color_magenta = hsv_color(5.0f, 0.675f, 0.9f);
+vec3 color_rose = hsv_color(5.75f, 0.675f, 0.9f);
 
 vec3 color_physics = color_rose;
 vec3 color_editor = color_physics;

@@ -10,6 +10,7 @@ void text_widget::handle_inputs() {
     std::string str = text[0]->string;
     str = callback(str);
 
+    text[0]->range = range;
     text[0]->string = str;
 }
 
@@ -127,7 +128,7 @@ void text_widget::init() {
             text[0]->width = size.x;
             //text[0]->dirty = true;
             
-            text[0]->mesh();
+            text[0]->measure();
 
             size.y = text[0]->size.y;
         }

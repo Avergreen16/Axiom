@@ -4,12 +4,15 @@
 
 namespace axiom {
 
+struct tab_widget;
+
 struct tab {
     std::string label;
     float width;
     vec3 color;
 
-    std::function<void()> swap = []() {};
+    std::function<void(tab_widget*)> swap_in = [](tab_widget* self) {};
+    std::function<void(tab_widget*)> swap_out = [](tab_widget* self) {};
 
     bool text_dirty = true;
     std::vector<ui_vertex> text_vertices;

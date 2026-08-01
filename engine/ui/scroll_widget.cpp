@@ -50,9 +50,6 @@ void scroll_widget::init() {
 
         //
 
-        static float child_height = -1.0f;
-        static float self_height = -1.0f;
-
         float new_child_height = ui_system->widgets[children[0]]->size.y;
         float new_self_height = size.y;
 
@@ -60,23 +57,22 @@ void scroll_widget::init() {
 
         float delta_scroll = 0.0f;
 
-        if(child_height != new_child_height || self_height != new_self_height) {
-            child_height = new_child_height;
-            self_height = new_self_height;
+        if(state_child_height != new_child_height || state_self_height != new_self_height) {
+            state_child_height = new_child_height;
+            state_self_height = new_self_height;
 
             auto& child = ui_system->widgets[children[0]];
 
             if(anchor_widget == NULL_WIDGET || std::find(child->children.begin(), child->children.end(), anchor_widget) == child->children.end()) {
-                std::cout << "NOT FOUND\n";
+                anchor_widget = NULL_WIDGET;
                 anchor_mode = 2;
+                
+                std::cout << "NOT FOUND\n";
             }
 
             float new_scroll = scroll_pos;
-            if(anchor_mode == 1) {
-                new_scroll = 0.0f;
-            } else if(anchor_mode == 2) {
-                new_scroll = FLT_MAX * -0.5f;
-            } else if(anchor_widget != NULL_WIDGET) {
+            
+            if(anchor_widget != NULL_WIDGET) {
 
                 auto& parent_widget = ui_system->widgets[children[0]];
 
@@ -93,6 +89,7 @@ void scroll_widget::init() {
                 }
 
                 if(!found) {
+                    std::cout << "x";
                     int index = 0;
                     while(true) {
                         if(prev_order[index] == anchor_widget) break;
@@ -157,9 +154,18 @@ void scroll_widget::init() {
 
                 //std::cout << index << " " << start << " " << end << " " << new_scroll << "\n";
             }
+            if(anchor_mode == 1) {
+                new_scroll = 0.0f;
+            } else if(anchor_mode == 2) {
+                new_scroll = FLT_MAX * -0.5f;
+            } 
 
             delta_scroll = scroll_pos - new_scroll;
             scroll_pos = new_scroll;
+            
+            float min_scroll = -total_scrollable;
+            float max_scroll = 0.0f;
+            scroll_pos = glm::clamp(scroll_pos, min_scroll, max_scroll);
         }
 
         float pos = 0.0f;
@@ -237,6 +243,8 @@ void scroll_widget::handle_inputs() {
             float scroll_speed = 60.0f;
             scroll_pos += ui_system.window->scroll_delta * scroll_speed;
             scroll_pos = glm::clamp(scroll_pos, min_scroll, max_scroll);
+
+            anchor_mode = 0;
         }
     }
 

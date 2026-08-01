@@ -13,6 +13,12 @@ uint64_t column_widget::insert(bool fill) {
     widget.buffer = ui_system.input_state.active_buffer;
     widget.position_mode = ui_system.input_state.active_position;
     widget.fill = fill;
+    
+    widget.size = vec2(0.0f);
+    widget.min_width = 0.0f;
+    widget.max_width = 0.0f;
+    widget.min_height = 0.0f;
+    widget.max_height = 0.0f;
 
     return ui_system.insert_widget(widget, true);
 }

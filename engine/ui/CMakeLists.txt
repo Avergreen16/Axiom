@@ -26,6 +26,7 @@ add_library(AxiomUI
     scroll_widget.cpp
     message_widget.cpp
     render_widget.cpp
+    match_widget.cpp
 )
 
 target_include_directories(AxiomUI

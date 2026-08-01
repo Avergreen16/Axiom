@@ -24,6 +24,8 @@ void tab_widget::handle_inputs() {
 
     if(ui_system.click_capture == self) {
         bool t = false;
+        
+        uint prev_selected = selected;
 
         if(hovered != 0xFFFFFFFF) {
             if(ui_system.window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
@@ -33,15 +35,17 @@ void tab_widget::handle_inputs() {
         }
 
         if(t) {
-            ui_system.erase(ui_system.get_children(self));
-            children.clear();
+            tabs[prev_selected].swap_out(this);
+
+            //ui_system.erase(ui_system.get_children(self));
+            //children.clear();
 
             uint64_t prev_cw = ui_system.input_state.current_widget;
             auto prev_pos = ui_system.input_state.active_position;
             vec4 prev_buffer = ui_system.input_state.active_buffer;
             
             ui_system.input_set(self);
-            tabs[selected].swap();
+            tabs[selected].swap_in(this);
 
             //ui_system.input_set(prev_cw);
             //ui_system.input_state.active_position = prev_pos;
@@ -193,7 +197,7 @@ uint64_t tab_widget::insert(float tab_height, float tab_sep, std::vector<tab> ta
     vec4 prev_buffer = ui_system.input_state.active_buffer;
     
     ui_system.input_set(w);
-    ((tab_widget*)ui_system.widgets[w].get())->tabs[selected].swap();
+    ((tab_widget*)ui_system.widgets[w].get())->tabs[selected].swap_in(dynamic_cast<tab_widget*>(ui_system.widgets[w].get()));
     
     ui_system.input_set(prev_cw);
     ui_system.input_state.active_position = prev_pos;

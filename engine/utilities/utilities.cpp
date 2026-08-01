@@ -26,11 +26,67 @@ auto get_date_time(ulong timestamp) {
     return local;
 }
 
+/*
+std::string m;
+switch(month) {
+    case 1: {
+        m = "January";
+        break;
+    }
+    case 2: {
+        m = "February";
+        break;
+    }
+    case 3: {
+        m = "March";
+        break;
+    }
+    case 4: {
+        m = "April";
+        break;
+    }
+    case 5: {
+        m = "May";
+        break;
+    }
+    case 6: {
+        m = "June";
+        break;
+    }
+    case 7: {
+        m = "July";
+        break;
+    }
+    case 8: {
+        m = "August";
+        break;
+    }
+    case 9: {
+        m = "September";
+        break;
+    }
+    case 10: {
+        m = "October";
+        break;
+    }
+    case 11: {
+        m = "November";
+        break;
+    }
+    case 12: {
+        m = "December";
+        break;
+    }
+}
+*/
+
 std::string get_date_time_string(ulong timestamp) {
     auto time_data = get_date_time(timestamp);
     std::string date;
+
+    uint month = time_data.tm_mon + 1;
     
-    date += std::to_string(time_data.tm_mon + 1) + "/" + std::to_string(time_data.tm_mday) + "/" + std::to_string(time_data.tm_year + 1900)  + " ";
+    date += std::to_string(month) + "/" + std::to_string(time_data.tm_mday) + "/" + std::to_string(time_data.tm_year + 1900)  + " ";
 
     std::string time;
     int hour = time_data.tm_hour;

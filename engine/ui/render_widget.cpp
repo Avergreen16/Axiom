@@ -84,7 +84,7 @@ ulong render_widget::insert(axiom::render_target* target, uint texture) {
     widget.size = vec2(0.0f);
     widget.position = vec2(0.0f);
 
-    return ui_system.insert_widget(widget, true);
+    return ui_system.insert_widget(widget);
 }
 
 }

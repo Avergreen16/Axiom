@@ -73,6 +73,7 @@ class text {
     public:
     
     double time = 0.0;
+    vec4 range = vec4(-FLT_MAX, -FLT_MAX, FLT_MAX, FLT_MAX);
 
     font_asset* font;
     
@@ -104,6 +105,9 @@ class text {
     // state
 
     bool dirty = false;
+    bool glyph_dirty = false;
+    bool select_dirty = false;
+    
     float state_width = 0.0f;
     std::string state_string = "";
     int state_select_line = 0;

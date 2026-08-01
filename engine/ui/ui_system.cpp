@@ -158,7 +158,7 @@ void ui_system::call() {
     for(auto& [key, widget] : widgets) if(widget->parent == NULL_WIDGET) roots.push_back(key);
 
     target_textures.clear();
-    
+
     for(ulong root : roots) {
         std::vector<ulong> path = {root};
         std::vector<ulong> child_ids = {0};

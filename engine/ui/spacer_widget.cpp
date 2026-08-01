@@ -3,7 +3,7 @@
 
 namespace axiom {
 
-ulong spacer_widget::insert(vec2 min_size, vec2 max_size, bool visual, bool step) {
+ulong spacer_widget::insert(vec2 min_size, vec2 max_size, bool visual, vec4 color, bool step) {
     axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
 
     spacer_widget widget;
@@ -13,8 +13,10 @@ ulong spacer_widget::insert(vec2 min_size, vec2 max_size, bool visual, bool step
     widget.max_height = max_size.y;
     widget.weight_width = 0.001f;
     widget.weight_height = 0.001f;
+    widget.size = vec2(0.0f);
 
     widget.visual = visual;
+    widget.color = color;
 
     if(widget.min_width == widget.max_width) widget.size.x = widget.min_width;
     if(widget.min_height == widget.max_height) widget.size.y = widget.min_height;
@@ -100,22 +102,41 @@ void spacer_widget::mesh() {
         dirty = false;
 
         if(visual) {
-            ui_vertex a = {vec3(0.0f, 0.0f, 0.0f), vec2(0.0f, 0.0f), vec4(1.0f)};
-            ui_vertex b = {vec3(1.0f, 0.0f, 0.0f), vec2(1.0f, 0.0f), vec4(1.0f)};
-            ui_vertex c = {vec3(0.0f, 1.0f, 0.0f), vec2(0.0f, 1.0f), vec4(1.0f)};
-            ui_vertex d = {vec3(1.0f, 1.0f, 0.0f), vec2(1.0f, 1.0f), vec4(1.0f)};
-            std::vector<ui_vertex> ret = {a, b, d, a, d, c};
+            if(color.w != 0.0f) {
+                ui_vertex a = {vec3(0.0f, 0.0f, 0.0f), vec2(0.0f, 0.0f), vec4(1.0f)};
+                ui_vertex b = {vec3(1.0f, 0.0f, 0.0f), vec2(1.0f, 0.0f), vec4(1.0f)};
+                ui_vertex c = {vec3(0.0f, 1.0f, 0.0f), vec2(0.0f, 1.0f), vec4(1.0f)};
+                ui_vertex d = {vec3(1.0f, 1.0f, 0.0f), vec2(1.0f, 1.0f), vec4(1.0f)};
+                std::vector<ui_vertex> ret = {a, b, d, a, d, c};
 
-            vec4 range = vec4(position.x, position.y + size.y * 0.5f, size.x, 1.0f);
-            range = round(range);
-            
-            for(ui_vertex& v : ret) {
-                v.pos = vec3(range.xy() + v.pos.xy() * range.zw(), z);
-                v.tex_pos = vec2(1.0f, 63.0f);
-                v.color = vec4(1.0f, 1.0f, 1.0f, 0.5f);
-                v.data = 0x1;
+                vec4 range = vec4(position, size);
+                range = round(range);
+                
+                for(ui_vertex& v : ret) {
+                    v.pos = vec3(range.xy() + v.pos.xy() * range.zw(), z);
+                    v.tex_pos = vec2(1.0f, 63.0f);
+                    v.color = vec4(1.0f, 1.0f, 1.0f, 0.5f);
+                    v.data = 0x1;
+                }
+                vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
+            } else {
+                ui_vertex a = {vec3(0.0f, 0.0f, 0.0f), vec2(0.0f, 0.0f), vec4(1.0f)};
+                ui_vertex b = {vec3(1.0f, 0.0f, 0.0f), vec2(1.0f, 0.0f), vec4(1.0f)};
+                ui_vertex c = {vec3(0.0f, 1.0f, 0.0f), vec2(0.0f, 1.0f), vec4(1.0f)};
+                ui_vertex d = {vec3(1.0f, 1.0f, 0.0f), vec2(1.0f, 1.0f), vec4(1.0f)};
+                std::vector<ui_vertex> ret = {a, b, d, a, d, c};
+
+                vec4 range = vec4(position.x, position.y + size.y * 0.5f, size.x, 1.0f);
+                range = round(range);
+                
+                for(ui_vertex& v : ret) {
+                    v.pos = vec3(range.xy() + v.pos.xy() * range.zw(), z);
+                    v.tex_pos = vec2(1.0f, 63.0f);
+                    v.color = vec4(1.0f, 1.0f, 1.0f, 0.5f);
+                    v.data = 0x1;
+                }
+                vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
             }
-            vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
         }
     }
 }

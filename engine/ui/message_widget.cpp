@@ -8,6 +8,8 @@ void message_widget::handle_inputs() {
     axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
     vec4 range = ui_system.get_range(self);
 
+    text[0]->range = range;
+    
     bool prev_hover = hover;
 
     vec4 include_range = vec4(position, position + size + vec2(0.0f, buffer.w));
@@ -34,7 +36,7 @@ void message_widget::handle_inputs() {
                 ui_system.position(position_mode);
                 ui_system.buffer(buffer);
 
-                std::string time_text = std::to_string(index);//axiom::get_date_time_string(timestamp);
+                std::string time_text = axiom::get_date_time_string(timestamp);
                 ulong time_label = axiom::text_widget::insert(time_text, axiom::text_alignment::LEFT);
                 parent_widget->children.pop_back();
                 parent_widget->children.insert(parent_widget->children.begin() + i, time_label);
@@ -45,7 +47,10 @@ void message_widget::handle_inputs() {
                 bool is_text_widget = dynamic_cast<axiom::text_widget*>(ui_system.widgets[parent_widget->children[i - 1]].get());
                 if(is_text_widget) {
                     inserted = false;
+
+                    uint id = parent_widget->children[i - 1];
                     parent_widget->children.erase(parent_widget->children.begin() + (i - 1));
+                    ui_system.widgets.erase(id);
                 }
             }
         }
@@ -206,7 +211,7 @@ void message_widget::init() {
             text[0]->width = size.x - border.x * 2.0f;
             //text[0]->dirty = true;
             
-            text[0]->mesh();
+            text[0]->measure();
 
             size.y = text[0]->size.y + border.y * 2.0f + tail_size;
         }
@@ -233,6 +238,9 @@ void message_widget::init() {
 
 axiom::capture_data message_widget::handle_capture() {
     axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
+
+    vec4 view_range = ui_system.get_range(self);
+    if(!includes(ui_system.window->cursor_pos, view_range)) return {z, false};
 
     vec4 hover_range = vec4(position, position + size + vec2(0.0f, buffer.w));
     if(inserted) hover_range.w += ui_system.font_assets[0]->line_height + buffer.y;

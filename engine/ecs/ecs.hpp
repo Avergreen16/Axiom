@@ -226,7 +226,7 @@ struct ecs {
     system_manager system_manager_;
 
     double delta_time;
-    double prev_time;
+    double prev_time = FLT_MAX;
     
     template<typename type>
     void register_component() {
@@ -367,7 +367,7 @@ struct ecs {
         make_active();
         
         double current_time = axiom::get_absolute_time();
-        delta_time = current_time - prev_time;
+        delta_time = glm::max(0.0, current_time - prev_time);
         prev_time = current_time;
 
         for(std::size_t& code : system_manager_.call_order) {

@@ -24,3 +24,4 @@
 #include <ui/scroll_widget.hpp>
 #include <ui/message_widget.hpp>
 #include <ui/render_widget.hpp>
+#include <ui/match_widget.hpp>

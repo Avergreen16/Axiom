@@ -1044,7 +1044,9 @@ std::vector<ui_vertex> mesh_text_select(font_asset& f, ivec2 selection, std::str
 }
 
 std::vector<ui_vertex> text::mesh() {
-    //if(dirty) {
+    if(glyph_dirty) {
+        glyph_dirty = false;
+
         if(!wrap) width = 0xFFFFFFFF;
         
         text_data data;
@@ -1052,13 +1054,15 @@ std::vector<ui_vertex> text::mesh() {
         size = data.size;
         wrap_limits = data.wrap_limits;
         max_width = data.max_width;
-    //}
+    }
 
     return glyph_vertices;
 }
 
 std::vector<ui_vertex> text::mesh_select() {
-    //if(dirty) {
+    if(select_dirty) {
+        select_dirty = false;
+
         if(!wrap) width = 0xFFFFFFFF;
 
         ivec2 abs_select = ivec2(glm::min(select_range.x, select_range.y), glm::max(select_range.x, select_range.y));
@@ -1092,7 +1096,7 @@ std::vector<ui_vertex> text::mesh_select() {
             
             select_vertices = ret2;
         }
-    //}
+    }
 
     return select_vertices;
 }
@@ -1130,6 +1134,8 @@ void text::measure() {
         max_width = data.max_width;
 
         dirty = false;
+        glyph_dirty = true;
+        select_dirty = true;
     }
 }
 
@@ -1486,6 +1492,7 @@ void text::select(vec4 cursor_range, bool anchor) {
     //
 
     if(prev_select != select_range) {
+        select_dirty = true;
         if(select_range != ivec2(-1)) {
             if(select_range.x == select_range.y) time = get_time();
 
@@ -1518,7 +1525,7 @@ void text::call() {
 
     axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
 
-    if(collide(ui_system.window->cursor_pos)) ui_system.cursor.cursor_mode = axiom::cursor_mode::TEXT;
+    if(collide(ui_system.window->cursor_pos) && includes(ui_system.window->cursor_pos, range)) ui_system.cursor.cursor_mode = axiom::cursor_mode::TEXT;
 
     if(editable) {
         ivec3 prev = ivec3{select_range, select_line};

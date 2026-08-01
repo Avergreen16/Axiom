@@ -46,6 +46,7 @@ extern vec3 color_red;
 extern vec3 color_orange;
 extern vec3 color_yellow;
 extern vec3 color_green;
+extern vec3 color_cyan;
 extern vec3 color_blue;
 extern vec3 color_purple;
 extern vec3 color_magenta;
