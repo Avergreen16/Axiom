@@ -225,6 +225,8 @@ struct ecs {
     component_manager component_manager_;
     system_manager system_manager_;
 
+    std::unordered_map<std::string, collector> collectors;
+
     double delta_time;
     double prev_time = FLT_MAX;
     
@@ -236,6 +238,10 @@ struct ecs {
     template<typename type>
     void register_system(type& system) {
         system_manager_.register_system<type>(system, this);
+    }
+
+    void create_collector(std::string key, collector& collector) {
+        collectors.emplace(key, std::move(collector));
     }
     
     int insert_entity() {
@@ -286,7 +292,7 @@ struct ecs {
             for(collector& c : s.second->collectors) {
                 if(!remove) {
                     signature s_signature = c.signature;
-                    if((new_signature & s_signature_) == s_signature_) {
+                    if((new_signature & s_signature) == s_signature) {
                         if(c.greedy) remove = true;
                         if(c.entities.find(entity_) == c.entities.end()) {
                             c.entities.emplace(entity_);
@@ -294,13 +300,22 @@ struct ecs {
                     }
                 } else {
                     signature s_signature = c.signature;
-                    if((new_signature & s_signature_) == s_signature_) {
+                    if((new_signature & s_signature) == s_signature) {
                         if(c.entities.find(entity_) != c.entities.end()) {
                             c.entities.erase(entity_);
                         }
                     }
                 }
             }
+        }
+
+        for(auto& [key, c] : collectors)  {
+            signature s_signature = c.signature;
+            if((new_signature & s_signature) == s_signature) {
+                if(c.entities.find(entity_) == c.entities.end()) {
+                    c.entities.emplace(entity_);
+                }
+            }            
         }
     }
 
@@ -317,7 +332,7 @@ struct ecs {
             for(collector& c : s.second->collectors) {
                 if(!remove) {
                     signature s_signature = c.signature;
-                    if((new_signature & s_signature_) == s_signature_) {
+                    if((new_signature & s_signature) == s_signature) {
                         if(c.greedy) remove = true;
                         if(c.entities.find(entity_) == c.entities.end()) {
                             c.entities.emplace(entity_);
@@ -325,13 +340,22 @@ struct ecs {
                     }
                 } else {
                     signature s_signature = c.signature;
-                    if((new_signature & s_signature_) == s_signature_) {
+                    if((new_signature & s_signature) == s_signature) {
                         if(c.entities.find(entity_) != c.entities.end()) {
                             c.entities.erase(entity_);
                         }
                     }
                 }
             }
+        }
+
+        for(auto& [key, c] : collectors)  {
+            signature s_signature = c.signature;
+            if((new_signature & s_signature) == s_signature) {
+                if(c.entities.find(entity_) == c.entities.end()) {
+                    c.entities.emplace(entity_);
+                }
+            }            
         }
     }
     
@@ -351,6 +375,16 @@ struct ecs {
                     }
                 }
             }
+        }
+        
+
+        for(auto& [key, c] : collectors)  {
+            signature s_signature = c.signature;
+            if((entity_signature & s_signature) == s_signature) {
+                if(c.entities.find(entity_) != c.entities.end()) {
+                    c.entities.erase(entity_);
+                }
+            }            
         }
     }
 

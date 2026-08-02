@@ -1,8 +1,11 @@
-add_executable(Game main.cpp)
+add_executable(Game 
+    main.cpp
+    chat.cpp
+)
 
 # icon.rc
 
-target_include_directories(Game PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(Game PUBLIC ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR})
 
 axiom_set_icon(Game)
 
@@ -18,6 +21,7 @@ target_link_libraries(Game
         AxiomECS
         AxiomRender
         AxiomUI
+        AxiomScene
         
         glm
         nlohmann_json
