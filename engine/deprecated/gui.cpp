@@ -478,7 +478,7 @@ vec2 compute_cursor_pos(uint32_t index, bool wrap, Font& f, std::string text, ui
         if(hex) {
             if(c == 'A') c = 0x80;
             else if(c == 'B') c = 0x81;
-            else if(c == 'C') c = 0x82;
+            else if(c == 'C') c = 0x82;F
             else if(c == 'D') c = 0x83;
             else if(c == 'E') c = 0x84;
             else if(c == 'F') c = 0x85;

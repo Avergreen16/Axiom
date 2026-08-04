@@ -2,6 +2,7 @@
 add_library(AxiomPhysics2D
     collider.cpp
     mesh.cpp
+    physics.cpp
 )
 
 target_include_directories(AxiomPhysics2D
@@ -14,6 +15,7 @@ target_link_libraries(AxiomPhysics2D
     PUBLIC
         AxiomMath
         AxiomScene
+        AxiomECS
 
         dwmapi
         gdi32

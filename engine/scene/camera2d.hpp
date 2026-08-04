@@ -1,7 +1,6 @@
 #pragma once
 
 #include <include/math.hpp>
-#include <scene/transform2d.hpp>
 
 namespace axiom {
 
@@ -9,9 +8,5 @@ struct camera2d {
     float zoom = 1.0f;
     vec2 aspect = vec2(1.0f);
 };
-
-mat4 get_model(transform2d& pbject, transform2d& camera);
-mat4 get_view(camera2d& camera, transform2d& transform);
-mat4 get_proj(camera2d& camera);
 
 }

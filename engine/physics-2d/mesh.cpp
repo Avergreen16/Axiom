@@ -1,4 +1,5 @@
 #include <physics-2d/mesh.hpp>
+#include <physics-2d/collider.hpp>
 
 #include <iostream>
 
@@ -11,52 +12,8 @@ struct mesh_face {
     bool finished = false;
 };
 
-struct ellipsoid {
-    vec2 center;
-    vec2 radii;
-    mat2 orientation;
-};
-
-
-vec2 support(vec2 direction, vec2 center, mat2 orientation, vec2 radii) {
-    vec2 local = transpose(orientation) * direction;
-
-    vec2 q = {
-        radii.x * radii.x * local.x,
-        radii.y * radii.y * local.y
-    };
-
-    float denom = sqrt(q.x * local.x + q.y * local.y);
-    if(denom == 0) denom = 1.0f;
-
-    return center + orientation * (q / denom);
-}
-
-vec2 support(vec2 direction, std::vector<ellipsoid> ellipsoids) {
-    float max_dot = -FLT_MAX;
-    vec2 point = vec2(0.0f);
-
-    for(ellipsoid& e : ellipsoids) {
-        vec2 new_point = support(direction, e.center, e.orientation, e.radii);
-
-        float new_dot = dot(new_point, direction);
-
-        if(new_dot > max_dot) {
-            max_dot = new_dot;
-            point = new_point;
-        }
-    }
-
-    return point;
-}
-
-std::vector<vec2> create_mesh(std::vector<vec2> v, vec2 radius, bool create_interior) {
-    std::vector<ellipsoid> ellipsoids = { // glm::rotate(glm::identity<mat3>(), axiom::pi * 0.125f)
-        ellipsoid{vec2(0.0f, 0.0f), vec2(1.0f, 2.0f), glm::identity<mat2>()},
-        ellipsoid{vec2(0.0f, -3.0f), vec2(1.0f, 0.0f), glm::rotate(glm::identity<mat3>(), axiom::pi * 0.125f)},
-    };
-
-    std::vector<vec2> points = {support(vec2(1.0f, 0.0f), ellipsoids), support(vec2(-1.0f, 0.0f), ellipsoids)};
+void create_mesh(std::vector<vertex_element> vertices, std::vector<vec2>* perimeter, std::vector<vec2>* area) {
+    std::vector<vec2> points = {support(vec2(1.0f, 0.0f), vertices), support(vec2(-1.0f, 0.0f), vertices)};
 
     std::vector<mesh_face> faces = {mesh_face(0, 1, false), mesh_face(1, 0, false)};
     
@@ -70,7 +27,7 @@ std::vector<vec2> create_mesh(std::vector<vec2> v, vec2 radius, bool create_inte
                 vec2 normal = vec2(points[face.i0] - points[face.i1]);
                 normal = vec2(-normal.y, normal.x);
 
-                vec2 s = support(normal, ellipsoids);
+                vec2 s = support(normal, vertices);
 
                 bool overwrite = false;
 
@@ -106,8 +63,57 @@ std::vector<vec2> create_mesh(std::vector<vec2> v, vec2 radius, bool create_inte
         }
     );
 
-    std::cout << points.size() << "\n";
-    return points;
+    if(perimeter != nullptr) {
+        std::vector<vec2> vs;
+        
+        for(int i = 0; i < points.size(); ++i) {
+            vs.push_back(points[i]);
+            vs.push_back(points[(i + 1) % points.size()]);
+        }
+
+        *perimeter = vs;
+    }
+
+    if(area != nullptr) {
+        vec2 center = vec2(0.0f);
+
+        for(int i = 0; i < points.size(); ++i) {
+            center += points[i];
+        }
+
+        center /= float(points.size());
+
+        //
+        
+        std::vector<vec2> vs;
+
+        for(int i = 0; i < points.size(); ++i) {
+            vs.push_back(points[i]);
+            vs.push_back(points[(i + 1) % points.size()]);
+            vs.push_back(center);
+        }
+
+        *area = vs;
+    }
+}
+
+
+void create_mesh(axiom::collider2d& collider, std::vector<vec2>* perimeter, std::vector<vec2>* area) {
+    std::vector<vec2>* p = new std::vector<vec2>();
+    std::vector<vec2>* a = nullptr;
+    if(area) a = new std::vector<vec2>();
+
+    for(auto& shape : collider.shapes) {
+        create_mesh(shape.vertices, p, a);
+        for(vec2& v : *p) v = shape.position + shape.orientation * v;
+        if(area) for(vec2& v : *a) v = shape.position + shape.orientation * v;
+        
+        perimeter->insert(perimeter->end(), p->begin(), p->end());
+        if(area) area->insert(area->end(), a->begin(), a->end());
+    }
+    
+    delete p;
+    if(a) delete a;
 }
 
 }
