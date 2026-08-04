@@ -31,6 +31,10 @@ void entity_manager::erase_entity(uint entity_) {
     available_ids.push(entity_);
 }
 
+ecs::ecs() {
+    entity_manager_.init();
+}
+
 axiom::core global_core;
 
 }

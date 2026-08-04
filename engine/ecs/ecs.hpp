@@ -22,7 +22,7 @@ using signature = std::bitset<MAX_COMPONENTS>;
 
 struct entity {
     uint id;
-    signature signature = 0;
+    axiom::signature signature = 0;
     
     entity() {}
     
@@ -133,7 +133,7 @@ struct component_manager {
         return *(component_list<type>*)(component_lists[ti].get());
     }
     
-    void delete_components(uint entity_, signature signature_) {
+    void delete_components(uint entity_, axiom::signature signature_) {
         for(int i = 0; i < MAX_COMPONENTS; ++i) {
             std::bitset<MAX_COMPONENTS> a = (signature)1 << i;
             std::bitset<MAX_COMPONENTS> b = signature_;
@@ -148,23 +148,23 @@ struct component_manager {
     }
     
     template<typename type>
-    void insert_component(uint entity_, signature& signature, type t) {
+    void insert_component(uint entity_, axiom::signature& signature_, type t) {
         std::size_t code = typeid(type).hash_code();
         uint i = code_to_id[code];
 
-        signature s2 = signature(1) << i;
-        signature |= s2;
+        axiom::signature s2 = axiom::signature(1) << i;
+        signature_ |= s2;
         
         (*(component_list<type>*)(component_lists[code].get())).insert_component(entity_, t);
     }
 
     template<typename type>
-    void insert_component_move(uint entity_, signature& signature, type&& t) {
+    void insert_component_move(uint entity_, axiom::signature& signature_, type&& t) {
         std::size_t code = typeid(type).hash_code();
         uint i = code_to_id[code];
 
-        signature s2 = signature(1) << i;
-        signature |= s2;
+        axiom::signature s2 = axiom::signature(1) << i;
+        signature_ |= s2;
         
         (*(component_list<type>*)(component_lists[code].get())).insert_component_move(entity_, std::move(t));
     }
@@ -229,6 +229,8 @@ struct ecs {
 
     double delta_time;
     double prev_time = FLT_MAX;
+
+    ecs();
     
     template<typename type>
     void register_component() {
@@ -253,7 +255,7 @@ struct ecs {
         register_component<type>();
 
         std::size_t code = typeid(type).hash_code();
-        return signature(1) << component_manager_.code_to_id[code];
+        return axiom::signature(1) << component_manager_.code_to_id[code];
     }
     
     template<typename type>
@@ -261,12 +263,12 @@ struct ecs {
         register_component<type>();
 
         std::size_t code = typeid(type).hash_code();
-        a |= signature(1) << component_manager_.code_to_id[code];
+        a |= axiom::signature(1) << component_manager_.code_to_id[code];
     }
 
     template<typename type>
     bool has_component(uint entity_) {
-        return (entity_manager_.signatures[entity_] & update_signature<type>()) != signature(0);
+        return (entity_manager_.signatures[entity_] & update_signature<type>()) != axiom::signature(0);
     }
     
     template<typename type>
@@ -276,7 +278,6 @@ struct ecs {
 
     template<typename type>
     type& get_component(uint entity_) {
-        ++num_lookups;
         return component_manager_.get_component<type>(entity_);
     }
     
@@ -285,13 +286,13 @@ struct ecs {
         register_component<type>();
 
         component_manager_.insert_component(entity_, entity_manager_.signatures[entity_], component);
-        signature new_signature = entity_manager_.signatures[entity_];
+        axiom::signature new_signature = entity_manager_.signatures[entity_];
         
         for(auto& s : system_manager_.systems) {
             bool remove = false;
             for(collector& c : s.second->collectors) {
                 if(!remove) {
-                    signature s_signature = c.signature;
+                    axiom::signature s_signature = c.signature;
                     if((new_signature & s_signature) == s_signature) {
                         if(c.greedy) remove = true;
                         if(c.entities.find(entity_) == c.entities.end()) {
@@ -299,7 +300,7 @@ struct ecs {
                         }
                     }
                 } else {
-                    signature s_signature = c.signature;
+                    axiom::signature s_signature = c.signature;
                     if((new_signature & s_signature) == s_signature) {
                         if(c.entities.find(entity_) != c.entities.end()) {
                             c.entities.erase(entity_);
@@ -308,9 +309,9 @@ struct ecs {
                 }
             }
         }
-
+        
         for(auto& [key, c] : collectors)  {
-            signature s_signature = c.signature;
+            axiom::signature s_signature = c.signature;
             if((new_signature & s_signature) == s_signature) {
                 if(c.entities.find(entity_) == c.entities.end()) {
                     c.entities.emplace(entity_);
@@ -325,13 +326,13 @@ struct ecs {
         register_component<raw_type>();
 
         component_manager_.insert_component_move(entity_, entity_manager_.signatures[entity_], std::move(component));
-        signature new_signature = entity_manager_.signatures[entity_];
+        axiom::signature new_signature = entity_manager_.signatures[entity_];
         
         for(auto& s : system_manager_.systems) {
             bool remove = false;
             for(collector& c : s.second->collectors) {
                 if(!remove) {
-                    signature s_signature = c.signature;
+                    axiom::signature s_signature = c.signature;
                     if((new_signature & s_signature) == s_signature) {
                         if(c.greedy) remove = true;
                         if(c.entities.find(entity_) == c.entities.end()) {
@@ -339,7 +340,7 @@ struct ecs {
                         }
                     }
                 } else {
-                    signature s_signature = c.signature;
+                    axiom::signature s_signature = c.signature;
                     if((new_signature & s_signature) == s_signature) {
                         if(c.entities.find(entity_) != c.entities.end()) {
                             c.entities.erase(entity_);
@@ -350,7 +351,7 @@ struct ecs {
         }
 
         for(auto& [key, c] : collectors)  {
-            signature s_signature = c.signature;
+            axiom::signature s_signature = c.signature;
             if((new_signature & s_signature) == s_signature) {
                 if(c.entities.find(entity_) == c.entities.end()) {
                     c.entities.emplace(entity_);
@@ -360,7 +361,7 @@ struct ecs {
     }
     
     void erase_entity(uint entity_) {
-        signature entity_signature = entity_manager_.signatures[entity_];
+        axiom::signature entity_signature = entity_manager_.signatures[entity_];
         
         component_manager_.delete_components(entity_, entity_manager_.signatures[entity_]);
         
@@ -368,7 +369,7 @@ struct ecs {
         
         for(auto& s : system_manager_.systems) {
             for(collector& c : s.second->collectors) {
-                signature s_signature = c.signature;
+                axiom::signature s_signature = c.signature;
                 if((entity_signature & s_signature) == s_signature) {
                     if(c.entities.find(entity_) != c.entities.end()) {
                         c.entities.erase(entity_);
@@ -379,7 +380,7 @@ struct ecs {
         
 
         for(auto& [key, c] : collectors)  {
-            signature s_signature = c.signature;
+            axiom::signature s_signature = c.signature;
             if((entity_signature & s_signature) == s_signature) {
                 if(c.entities.find(entity_) != c.entities.end()) {
                     c.entities.erase(entity_);

@@ -67,7 +67,7 @@ void scroll_widget::init() {
                 anchor_widget = NULL_WIDGET;
                 anchor_mode = 2;
                 
-                std::cout << "NOT FOUND\n";
+                //std::cout << "NOT FOUND\n";
             }
 
             float new_scroll = scroll_pos;

@@ -3,8 +3,9 @@
 
 namespace axiom {
 
-void render_target::set_size(ivec2 new_size) {
+void render_target::set_size(ivec2 new_size, ivec2 new_position) {
     size = new_size;
+    position = new_position;
     framebuffer.resize(size);
 }
 
@@ -32,10 +33,11 @@ void render_target::call() {
     draw(*this);
 }
 
-render_target render_target::create(std::function<void(render_target&)> draw_func, ivec2 size, std::vector<axiom::texture_format> fb_format, std::vector<axiom::texture_attachment> fb_attachment, std::vector<int> fb_binding) {
+render_target render_target::create(std::function<void(render_target&)> draw_func, ivec2 size, ivec2 position, std::vector<axiom::texture_format> fb_format, std::vector<axiom::texture_attachment> fb_attachment, std::vector<int> fb_binding) {
     render_target target;
     target.draw = draw_func;
     target.size = size;
+    target.position = position;
 
     std::vector<axiom::fb_tex_params> params;
     uint counter = 0;

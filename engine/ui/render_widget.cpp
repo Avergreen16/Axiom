@@ -22,6 +22,9 @@ void render_widget::mesh() {
         float scrollbar_height;
         float scrollbar_pos;
 
+        position = floor(position);
+        size = floor(size);
+
         ret = {a, b, d, a, d, c};
         for(ui_vertex& v : ret) {
             v.pos = vec3(position + v.pos.xy() * size, z);
@@ -32,6 +35,8 @@ void render_widget::mesh() {
 
         vertices_before = total_ret;
     }
+
+    //std::cout << position.x << " " << position.y << " " << size.x << " " << size.y << " " << target->size.x << " " << target->size.y << "\n";
 
     ++ui_system->target;
 }
@@ -45,7 +50,7 @@ void render_widget::init() {
 void render_widget::handle_inputs() {
     axiom::ui_system* ui_system = &axiom::global_core.ecs->get_system<axiom::ui_system>();
 
-    if(target->size != ivec2(size)) target->set_size(ivec2(size));
+    if(target->size != ivec2(size) || target->position != ivec2(position)) target->set_size(ivec2(size), ivec2(position));
     target->call();
 
     ui_system->target_textures.push_back(&target->framebuffer.textures[texture]);

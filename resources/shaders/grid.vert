@@ -1,22 +1,17 @@
 #version 460 core
 
-vec3 grid_plane[6] = vec3[](
-    vec3(1, 1, 0), vec3(-1, 1, 0), vec3(-1, -1, 0),
-    vec3(-1, -1, 0), vec3(1, -1, 0), vec3(1, 1, 0)
-);
+layout(location = 0) in vec2 position;
 
-layout(location = 0) uniform mat4 model;
-layout(location = 2) uniform mat4 proj;
+layout(location = 0) uniform mat4 view;
+layout(location = 1) uniform mat4 proj;
 
-out vec2 tex_coord;
-
-out mat4 inverse_proj;
-out mat4 inverse_model;
+layout(location = 0) out vec2 world_coords;
 
 void main() {
-    tex_coord = grid_plane[gl_VertexID].xy;
-    gl_Position = vec4(grid_plane[gl_VertexID].xyz, 1.0);
+    gl_Position = vec4(position, 0.5, 1.0);
 
-    inverse_proj = inverse(proj);
-    inverse_model = -model;
+    mat4 inv_view = inverse(view);
+    mat4 inv_proj = inverse(proj);
+
+    world_coords = (inv_view * inv_proj * vec4(position, 0.0, 1.0)).xy;
 }

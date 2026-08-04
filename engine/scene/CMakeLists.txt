@@ -3,6 +3,7 @@ add_library(AxiomScene
     camera2d.cpp
     transform3d.cpp
     camera3d.cpp
+    func.cpp
 )
 
 target_include_directories(AxiomScene

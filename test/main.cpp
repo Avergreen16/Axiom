@@ -5,6 +5,9 @@
 #include <ui.hpp>
 #include <platform.hpp>
 #include <utilities.hpp>
+#include <scene.hpp>
+#include <physics-2d.hpp>
+
 #include <nlohmann/json.hpp>
 
 #include <test/chat.hpp>
@@ -336,66 +339,146 @@ void create_ui() {
     
     axiom::texture_asset tex_asset = axiom::texture_asset::load("resources/textures/test.png");
     msystem->textures.emplace("test", std::move(axiom::texture(tex_asset, axiom::texture_format::RGBA8)));
+
+    axiom::text_asset grid_vert = axiom::text_asset::load("resources/shaders/grid.vert");
+    axiom::text_asset grid_frag = axiom::text_asset::load("resources/shaders/grid.frag");
+    msystem->shaders.emplace("grid", std::move(axiom::shader(grid_vert, grid_frag)));
+    
+    axiom::text_asset color_vert = axiom::text_asset::load("resources/shaders/color.vert");
+    axiom::text_asset color_frag = axiom::text_asset::load("resources/shaders/color.frag");
+    msystem->shaders.emplace("color", std::move(axiom::shader(color_vert, color_frag)));
     
     ui_system->buffer(vec4(0.0f, 0.0f, 0.0f, 0.0f));
     msystem->targets.push_back(axiom::render_target());
 
     {
-        std::function<void(axiom::render_target&)> render_func = [msystem](axiom::render_target& f) {
+        std::function<void(axiom::render_target&)> render_func = [msystem, ui_system](axiom::render_target& f) {
+            static vec2 cursor_pos = vec2(0.0f);
+            static bool capture = false;
+            
             static axiom::vertices vertices;
-            static double rotation = 0.0f;
+            if(!vertices.initialized) {
+                vertices.init();
+            }
 
-            vec2 scale = vec2(f.size) / float(glm::min(f.size.x, f.size.y));
-            mat4 matrix = glm::scale(vec3(1.0f / scale, 1.0f));
-            matrix = matrix * glm::rotate((float)rotation, vec3(0.0f, 0.0f, 1.0f));
-
-            rotation += axiom::global_core.ecs->delta_time * msystem->param;
-
-            struct color_vertex {
-                vec3 position;
-                vec3 color;
-                vec2 tex_coord;
-            };
-
-            float r = 0.75f;
-
-            /*
-            std::vector<color_vertex> vs = {
-                color_vertex({-sqrt(3.0f) * 0.5f * r, -0.5f * r, 0.5f}, {1.0f, 0.0f, 0.0f}, vec2(-sqrt(3.0f) * 0.5f, -0.5f)),
-                color_vertex({0.0f, r, 0.5f}, {0.0f, 1.0f, 0.0f}, vec2(0.0f, 1.0f)),
-                color_vertex({sqrt(3.0f) * 0.5f * r, -0.5f * r, 0.5f}, {0.0f, 0.0f, 1.0f}, vec2(sqrt(3.0f) * 0.5f, -0.5f))
-            };
-            */
-
-            std::vector<color_vertex> vs = {
-                color_vertex({-1.0f * r, -1.0f * r, 0.5f}, {1.0f, 0.0f, 0.0f}, vec2(0.0f, 0.0f)),
-                color_vertex({1.0f * r, -1.0f * r, 0.5f}, {1.0f, 1.0f, 0.0f}, vec2(1.0f, 0.0f)),
-                color_vertex({-1.0f * r, 1.0f * r, 0.5f}, {0.0f, 0.0f, 1.0f}, vec2(0.0f, 1.0f)),
-                color_vertex({1.0f * r, 1.0f * r, 0.5f}, {0.0f, 1.0f, 0.0f}, vec2(1.0f, 1.0f)),
+            //
+            
+            std::vector<vec2> vs = {
+                vec2(-1.0f, -1.0f),
+                vec2(1.0f, -1.0f),
+                vec2(-1.0f, 1.0f),
+                vec2(1.0f, 1.0f)
             };
 
             vs = {vs[0], vs[1], vs[3], vs[0], vs[3], vs[2]};
 
-            if(!vertices.initialized) vertices.init();
+            vertices.vertex_buffer_data(vs.data(), vs.size(), sizeof(vec2), GL_STATIC_DRAW);
+            vertices.add_vertex_attribute(0, 2, GL_FLOAT, false, sizeof(vec2), 0);
 
-            vertices.vertex_buffer_data(vs.data(), vs.size(), sizeof(color_vertex), GL_STATIC_DRAW);
+            uint camera = *axiom::global_core.ecs->collectors["camera"].entities.begin();
 
-            vertices.add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(color_vertex), 0);
-            vertices.add_vertex_attribute(1, 3, GL_FLOAT, false, sizeof(color_vertex), sizeof(float) * 3);
-            vertices.add_vertex_attribute(2, 2, GL_FLOAT, false, sizeof(color_vertex), sizeof(float) * 6);
+            axiom::transform2d& camera_transform = axiom::global_core.ecs->get_component<axiom::transform2d>(camera);
+            axiom::camera2d& camera_cam = axiom::global_core.ecs->get_component<axiom::camera2d>(camera);
 
-            msystem->shaders["test"].use();
-            msystem->textures["test"].bind(0);
+            cursor_pos = ui_system->window->cursor_pos;
+            cursor_pos = (cursor_pos - (vec2)f.position - (0.5f * (vec2)f.size)) / (0.5f * (vec2)f.size);
+
+            camera_cam.aspect = vec2(f.size) / (float)glm::min(f.size.x, f.size.y);
+
+            //
+
+            mat4 view = axiom::get_view(camera_cam, camera_transform);
+            mat4 proj = axiom::get_proj(camera_cam);
+
+            mat4 inv_view = glm::inverse(view);
+            mat4 inv_proj = glm::inverse(proj);
+
+            cursor_pos = inv_view * inv_proj * vec4(cursor_pos, 0.0f, 1.0f);
+            
+
+            axiom::shader& grid_shader = msystem->shaders["grid"];
+
+            grid_shader.use();
             vertices.bind();
 
-            glUniformMatrix4fv(0, 1, false, &matrix[0][0]);
+            glUniformMatrix4fv(0, 1, false, &view[0][0]);
+            glUniformMatrix4fv(1, 1, false, &proj[0][0]);
+            glUniform2i(2, f.size.x, f.size.y);
+            glUniform2f(3, cursor_pos.x, cursor_pos.y);
 
             vertices.draw_vertices(GL_TRIANGLES);
+
+            //
+
+            bool includes = axiom::includes(ui_system->window->cursor_pos, ivec4(f.position, f.position + f.size));
+            
+            if(includes) {
+                if(ui_system->window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
+                    capture = true;
+                }
+            }
+            if(!ui_system->window->input_map[axiom::input_code::MOUSE_LEFT]) capture = false;
+
+            if(capture) {
+                vec2 delta = ui_system->window->cursor_delta / (0.5f * (vec2)f.size);
+
+                vec2 world_delta = mat4(mat3(inv_view)) * inv_proj * vec4(delta, 0.0f, 1.0f);
+
+                camera_transform.position -= world_delta;
+            }
+            if(includes) {
+                float zoom_delta = glm::pow(1.25f, ui_system->window->scroll_delta);
+                if(zoom_delta != 1.0f) {
+                    vec2 offset = camera_transform.position - cursor_pos;
+                    offset /= zoom_delta;
+
+                    camera_transform.position = offset + cursor_pos;
+                    
+                    camera_cam.zoom *= zoom_delta;
+                }
+            }
+
+            // render shape
+
+            std::vector<vec2> shape = axiom::create_mesh({}, vec2(0.0f));
+
+            axiom::shader& color_shader = msystem->shaders["color"];
+
+            vec4 color = vec4(1.0f);
+            std::vector<axiom::color_vertex> cvs;
+            for(int i = 0; i < shape.size(); ++i) {
+                uint index_a = i;
+                uint index_b = (i + 1) % shape.size();
+
+                axiom::color_vertex va = axiom::color_vertex{shape[index_a], color};
+                axiom::color_vertex vb = axiom::color_vertex{shape[index_b], color};
+
+                cvs.push_back(va);
+                cvs.push_back(vb);
+            }
+            vertices.vertex_buffer_data(cvs.data(), cvs.size(), sizeof(axiom::color_vertex), GL_STREAM_DRAW);
+            vertices.add_vertex_attribute(0, 2, GL_FLOAT, false, sizeof(axiom::color_vertex), 0);
+            vertices.add_vertex_attribute(1, 4, GL_FLOAT, false, sizeof(axiom::color_vertex), sizeof(float) * 2);
+
+            color_shader.use();
+            vertices.bind();
+
+            axiom::transform2d shape_transform;
+            shape_transform.orientation = glm::identity<mat2>(); //glm::rotate(glm::identity<mat3>(), axiom::pi * 0.125f);
+            shape_transform.position = vec2(0.5f, 0.75f);
+
+            mat4 model = axiom::get_model(shape_transform);
+
+            glUniformMatrix4fv(0, 1, false, &model[0][0]);
+            glUniformMatrix4fv(1, 1, false, &view[0][0]);
+            glUniformMatrix4fv(2, 1, false, &proj[0][0]);
+
+            vertices.draw_vertices(GL_LINES);
         };
         std::vector<axiom::texture_format> formats = {axiom::texture_format::RGBA8};
         std::vector<axiom::texture_attachment> attachments = {axiom::texture_attachment::COLOR0};
 
-        msystem->targets[0] = axiom::render_target::create(render_func, ivec2(400, 400), formats, attachments);
+        msystem->targets[0] = axiom::render_target::create(render_func, ivec2(400, 400), ivec2(0, 0), formats, attachments);
     }
 
     axiom::render_widget::insert(&msystem->targets[0], 0);
@@ -426,11 +509,24 @@ void create_ui() {
 
     axiom::text_widget::insert("FPS: ", axiom::text_alignment::LEFT, true, fps_func);
 
+    std::function<std::string(std::string)> position_func = [msystem](std::string prev) {
+        uint camera = *axiom::global_core.ecs->collectors["camera"].entities.begin();
+
+        axiom::transform2d& transform = axiom::global_core.ecs->get_component<axiom::transform2d>(camera);
+        //axiom::camera2d& cam = axiom::global_core.ecs->get_component<axiom::camera2d>(camera);
+        
+        return "position: " + axiom::to_base(transform.position.x, 16, 3) + " " + axiom::to_base(transform.position.y, 16, 3);
+    };
+
+    axiom::text_widget::insert("position: ", axiom::text_alignment::LEFT, true, position_func);
+
+    /*
     std::function<std::string(std::string)> widget_func = [ui_system](std::string prev) {
         return "widgets: " + std::to_string(ui_system->widgets.size());
     };
 
     axiom::text_widget::insert("widgets: ", axiom::text_alignment::LEFT, true, widget_func);
+    */
 };
 
 int main(int argc, char* argv[]) {
@@ -461,6 +557,23 @@ int main(int argc, char* argv[]) {
     main_system bsystem(&win);
     bsystem.textures.emplace("font_axiom_default", std::move(font_tex));
     ecs.register_system(bsystem);
+    
+    axiom::signature sig = axiom::global_core.ecs->update_signature<axiom::transform2d>();
+    axiom::global_core.ecs->update_signature<axiom::camera2d>(sig);
+    axiom::collector col(sig);
+    axiom::global_core.ecs->create_collector("camera", col);
+
+    uint camera_entity = axiom::global_core.ecs->insert_entity();
+    axiom::camera2d cam;
+    axiom::transform2d tf;
+
+    tf.position = vec2(0.5f, 0.25f);
+    tf.orientation = glm::identity<mat2>(); //glm::rotate(glm::identity<mat3>(), axiom::pi * 0.125f);
+
+    axiom::global_core.ecs->insert_component(camera_entity, cam);
+    axiom::global_core.ecs->insert_component(camera_entity, tf);
+
+    //
 
     //
 
