@@ -5,11 +5,18 @@
 #include <set>
 
 namespace axiom {
-    
+
+struct clipping_plane {
+    vec2 origin;
+    vec2 normal;
+};
+
 struct vertex_element {
     vec2 center;
     vec2 radii = vec2(0.0f);
     mat2 orientation = glm::identity<mat2>();
+
+    std::vector<clipping_plane> planes;
 };
 
 struct bounding_box {
@@ -18,12 +25,12 @@ struct bounding_box {
 };
 
 struct BVH_node {
-    bounding_box bounding_box;
+    axiom::bounding_box bounding_box;
     std::vector<uint> children;
 };
 
 struct collision_shape {
-    bounding_box bounding_box;
+    axiom::bounding_box bounding_box;
 
     //
 

@@ -31,7 +31,7 @@ void create_mesh(std::vector<vertex_element> vertices, std::vector<vec2>* perime
 
                 bool overwrite = false;
 
-                if(dot(s, normal) < dot(points[face.i0], normal) + 0.00001f) {
+                if(dot(s, normal) < glm::max(dot(points[face.i0], normal), dot(points[face.i1], normal)) + 0.00001f) {
                     face.finished = true;
                 } else overwrite = true;
 
@@ -111,6 +111,12 @@ void create_mesh(axiom::collider2d& collider, std::vector<vec2>* perimeter, std:
         perimeter->insert(perimeter->end(), p->begin(), p->end());
         if(area) area->insert(area->end(), a->begin(), a->end());
     }
+
+    float width = 0.125f;
+    perimeter->push_back(vec2(-width, -width));
+    perimeter->push_back(vec2(width, width));
+    perimeter->push_back(vec2(width, -width));
+    perimeter->push_back(vec2(-width, width));
     
     delete p;
     if(a) delete a;

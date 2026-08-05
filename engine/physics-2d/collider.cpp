@@ -1,5 +1,7 @@
 #include <physics-2d/collider.hpp>
 
+#include <iostream>
+
 namespace axiom {
 
 void collider2d::create_bounding_box() {
@@ -110,7 +112,47 @@ vec2 support(vec2 direction, vec2 center, mat2 orientation, vec2 radii) {
     float denom = sqrt(q.x * local.x + q.y * local.y);
     if(denom == 0) denom = 1.0f;
 
-    return center + orientation * (q / denom);
+    vec2 point = orientation * (q / denom);
+
+    return center + point;
+}
+
+vec2 support(vec2 direction, vec2 center, mat2 orientation, vec2 radii, std::vector<clipping_plane>& planes) {
+    vec2 local = transpose(orientation) * direction;
+
+    vec2 q = {
+        radii.x * radii.x * local.x,
+        radii.y * radii.y * local.y
+    };
+
+    float denom = sqrt(q.x * local.x + q.y * local.y);
+    if(denom == 0) denom = 1.0f;
+
+    vec2 point = (q / denom);
+
+    for(clipping_plane& p : planes) {
+        if(dot(p.normal, point - p.origin) > 0.0f) {
+            vec2 pp = p.origin / radii;
+            vec2 n = normalize(vec2(p.normal.y, -p.normal.x) / radii);
+
+            float l = dot(n, -pp);
+            float d = length(pp + n * l);
+            float ll = sqrt(1.0f - d * d);
+            float l0 = l - ll;
+            float l1 = l + ll;
+
+            vec2 p0 = radii * (pp + n * l0);
+            vec2 p1 = radii * (pp + n * l1);
+
+            float dot0 = dot(p0, local);
+            float dot1 = dot(p1, local);
+
+            if(dot0 > dot1) point = p0;
+            else point = p1;
+        }
+    }
+
+    return center + orientation * point;
 }
 
 vec2 support(vec2 direction, std::vector<vertex_element> ellipsoids) {
@@ -118,7 +160,9 @@ vec2 support(vec2 direction, std::vector<vertex_element> ellipsoids) {
     vec2 point = vec2(0.0f);
 
     for(vertex_element& e : ellipsoids) {
-        vec2 new_point = support(direction, e.center, e.orientation, e.radii);
+        vec2 new_point;
+        if(e.planes.size()) new_point = support(direction, e.center, e.orientation, e.radii, e.planes);
+        else new_point = support(direction, e.center, e.orientation, e.radii);
 
         float new_dot = dot(new_point, direction);
 

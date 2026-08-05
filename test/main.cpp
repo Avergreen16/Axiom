@@ -141,7 +141,7 @@ void create_ui() {
     auto* csystem = &axiom::global_core.ecs->get_system<chat_system>();
     auto* msystem = &axiom::global_core.ecs->get_system<main_system>();
 
-    std::function<void()> lipsum_func = [ui_system]() {
+    std::function<void()> switch_lipsum = [ui_system]() {
         ui_system->position(axiom::position_mode::TOP_LEFT);
 
         ui_system->input_reset();
@@ -149,7 +149,7 @@ void create_ui() {
 
         vec2 window_size = vec2(384, 384);
 
-        axiom::window_widget::insert("WINDOW", window_size, (vec2(ui_system->window->screen_size) - window_size) * 0.5f, axiom::color_blue);
+        axiom::window_widget::insert("Lipsum", window_size, (vec2(ui_system->window->screen_size) - window_size) * 0.5f, axiom::color_blue);
         
         ui_system->buffer(vec4(0.0f));
         axiom::panel_widget::insert();
@@ -167,27 +167,81 @@ void create_ui() {
         ui_system->input_z(0.0f);
     };
 
-    std::function<void()> render_func = [ui_system]() {
-        ui_system->position(axiom::position_mode::TOP_LEFT);
+    std::function<void()> switch_render = [msystem, ui_system]() {
+        std::function<void(axiom::render_target&)> render_func = [msystem](axiom::render_target& f) {
+            static axiom::vertices vertices;
+            static double rotation = 0.0f;
 
+            float r = 0.75f;
+
+            vec2 scale = vec2(f.size) / float(glm::min(f.size.x, f.size.y));
+            mat4 matrix = glm::scale(vec3(1.0f / scale, 1.0f));
+            mat4 rot = glm::rotate((float)rotation, vec3(0.0f, 0.0f, 1.0f));
+            matrix = matrix * rot;
+
+            rotation += axiom::global_core.ecs->delta_time * msystem->param;
+
+            struct color_vertex {
+                vec3 position;
+                vec3 color;
+                vec2 tex_coord;
+            };
+
+            /*
+            std::vector<color_vertex> vs = {
+                color_vertex({-sqrt(3.0f) * 0.5f * r, -0.5f * r, 0.5f}, {1.0f, 0.0f, 0.0f}, vec2(-sqrt(3.0f) * 0.5f, -0.5f)),
+                color_vertex({0.0f, r, 0.5f}, {0.0f, 1.0f, 0.0f}, vec2(0.0f, 1.0f)),
+                color_vertex({sqrt(3.0f) * 0.5f * r, -0.5f * r, 0.5f}, {0.0f, 0.0f, 1.0f}, vec2(sqrt(3.0f) * 0.5f, -0.5f))
+            };
+            */
+
+            std::vector<color_vertex> vs = {
+                color_vertex({-1.0f * r, -1.0f * r, 0.5f}, {1.0f, 0.0f, 0.0f}, vec2(0.0f, 0.0f)),
+                color_vertex({1.0f * r, -1.0f * r, 0.5f}, {1.0f, 1.0f, 0.0f}, vec2(1.0f, 0.0f)),
+                color_vertex({-1.0f * r, 1.0f * r, 0.5f}, {0.0f, 0.0f, 1.0f}, vec2(0.0f, 1.0f)),
+                color_vertex({1.0f * r, 1.0f * r, 0.5f}, {0.0f, 1.0f, 0.0f}, vec2(1.0f, 1.0f)),
+            };
+
+            vs = {vs[0], vs[1], vs[3], vs[0], vs[3], vs[2]};
+
+            if(!vertices.initialized) vertices.init();
+
+            vertices.vertex_buffer_data(vs.data(), vs.size(), sizeof(color_vertex), GL_STATIC_DRAW);
+
+            vertices.add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(color_vertex), 0);
+            vertices.add_vertex_attribute(1, 3, GL_FLOAT, false, sizeof(color_vertex), sizeof(float) * 3);
+            vertices.add_vertex_attribute(2, 2, GL_FLOAT, false, sizeof(color_vertex), sizeof(float) * 6);
+
+            msystem->shaders["test"].use();
+            msystem->textures["test"].bind(0);
+            vertices.bind();
+
+            glUniformMatrix4fv(0, 1, false, &matrix[0][0]);
+
+            vertices.draw_vertices(GL_TRIANGLES);
+        };
+        
+        std::vector<axiom::texture_format> formats = {axiom::texture_format::RGBA8};
+        std::vector<axiom::texture_attachment> attachments = {axiom::texture_attachment::COLOR0};
+
+        msystem->targets[1] = axiom::render_target::create(render_func, ivec2(400, 400), ivec2(0), formats, attachments);
+
+        //
         ui_system->input_reset();
         ui_system->input_z(0.1f);
+        ui_system->buffer(vec4(0.0f));
 
         vec2 window_size = vec2(384, 384);
-
-        axiom::window_widget::insert("WINDOW", window_size, (vec2(ui_system->window->screen_size) - window_size) * 0.5f, axiom::color_blue);
-        
-        axiom::panel_widget::insert();
-        ui_system->input_z(0.0f);
+        axiom::window_widget::insert("Render", window_size, (vec2(ui_system->window->screen_size) - window_size) * 0.5f, axiom::color_blue);
+        axiom::render_widget::insert(&msystem->targets[1], 0);
     };
-
     
     std::shared_ptr<axiom::menu_node> node(new axiom::menu_node{
         "",
         {
             axiom::menu_node("Debug Windows", {
-                axiom::menu_node("Lipsum", {}, lipsum_func),
-                axiom::menu_node("Render", {}, render_func),
+                axiom::menu_node("Lipsum", {}, switch_lipsum),
+                axiom::menu_node("Render", {}, switch_render),
             })
         }
     });
@@ -358,6 +412,7 @@ void create_ui() {
     
     ui_system->buffer(vec4(0.0f, 0.0f, 0.0f, 0.0f));
     msystem->targets.push_back(axiom::render_target());
+    msystem->targets.push_back(axiom::render_target());
 
     {
         std::function<void(axiom::render_target&)> render_func = [msystem, ui_system](axiom::render_target& f) {
@@ -422,8 +477,6 @@ void create_ui() {
             bool includes = axiom::includes(ui_system->window->cursor_pos, ivec4(f.position, f.position + f.size));
 
             if(constraint != 0xFFFFFFFF) capture = false;
-
-            std::cout << constraint << "\n";
             
             if(includes) {
                 if(ui_system->window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
@@ -637,6 +690,60 @@ void build_shape(vec2 pos, mat2 ori, float mass, std::vector<axiom::vertex_eleme
     axiom::global_core.ecs->insert_component(entity, collider);
 }
 
+void build_shape(vec2 pos, mat2 ori, std::vector<vec2> positions, std::vector<mat2> orientations, std::vector<float> masses, std::vector<std::vector<axiom::vertex_element>> elements, bool is_static = false) {
+    axiom::color_mesh mesh;
+    axiom::collider2d collider;
+
+    for(int i = 0; i < elements.size(); ++i) {
+        axiom::collision_shape shape;
+        shape.vertices = elements[i];
+        shape.mass = masses[i];
+        collider.shapes.push_back(shape);
+    }
+    collider.is_static = is_static;
+    axiom::physics_system::calculate_inertia(collider);
+
+    //
+
+    std::vector<axiom::color_vertex> perimeter_vertices;
+    std::vector<axiom::color_vertex> area_vertices;
+
+    std::vector<vec2> perimeter;
+    std::vector<vec2> area;
+    axiom::create_mesh(collider, &perimeter, &area);
+
+    for(vec2 v : perimeter) {
+        perimeter_vertices.push_back(axiom::color_vertex(v, vec4(1.0f)));
+    }
+    
+    for(vec2 v : area) {
+        area_vertices.push_back(axiom::color_vertex(v, vec4(1.0f, 1.0f, 1.0f, 0.125f)));
+    }
+
+    mesh.v_lines = std::shared_ptr<axiom::vertices>(new axiom::vertices);
+    mesh.v_lines->init();
+    mesh.v_lines->vertex_buffer_data(perimeter_vertices.data(), perimeter_vertices.size(), sizeof(axiom::color_vertex), GL_STATIC_DRAW);
+    mesh.v_lines->add_vertex_attribute(0, 2, GL_FLOAT, false, sizeof(axiom::color_vertex), 0);
+    mesh.v_lines->add_vertex_attribute(1, 4, GL_FLOAT, false, sizeof(axiom::color_vertex), sizeof(float) * 2);
+    
+    mesh.v_tris = std::shared_ptr<axiom::vertices>(new axiom::vertices);
+    mesh.v_tris->init();
+    mesh.v_tris->vertex_buffer_data(area_vertices.data(), area_vertices.size(), sizeof(axiom::color_vertex), GL_STATIC_DRAW);
+    mesh.v_tris->add_vertex_attribute(0, 2, GL_FLOAT, false, sizeof(axiom::color_vertex), 0);
+    mesh.v_tris->add_vertex_attribute(1, 4, GL_FLOAT, false, sizeof(axiom::color_vertex), sizeof(float) * 2);
+
+    //
+
+    axiom::transform2d tf;
+    tf.position = pos;
+    tf.orientation = ori;
+
+    uint entity = axiom::global_core.ecs->insert_entity();
+    axiom::global_core.ecs->insert_component(entity, tf);
+    axiom::global_core.ecs->insert_component(entity, mesh);
+    axiom::global_core.ecs->insert_component(entity, collider);
+}
+
 int main(int argc, char* argv[]) {
     axiom::window win = axiom::window(ivec2(64, 64), ivec2(512, 512), 6, "axiom test", false);
 
@@ -690,17 +797,55 @@ int main(int argc, char* argv[]) {
     axiom::global_core.ecs->insert_component(camera_entity, tf);
 
     //
+
+    std::vector<vec2> positions;
+    std::vector<mat2> orientations;
+    std::vector<float> masses;
+    std::vector<std::vector<axiom::vertex_element>> elements;
+
+    float inner_radius = 16.0f;
+    float outer_radius = 18.0f;
+    uint segments = 32;
+
+    for(int i = 0; i < segments; ++i) {
+        int a0 = i;
+        int a1 = i + 1;
+
+        float angle_0 = axiom::pi * 2.0f * a0 / segments;
+        float angle_1 = axiom::pi * 2.0f * a1 / segments;
+
+        vec2 dir_0 = vec2(cos(angle_0), sin(angle_0));
+        vec2 dir_1 = vec2(cos(angle_1), sin(angle_1));
+        axiom::vertex_element va = axiom::vertex_element(dir_0 * inner_radius);
+        axiom::vertex_element vb = axiom::vertex_element(dir_1 * inner_radius);
+        axiom::vertex_element vc = axiom::vertex_element(dir_0 * outer_radius);
+        axiom::vertex_element vd = axiom::vertex_element(dir_1 * outer_radius);
+
+        float dist_ab = length(va.center - vb.center);
+        vec2 sep_ab = (va.center - vb.center) / dist_ab;
+        vec2 origin_ab = (va.center + vb.center) * 0.5f;
+        
+        float dist_cd = length(vc.center - vd.center);
+        vec2 sep_cd = (vc.center - vd.center) / dist_cd;
+        vec2 origin_cd = (vc.center + vd.center) * 0.5f;
+
+        axiom::vertex_element ve = axiom::vertex_element(origin_ab, vec2(dist_ab * 0.5f, dist_ab * 0.25f), mat2(sep_ab, vec2(sep_ab.y, -sep_ab.x)));
+        axiom::vertex_element vf = axiom::vertex_element(origin_cd, vec2(dist_cd * 0.5f, dist_cd * 0.25f), mat2(sep_cd, vec2(sep_cd.y, -sep_cd.x)));
+
+        elements.push_back({ve, vf});
+        positions.push_back(vec2(0.0f));
+        orientations.push_back(glm::identity<mat2>());
+        masses.push_back(1.0f);
+    }
     
-    build_shape(vec2(0.0f, 0.0f), glm::identity<mat2>(), 1.0f, {
-        axiom::vertex_element(vec2(-8.0f, -0.5f)),
-        axiom::vertex_element(vec2(8.0f, -0.5f)),
-        axiom::vertex_element(vec2(-8.0f, 0.5f)),
-        axiom::vertex_element(vec2(8.0f, 0.5f)),
-    }, true);
+    build_shape(vec2(0.0f, 0.0f), glm::identity<mat2>(), positions, orientations, masses, elements, true);
 
     build_shape(vec2(-8.0f, 8.0f), glm::identity<mat2>(), 1.0f, {
-        axiom::vertex_element(vec2(0.0f, 1.0f), vec2(1.0f, 0.25f), glm::identity<glm::mat2>()),
-        axiom::vertex_element(vec2(0.0f, -1.0f), vec2(1.0f, 0.5f), glm::identity<glm::mat2>()),
+        axiom::vertex_element(vec2(0.0f, 0.0f), vec2(2.0f, 1.0f), glm::identity<glm::mat2>(), {
+            axiom::clipping_plane(vec2(-1.5f, 0.0f), normalize(vec2(-1.0f, 0.0f)))
+        }),
+        axiom::vertex_element(vec2(2.5f, 0.0f), vec2(0.25f, 0.25f), glm::identity<glm::mat2>()),
+        //axiom::vertex_element(vec2(0.0f, -1.0f), vec2(1.0f, 0.5f), glm::identity<glm::mat2>()),
     });
     
     build_shape(vec2(8.0f, 8.0f), glm::identity<mat2>(), 1.0f, {
