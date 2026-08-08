@@ -22,6 +22,7 @@ struct button_widget : widget {
     capture_data handle_capture();
 
     static ulong insert(vec2 size, vec3 color, std::string str, std::function<void(button_widget&)> callback = [](button_widget& w) {});
+    static ulong insert(vec2 size, vec3 color, vec4 icon, std::function<void(button_widget&)> callback = [](button_widget& w) {});
 };
 
 }

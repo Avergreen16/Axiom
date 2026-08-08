@@ -125,8 +125,6 @@ void message_widget::mesh() {
         std::vector<ui_vertex> select_vertices = text[0]->mesh_select();
         text_vertices.insert(text_vertices.end(), select_vertices.begin(), select_vertices.end());
 
-        //std::cout << select_vertices.size() << "\n";
-
         for(ui_vertex& v : text_vertices) {
             v.pos.x += text[0]->position.x;
             v.pos.y += text[0]->position.y;
@@ -245,9 +243,9 @@ axiom::capture_data message_widget::handle_capture() {
     vec4 hover_range = vec4(position, position + size + vec2(0.0f, buffer.w));
     if(inserted) hover_range.w += ui_system.font_assets[0]->line_height + buffer.y;
 
-    if(includes(ui_system.window->cursor_pos, hover_range)) return {z, true};
+    if(includes(ui_system.window->cursor_pos, hover_range)) return {self, z, true};
 
-    return {z, false};
+    return {self, z, false};
 }
 
 }

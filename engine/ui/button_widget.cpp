@@ -31,8 +31,6 @@ void button_widget::mesh() {
     if(dirty) {
         vec4 view_range = ui_system.get_range(self);
 
-        std::vector<ui_vertex> text_vertices = text[0]->mesh();
-
         dirty = false;
 
         ui_vertex a = {vec3(0.0f, 0.0f, 0.0f), vec2(0.0f, 0.0f), vec4(1.0f)};
@@ -52,7 +50,6 @@ void button_widget::mesh() {
         std::vector<vec4> colors = {
             vec4(base_color.xyz(), 1.0f),
         };
-        vec2 text_pos = position + (size - text[0]->size) * 0.5f;
         
         vertices_before.clear();
 
@@ -72,7 +69,9 @@ void button_widget::mesh() {
             vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
         }
 
-        if(icon.x != 0.0f) {
+        icon_size = icon.zw();
+
+        if(icon.z != 0.0f) {
             std::vector<ui_vertex> ret = {a, b, d, a, d, c};
             vec2 pos = position + (size - icon_size) * 0.5f;
             pos = round(pos);
@@ -88,14 +87,21 @@ void button_widget::mesh() {
 
             vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
         }
-
-        std::vector<ui_vertex> vs = text_vertices;
-        for(ui_vertex& v : vs) {
-            v.pos += vec3(round(text_pos), z);
+        
+        std::vector<ui_vertex> text_vertices;
+        vec2 text_pos;
+        if(text.size()) {
+            text_vertices = text[0]->mesh();
+            text_pos = position + (size - text[0]->size) * 0.5f;
             
-            v.range = view_range;
+            std::vector<ui_vertex> vs = text_vertices;
+            for(ui_vertex& v : vs) {
+                v.pos += vec3(round(text_pos), z);
+                
+                v.range = view_range;
+            }
+            vertices_before.insert(vertices_before.end(), vs.begin(), vs.end());
         }
-        vertices_before.insert(vertices_before.end(), vs.begin(), vs.end());
     }
 }
 
@@ -133,6 +139,32 @@ uint64_t button_widget::insert(vec2 size, vec3 color, std::string str, std::func
     return ui_system.insert_widget(widget);
 }
 
+
+uint64_t button_widget::insert(vec2 size, vec3 color, vec4 icon, std::function<void(button_widget&)> callback) {
+    axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
+
+    button_widget widget;
+
+    widget.icon = icon;
+
+    //
+    
+    widget.layout_mode = axiom::layout_mode::VOID;
+    widget.buffer = ui_system.input_state.active_buffer;
+    widget.position_mode = ui_system.input_state.active_position;
+    widget.callback = callback;
+
+    widget.color = color;
+
+    widget.size = size;
+    widget.min_width = size.x;
+    widget.max_width = size.x;
+    widget.min_height = size.y;
+    widget.max_height = size.y;
+
+    return ui_system.insert_widget(widget);
+}
+
 capture_data button_widget::handle_capture() {
     axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
 
@@ -141,10 +173,10 @@ capture_data button_widget::handle_capture() {
     };
 
     for(vec4 range : ranges) {
-        if(includes(ui_system.window->cursor_pos, range)) return {z, true};
+        if(includes(ui_system.window->cursor_pos, range)) return {self, z, true};
     }
 
-    return {z, false};
+    return {self, z, false};
 }
 
 }

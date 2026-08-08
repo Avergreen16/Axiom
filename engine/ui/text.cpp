@@ -151,7 +151,7 @@ std::vector<ui_vertex> mesh_text(font_asset& f, std::string str, text_data& data
         
         pos.x += word_pos.x;
         word_pos = vec2(0.0f);  
-             
+        
         if(line_len == 0) {
             line_start = word_start;
         }
@@ -472,6 +472,11 @@ void measure_text(font_asset& f, std::string str, text_data& data, uint text_siz
         //
         //
         
+        min_offset = glm::min(min_offset, float(offset));
+        for(ui_vertex& v : line_ret) {
+            v.pos.x += offset;
+        }
+        
         max_x = glm::max(max_x, pos.x);
 
         pos.x = 0;
@@ -514,13 +519,13 @@ void measure_text(font_asset& f, std::string str, text_data& data, uint text_siz
         word_ret.clear();
         
         pos.x += word_pos.x;
-        word_pos = vec2(0.0f);  
-             
+        word_pos = vec2(0.0f);
+        
         if(line_len == 0) {
             line_start = word_start;
         }
         ++line_len;
-        word_len = 0;
+        word_len = 0;  
     };
 
     auto insert_char = [&](uint codepoint) {
@@ -690,10 +695,12 @@ void measure_text(font_asset& f, std::string str, text_data& data, uint text_siz
     insert_word();
     insert_line();
 
-    float offset = (num_lines - 1) * f.line_height;
-
-    for(auto& line : text_lines) line.offset -= min_offset;
+    //
     
+    float offset = (num_lines - 1) * f.line_height;
+    
+    for(auto& line : text_lines) line.offset -= min_offset;
+
     data.size = {max_x, num_lines * f.line_height};
     data.lines = line_data;
     data.wrap_limits = wrap_limits;
@@ -702,7 +709,7 @@ void measure_text(font_asset& f, std::string str, text_data& data, uint text_siz
     if(lines != nullptr) *lines = text_lines;
 }
 
-std::vector<ui_vertex> mesh_text_select(font_asset& f, ivec2 selection, std::string str, text_data& data, uint text_size, uint width = 0xFFFFFFFF, axiom::text_alignment alignment, bool show_debug) {    
+std::vector<ui_vertex> mesh_text_select(font_asset& f, ivec2 selection, std::string str, text_data& data, uint text_size, uint width = 0xFFFFFFFF, axiom::text_alignment alignment, bool show_debug, std::vector<text_line_data>* lines) {    
     data = text_data();
 
     vec2 wrap_limits = vec2(-FLT_MAX, FLT_MAX);
@@ -747,10 +754,13 @@ std::vector<ui_vertex> mesh_text_select(font_asset& f, ivec2 selection, std::str
     
     std::vector<ui_vertex> line_ret;
 
+    
     auto insert_line = [&]() {
-        auto s = line_start;
+        text_line_data s = line_start;
+        line_len = 0;
         
         wrap_limits.x = glm::max(wrap_limits.x, pos.x);
+
         max_width += pos.x;
 
         //
@@ -772,24 +782,18 @@ std::vector<ui_vertex> mesh_text_select(font_asset& f, ivec2 selection, std::str
         ret.insert(ret.end(), line_ret.begin(), line_ret.end());
         
         line_ret.clear();
-
+        
         max_x = glm::max(max_x, pos.x);
 
         pos.x = 0;
         pos.y -= f.line_height;
         ++num_lines;
-        
+
         s.offset = offset;
         text_lines.push_back(s);
     };
 
     auto insert_word = [&]() {
-        if(line_len == 0) {
-            line_start = word_start;
-        }
-        ++line_len;
-        word_len = 0;
-
         //
 
         uint end = pos.x + word_pos.x;
@@ -820,6 +824,12 @@ std::vector<ui_vertex> mesh_text_select(font_asset& f, ivec2 selection, std::str
         
         pos.x += word_pos.x;
         word_pos = vec2(0.0f);  
+        
+        if(line_len == 0) {
+            line_start = word_start;
+        }
+        ++line_len;
+        word_len = 0;
     };
 
     auto insert_selection = [&](ivec2 pos, ivec2 size) {
@@ -1021,6 +1031,8 @@ std::vector<ui_vertex> mesh_text_select(font_asset& f, ivec2 selection, std::str
 
     float offset = (num_lines - 1) * f.line_height;
     
+    for(auto& line : text_lines) line.offset -= min_offset;
+
     for(ui_vertex& v : ret) {
         v.pos.y = v.pos.y + offset;
         v.pos.x -= min_offset;
@@ -1039,6 +1051,8 @@ std::vector<ui_vertex> mesh_text_select(font_asset& f, ivec2 selection, std::str
     data.lines = line_data;
     data.wrap_limits = wrap_limits;
     data.max_width = max_width;
+
+    if(lines != nullptr) *lines = text_lines;
 
     return ret;
 }
@@ -1068,7 +1082,7 @@ std::vector<ui_vertex> text::mesh_select() {
         ivec2 abs_select = ivec2(glm::min(select_range.x, select_range.y), glm::max(select_range.x, select_range.y));
         
         text_data data;
-        select_vertices = axiom::mesh_text_select(*font, abs_select, string, data, 1, width, alignment, false);
+        select_vertices = axiom::mesh_text_select(*font, abs_select, string, data, 1, width, alignment, false, &lines);
         size = data.size;
         wrap_limits = data.wrap_limits;
         max_width = data.max_width;
@@ -1416,6 +1430,8 @@ vec2 compute_cursor_pos(uint32_t index, axiom::text& text) {
 }
 
 ivec2 text::select(vec2 cursor, uint wrap_mode) {
+    //if(!capture) return ivec2(-1);
+
     axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
 
     ivec2 prev_select = select_range;
@@ -1439,6 +1455,8 @@ ivec2 text::select(vec2 cursor, uint wrap_mode) {
 }
 
 void text::select(vec4 cursor_range, bool anchor) {
+    //if(!capture) return;
+
     axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
 
     ivec2 prev_select = select_range;
@@ -1475,6 +1493,8 @@ void text::select(vec4 cursor_range, bool anchor) {
     if(wrap_selection_start) cursor_a.x = 0.0f;
     if(wrap_selection_end) cursor_b.x = size.x + 1;
 
+    //
+
     int ia = compute_cursor_index(cursor_a, *this, true, false).first;
     int ib = compute_cursor_index(cursor_b, *this, false, true).first;
 
@@ -1504,7 +1524,8 @@ void text::select(vec4 cursor_range, bool anchor) {
 }
 
 bool text::collide(vec2 cursor) {
-    int ii = compute_cursor_index(cursor - position, *this, false, false, false).first;
+    int ii = -1;
+    ii = compute_cursor_index(cursor - position, *this, false, false, false).first;
 
     return ii != -1;
 }
@@ -1525,7 +1546,19 @@ void text::call() {
 
     axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
 
-    if(collide(ui_system.window->cursor_pos) && includes(ui_system.window->cursor_pos, range)) ui_system.cursor.cursor_mode = axiom::cursor_mode::TEXT;
+    if(collide(ui_system.window->cursor_pos) && includes(ui_system.window->cursor_pos, range)) {
+        ulong current = parent;
+        bool hover = false;
+        while(true) {
+            if(current == ui_system.hover_capture) {
+                hover = true;
+                break;
+            } else if(current == NULL_WIDGET) break;
+            current = ui_system.widgets[current]->parent;
+        }
+
+        if(hover) ui_system.cursor.cursor_mode = axiom::cursor_mode::TEXT;
+    }
 
     if(editable) {
         ivec3 prev = ivec3{select_range, select_line};

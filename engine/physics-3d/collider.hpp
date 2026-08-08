@@ -6,19 +6,22 @@
 
 namespace axiom {
 
+/*
 struct clipping_plane2d {
     vec2 origin;
     vec2 normal;
 };
+*/
 
-struct vertex_element2d {
-    vec2 center;
-    vec2 radii = vec2(0.0f);
-    mat2 orientation = glm::identity<mat2>();
+struct vertex_element3d {
+    vec3 center;
+    vec3 radii = vec3(0.0f);
+    mat3 orientation = glm::identity<mat3>();
 
-    std::vector<clipping_plane2d> planes;
+    //std::vector<clipping_plane2d> planes;
 };
 
+/*
 struct bounding_box2d {
     vec2 minimum = vec2(FLT_MAX, FLT_MAX);
     vec2 maximum = vec2(-FLT_MAX, -FLT_MAX);
@@ -79,8 +82,9 @@ struct collider2d {
     void create_bounding_box();
     void create_BVH();
 };
+*/
 
-vec2 support(vec2 direction, vec2 center, mat2 orientation, vec2 radii);
-vec2 support(vec2 direction, std::vector<vertex_element2d> ellipsoids);
+vec3 support(vec3 direction, vec3 center, mat3 orientation, vec3 radii);
+vec3 support(vec3 direction, std::vector<vertex_element3d> ellipsoids);
 
 }

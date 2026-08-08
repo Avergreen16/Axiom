@@ -5,8 +5,13 @@ add_library(AxiomMath
     octree.cpp 
     random.cpp
     simd.cpp
+    3d.cpp
 )
 
+target_include_directories(AxiomMath
+    PUBLIC
+        ${CMAKE_SOURCE_DIR}/engine
+)
 
 target_link_libraries(AxiomMath
     PUBLIC

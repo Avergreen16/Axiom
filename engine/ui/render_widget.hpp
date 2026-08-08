@@ -8,6 +8,7 @@ struct render_target;
 
 struct render_widget : widget {
     axiom::render_target* target;
+    std::function<void(axiom::render_widget*, axiom::render_target*)> callback = [](axiom::render_widget*, axiom::render_target*) {};
     uint texture;
 
     void mesh();
@@ -15,7 +16,7 @@ struct render_widget : widget {
     void handle_inputs();
     axiom::capture_data handle_capture();
 
-    static ulong insert(axiom::render_target* target, uint texture);
+    static ulong insert(axiom::render_target* target, uint texture, std::function<void(axiom::render_widget*, axiom::render_target*)> callback = [](axiom::render_widget*, axiom::render_target*) {});
 };
 
 }

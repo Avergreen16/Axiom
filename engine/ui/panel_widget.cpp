@@ -107,9 +107,9 @@ capture_data panel_widget::handle_capture() {
         vec4(position, position + size)
     };
 
-    if(includes(ui_system.window->cursor_pos, ranges[0])) return {z, true, true};
+    if(includes(ui_system.window->cursor_pos, ranges[0])) return {self, z, true, true};
 
-    return {z, false};
+    return {self, z, false};
 }
 
 }

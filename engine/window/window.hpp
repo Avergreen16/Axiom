@@ -75,6 +75,7 @@ class window {
     
     ivec2 prev_pos;
     ivec2 prev_size;
+    ivec2 prev_cursor_pos = ivec2(0);
 
     bool dragging = false;
     

@@ -67,4 +67,21 @@ void match_widget::init() {
     before.push_back(c);
 }
 
+capture_data match_widget::handle_capture() {
+    axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
+
+    auto& parent_widget = ui_system.widgets[parent];
+    vec4 range = vec4(parent_widget->position, parent_widget->size);
+
+    std::vector<vec4> ranges = {
+        vec4(range.xy(), range.xy() + range.zw())
+    };
+
+    if(includes(ui_system.window->cursor_pos, ranges[0])) {
+        return {parent, z, true, true};
+    }
+
+    return {parent, z, false};
+}
+
 }

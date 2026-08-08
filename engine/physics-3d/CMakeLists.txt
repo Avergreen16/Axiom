@@ -1,21 +1,23 @@
-add_library(AxiomRender
-    wrapper.cpp
-    target.cpp
+
+add_library(AxiomPhysics3D
+    collider.cpp
     mesh.cpp
+    #physics.cpp
 )
 
-target_include_directories(AxiomRender
+target_include_directories(AxiomPhysics3D
     PUBLIC
         ${CMAKE_SOURCE_DIR}/engine
         ${CMAKE_SOURCE_DIR}
 )
 
-target_link_libraries(AxiomRender
+target_link_libraries(AxiomPhysics3D
     PUBLIC
-        glad
-        glfw
-        glm
-    
+        AxiomMath
+        AxiomScene
+        AxiomECS
+        AxiomUtilities
+
         dwmapi
         gdi32
         user32
@@ -28,12 +30,8 @@ target_link_libraries(AxiomRender
         atomic
 )
 
-target_link_libraries(AxiomRender
-    PUBLIC
-        AxiomAssets
-)
-
-target_compile_options(AxiomRender PRIVATE
+target_compile_options(AxiomPhysics3D PRIVATE
+    -g
     -O3
     -fpermissive
     -march=native

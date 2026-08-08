@@ -26,6 +26,35 @@ auto get_date_time(ulong timestamp) {
     return local;
 }
 
+//
+
+void profiler::insert(std::string name, ulong start, ulong end) {
+    profiler_entry entry;
+    entry.name = name;
+    entry.start = start;
+    entry.end = end;
+
+    current_frame.entries.push_back(entry);
+}
+
+void profiler::start_frame() {
+    frame current;
+    current.start = axiom::get_timestamp();
+    
+    current_frame = current;
+}
+
+void profiler::end_frame() {
+    current_frame.end = axiom::get_timestamp();
+    frames.push_back(current_frame);
+
+    while(frames.size() > num_frames) frames.pop_front();
+}
+
+void profiler::clear() {
+    frames.clear();
+}
+
 /*
 std::string m;
 switch(month) {
@@ -366,5 +395,7 @@ double Time::get_elapsed_time(bool overwrite) {
 
     return double(duration.count()) * std::chrono::steady_clock::period::num / std::chrono::steady_clock::period::den;
 }
+
+profiler prof;
 
 }

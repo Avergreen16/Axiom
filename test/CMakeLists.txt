@@ -23,6 +23,7 @@ target_link_libraries(Game
         AxiomUI
         AxiomScene
         AxiomPhysics2D
+        AxiomPhysics3D
         
         glm
         nlohmann_json

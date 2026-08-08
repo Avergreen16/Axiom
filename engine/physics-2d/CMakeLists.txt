@@ -16,6 +16,7 @@ target_link_libraries(AxiomPhysics2D
         AxiomMath
         AxiomScene
         AxiomECS
+        AxiomUtilities
 
         dwmapi
         gdi32

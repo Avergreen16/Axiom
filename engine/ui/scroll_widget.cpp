@@ -407,10 +407,10 @@ capture_data scroll_widget::handle_capture() {
             vec4(position + vec2(size.x - scroll_width, 0.0f), position + size),
         };
 
-        if(includes(ui_system.window->cursor_pos, ranges[0])) return {z, true, false, true};
+        if(includes(ui_system.window->cursor_pos, ranges[0])) return {self, z, true, false, true};
     }
 
-    return {z, false};
+    return {self, z, false};
 }
 
 }

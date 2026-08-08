@@ -123,11 +123,12 @@ void text_widget::init() {
     widget_constraint c;
     c.func = [this, ui_system]() {
         //text[0]->click_range = ivec4(position, position + size);
+
         if(size.x <= text[0]->wrap_limits.x || size.x >= text[0]->wrap_limits.y || size.x == 0.0f) {
             text[0]->size.x = size.x;
             text[0]->width = size.x;
             //text[0]->dirty = true;
-            
+
             text[0]->measure();
 
             size.y = text[0]->size.y;

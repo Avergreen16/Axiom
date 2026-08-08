@@ -65,7 +65,7 @@ extern std::vector<text_line_data> line_data;
 
 std::vector<ui_vertex> create_char(glyph_data& glyph);
 std::vector<ui_vertex> mesh_text(font_asset& f, std::string text, text_data& data, uint text_size, uint width = 0xFFFFFFFF, axiom::text_alignment alignment = axiom::text_alignment::LEFT, bool show_debug = false, std::vector<text_line_data>* lines = nullptr);
-std::vector<ui_vertex> mesh_text_select(font_asset& f, ivec2 selection, std::string text, text_data& data, uint text_size, uint width = 0xFFFFFFFF, axiom::text_alignment alignment = axiom::text_alignment::LEFT, bool show_debug = false);
+std::vector<ui_vertex> mesh_text_select(font_asset& f, ivec2 selection, std::string text, text_data& data, uint text_size, uint width = 0xFFFFFFFF, axiom::text_alignment alignment = axiom::text_alignment::LEFT, bool show_debug = false, std::vector<text_line_data>* lines = nullptr);
 
 //std::vector<float> compute_text_bounds(font_asset& f, std::string text, uint text_size, uint width, bool wrap, ALIGNMENT alignment);
 
@@ -85,6 +85,8 @@ class text {
     vec2 wrap_limits;
     float max_width;
     float z = 0.0f;
+
+    ulong parent = NULL_WIDGET;
 
     bool selectable = true;
     bool editable = false;

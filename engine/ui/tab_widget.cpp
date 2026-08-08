@@ -214,13 +214,13 @@ capture_data tab_widget::handle_capture() {
         vec4 range = vec4(position + vec2(pos, size.y - tab_height), tab.width, tab_height);
 
         if(includes(ui_system.window->cursor_pos, vec4(range.xy(), range.xy() + range.zw()))) {
-            return {z, true};
+            return {self, z, true};
         }
 
         pos += tab.width + tab_sep;
     }
 
-    return {z, false};
+    return {self, z, false};
 }
 
 }

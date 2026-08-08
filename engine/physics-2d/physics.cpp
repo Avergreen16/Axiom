@@ -14,12 +14,12 @@ physics_system::physics_system() {
     collectors.push_back(collector{s, false});
 }
 
-vec2 physics_system::transform_vertices(transform2d& t, collision_shape& c, std::vector<vertex_element>& vertices, vec2 origin) {
+vec2 physics_system::transform_vertices(transform2d& t, collision_shape2d& c, std::vector<vertex_element2d>& vertices, vec2 origin) {
     vec2 center = vec2(0.0f);
 
     vec2 o = t.position - origin;
 
-    for(vertex_element vertex : c.vertices) {
+    for(vertex_element2d vertex : c.vertices) {
         vertex.center = t.orientation * (c.orientation * vertex.center + c.position) + o;
         vertex.orientation = t.orientation * vertex.orientation;
 
@@ -321,8 +321,8 @@ std::vector<collision_data> physics_system::collision(collision_input& input) {
                 uint32_t a = pair & 0xFFFFFFFF;
                 uint32_t b = pair >> 32;
 
-                collision_shape& sa = input.ca->shapes[a];
-                collision_shape& sb = input.cb->shapes[b];
+                collision_shape2d& sa = input.ca->shapes[a];
+                collision_shape2d& sb = input.cb->shapes[b];
 
                 std::vector<collision_data> r = collision(*input.ta, sa, *input.tb, sb, tag);
                 ret.insert(ret.end(), r.begin(), r.end());
@@ -331,11 +331,11 @@ std::vector<collision_data> physics_system::collision(collision_input& input) {
             std::vector<return_tag> tags;
             std::vector<std::vector<collision_data>> data;
 
-            for(collision_shape& sb : input.cb->shapes) {
+            for(collision_shape2d& sb : input.cb->shapes) {
                 std::vector<uint32_t> shapes = traverse_BVH(*input.ta, input.ca->BVH, *input.tb, sb.bounding_box);
 
                 for(uint32_t shape : shapes) {
-                    collision_shape& sa = input.ca->shapes[shape];
+                    collision_shape2d& sa = input.ca->shapes[shape];
 
                     std::vector<collision_data> r = collision(*input.ta, sa, *input.tb, sb, tag);
 
@@ -375,11 +375,11 @@ std::vector<collision_data> physics_system::collision(collision_input& input) {
         std::vector<return_tag> tags;
         std::vector<std::vector<collision_data>> data;
 
-        for(collision_shape& sa : input.ca->shapes) {
+        for(collision_shape2d& sa : input.ca->shapes) {
             std::vector<uint32_t> shapes = traverse_BVH(*input.tb, input.cb->BVH, *input.ta, sa.bounding_box);
 
             for(uint32_t shape : shapes) {
-                collision_shape& sb = input.cb->shapes[shape];
+                collision_shape2d& sb = input.cb->shapes[shape];
 
                 std::vector<collision_data> r = collision(*input.ta, sa, *input.tb, sb, tag);
 
@@ -416,8 +416,8 @@ std::vector<collision_data> physics_system::collision(collision_input& input) {
             }
         }
     } else {
-        for(collision_shape& sa : input.ca->shapes) {
-            for(collision_shape& sb : input.cb->shapes) {
+        for(collision_shape2d& sa : input.ca->shapes) {
+            for(collision_shape2d& sb : input.cb->shapes) {
                 std::vector<collision_data> r = collision(*input.ta, sa, *input.tb, sb, tag);
 
                 ret.insert(ret.end(), r.begin(), r.end());
@@ -428,11 +428,11 @@ std::vector<collision_data> physics_system::collision(collision_input& input) {
     return ret;
 }
 
-std::vector<collision_data> physics_system::collision(transform2d& ta, collision_shape& ca, transform2d& tb, collision_shape& cb, return_tag& tag) {
+std::vector<collision_data> physics_system::collision(transform2d& ta, collision_shape2d& ca, transform2d& tb, collision_shape2d& cb, return_tag& tag) {
     std::vector<collision_data> data;
 
-    std::vector<vertex_element> a_vertices;
-    std::vector<vertex_element> b_vertices;
+    std::vector<vertex_element2d> a_vertices;
+    std::vector<vertex_element2d> b_vertices;
 
     float limit = 0.00001;
 
@@ -573,7 +573,7 @@ std::vector<collision_data> physics_system::collision(transform2d& ta, collision
                         float margin = 0.01f;
 
                         for(int i = 0; i < a_vertices.size(); ++i) {
-                            vertex_element& v = a_vertices[i];
+                            vertex_element2d& v = a_vertices[i];
                             float d = glm::dot(v.center, sideways);
 
                             bool c = glm::dot(v.center - pa, -collision_normal) > -margin;
@@ -585,7 +585,7 @@ std::vector<collision_data> physics_system::collision(transform2d& ta, collision
                         }
 
                         for(int i = 0; i < b_vertices.size(); ++i) {
-                            vertex_element& v = b_vertices[i];
+                            vertex_element2d& v = b_vertices[i];
                             float d = glm::dot(v.center, sideways);
 
                             bool c = glm::dot(v.center - pb, collision_normal) > -margin;
@@ -652,12 +652,12 @@ std::vector<collision_data> physics_system::collision(transform2d& ta, collision
     }
 }
 
-bool physics_system::collision_point(std::vector<vertex_element> vertices, vec2 point) {
-    std::vector<vertex_element> a_vertices;
+bool physics_system::collision_point(std::vector<vertex_element2d> vertices, vec2 point) {
+    std::vector<vertex_element2d> a_vertices;
 
     float limit = 0.00001;
 
-    for(vertex_element v : vertices) {
+    for(vertex_element2d v : vertices) {
 
         v.center -= point;
         a_vertices.push_back(v);
@@ -768,8 +768,8 @@ void insertion_sort(Iter begin, Iter end, Compare comp) {
     }
 }
 
-bounding_box physics_system::transform(transform2d& t, bounding_box& b) {
-    bounding_box ret;
+bounding_box2d physics_system::transform(transform2d& t, bounding_box2d& b) {
+    bounding_box2d ret;
 
     vec2 center = (b.minimum + b.maximum) * 0.5f;
     vec2 r = b.maximum - center;
@@ -786,17 +786,17 @@ bounding_box physics_system::transform(transform2d& t, bounding_box& b) {
     return ret;
 }
 
-bool physics_system::collision(transform2d& ta, bounding_box& a, transform2d& tb, bounding_box& b) {
+bool physics_system::collision(transform2d& ta, bounding_box2d& a, transform2d& tb, bounding_box2d& b) {
     transform2d t;
     t.position = transpose(ta.orientation) * (tb.position - ta.position);
     t.orientation = transpose(ta.orientation) * tb.orientation;
 
-    bounding_box nb = transform(t, b);
+    bounding_box2d nb = transform(t, b);
 
     return collision(a, nb);
 }
 
-bool physics_system::collision(bounding_box& a, bounding_box& b) {
+bool physics_system::collision(bounding_box2d& a, bounding_box2d& b) {
     bool bx = a.minimum.x < b.maximum.x && b.minimum.x < a.maximum.x;
     bool by = a.minimum.y < b.maximum.y && b.minimum.y < a.maximum.y;
 
@@ -805,7 +805,7 @@ bool physics_system::collision(bounding_box& a, bounding_box& b) {
 
 struct spacial_data {
     uint32_t i;
-    bounding_box bb;
+    bounding_box2d bb;
 };
 
 std::vector<uint64_t> physics_system::broad_phase(std::vector<input_data>& input) {
@@ -818,7 +818,7 @@ std::vector<uint64_t> physics_system::broad_phase(std::vector<input_data>& input
     std::array<std::unordered_map<ivec2, std::vector<spacial_data>, hash_coord>, max_i> spacial;
 
     auto insert_into = [&](input_data& ii) {
-        bounding_box bb = transform(*ii.transform, ii.bounding_box);
+        bounding_box2d bb = transform(*ii.transform, ii.bounding_box);
 
         vec2 size = bb.maximum - bb.minimum;
 
@@ -910,7 +910,7 @@ std::vector<uint64_t> physics_system::broad_phase(std::vector<input_data>& input
     return std::vector<uint64_t>(set.begin(), set.end());
 }
 
-std::vector<uint32_t> physics_system::traverse_BVH(transform2d& ta, std::vector<BVH_node>& ca, transform2d& tb, bounding_box& bb) {
+std::vector<uint32_t> physics_system::traverse_BVH(transform2d& ta, std::vector<BVH_node2d>& ca, transform2d& tb, bounding_box2d& bb) {
     std::vector<uint32_t> front_buffer = {0};
     std::vector<uint32_t> back_buffer;
     std::vector<uint32_t> shapes;
@@ -919,7 +919,7 @@ std::vector<uint32_t> physics_system::traverse_BVH(transform2d& ta, std::vector<
         if(front_buffer.size() == 0) break;
 
         for(uint32_t i : front_buffer) {
-            BVH_node& node = ca[i];
+            BVH_node2d& node = ca[i];
 
             if(physics_system::collision(ta, node.bounding_box, tb, bb)) {
                 if(node.children.size() > 1) {
@@ -938,7 +938,7 @@ std::vector<uint32_t> physics_system::traverse_BVH(transform2d& ta, std::vector<
 
 uint32_t depth = 0;
 
-std::vector<uint64_t> physics_system::traverse_BVH(transform2d& ta, std::vector<BVH_node>& ca, transform2d& tb, std::vector<BVH_node>& cb) {
+std::vector<uint64_t> physics_system::traverse_BVH(transform2d& ta, std::vector<BVH_node2d>& ca, transform2d& tb, std::vector<BVH_node2d>& cb) {
     std::vector<uint64_t> front_buffer = {0};
     std::vector<uint64_t> back_buffer;
     std::vector<uint64_t> shape_pairs;
@@ -950,8 +950,8 @@ std::vector<uint64_t> physics_system::traverse_BVH(transform2d& ta, std::vector<
             uint32_t ai = i & 0xFFFFFFFF;
             uint32_t bi = i >> 32;
 
-            BVH_node& node_a = ca[ai];
-            BVH_node& node_b = cb[bi];
+            BVH_node2d& node_a = ca[ai];
+            BVH_node2d& node_b = cb[bi];
 
             if(physics_system::collision(ta, node_a.bounding_box, tb, node_b.bounding_box)) {
                 if(node_a.children.size() == 1) {
@@ -981,6 +981,8 @@ std::vector<uint64_t> physics_system::traverse_BVH(transform2d& ta, std::vector<
 }
 
 void physics_system::physics_loop() {
+    PROFILE_SCOPE("physics");
+    
     std::vector<input_data> input;
 
     for(uint32_t a : collectors[0].entities) {
@@ -1603,7 +1605,7 @@ vec2 angular_to_linear(vec2 pos, float angular_velocity) {
     return vec2(pos.y, -pos.x) * angular_velocity;
 }
 
-vec2 physics_system::calculate_inertia(collision_shape& c) {
+vec2 physics_system::calculate_inertia(collision_shape2d& c) {
     ivec2 num_points = ivec2(16);
 
     transform2d temp;
@@ -1615,7 +1617,7 @@ vec2 physics_system::calculate_inertia(collision_shape& c) {
 
     //
 
-    axiom::bounding_box bb;
+    axiom::bounding_box2d bb;
     bb.minimum = vec2(FLT_MAX, FLT_MAX);
     bb.maximum = vec2(-FLT_MAX, -FLT_MAX);
         
@@ -1675,7 +1677,7 @@ vec2 physics_system::calculate_inertia(collider2d& c) {
     c.mass = 0.0f;
     c.inertia = 0.0f;
 
-    for(collision_shape& cs : c.shapes) {
+    for(collision_shape2d& cs : c.shapes) {
         vec2 com = calculate_inertia(cs);
 
         center += com * cs.mass;
@@ -1887,11 +1889,11 @@ vec2 get_gravity(vec2 pos) {
     return vec2(0.0f, 1.0f);
 }
 
-std::vector<collision_data> physics_system::collide(transform2d t, std::vector<vertex_element> vs) {
+std::vector<collision_data> physics_system::collide(transform2d t, std::vector<vertex_element2d> vs) {
     std::vector<collision_data> ret;
 
     collider2d c;
-    collision_shape cs;
+    collision_shape2d cs;
     cs.vertices = vs;
     c.shapes.push_back(cs);
     c.create_bounding_box();

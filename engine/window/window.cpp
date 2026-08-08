@@ -266,17 +266,23 @@ void window::make_maximized() {
 
 void window::hide_cursor() {
     glfwSetInputMode(window_handle, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+    if(cursor_disabled) cursor_pos = prev_cursor_pos;
+
     cursor_hidden = true;
     cursor_disabled = false;
 }
 
 void window::disable_cursor() {
     glfwSetInputMode(window_handle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    if(!cursor_disabled) prev_cursor_pos = cursor_pos;
+    
     cursor_disabled = true;
 }
 
 void window::show_cursor() {
     glfwSetInputMode(window_handle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    if(cursor_disabled) cursor_pos = prev_cursor_pos;
+    
     cursor_hidden = false;
     cursor_disabled = false;
 }

@@ -4,7 +4,7 @@
 
 namespace axiom {
     
-void create_mesh(std::vector<vertex_element> vertices, std::vector<vec2>* perimeter, std::vector<vec2>* area = nullptr);
+void create_mesh(std::vector<vertex_element2d> vertices, std::vector<vec2>* perimeter, std::vector<vec2>* area = nullptr);
 void create_mesh(axiom::collider2d& shape, std::vector<vec2>* perimeter, std::vector<vec2>* area = nullptr);
 
 }

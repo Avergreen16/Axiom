@@ -229,13 +229,9 @@ void ui_system::call() {
     }
     cursor_pos = window->cursor_pos;
 
-    for(auto& t : text) {
-        t->call();
-    }
-
     // mesh
 
-    
+    text_cursor = false;
     if(text_capture != NULL_WIDGET) {
         std::set<uint64_t> c;
         uint32_t n_focused = 0;
@@ -271,6 +267,10 @@ void ui_system::call() {
             if(c.contains(key)) {
                 for(auto& text : widget->text) {
                     text->select(vec4(cursor_anchor, cursor_pos), window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT));
+
+                    if(text->select_range.x != -1) {
+                        text_cursor = true;
+                    }
                     //if(text->focused) ++n_focused;
                 }
             } else {
@@ -284,6 +284,10 @@ void ui_system::call() {
         
         if(n_focused) isolate_selection = true;
         else isolate_selection = false;
+    }
+    
+    for(auto& t : text) {
+        t->call();
     }
 
     //
@@ -350,222 +354,6 @@ void ui_system::call() {
 
         text.erase(text.begin() + i);
     }
-
-    /*
-
-    for(auto& [key, widget] : widgets) {
-        for(Text& text : widget->texts) {
-            if(text.dirty) {
-                text.dirty = false;
-
-                text.refresh();
-                text.mesh();
-            }
-        }
-    }
-
-
-    
-    text_selected.clear();
-    for(auto& [key, widget] : widgets) {
-        uint i = 0;
-        for(Text& text : widget->texts) {
-            if(text.select_range.x != -1 || text.select_range.y != -1) text_selected.push_back({widget->self, i});
-            ++i;
-            
-            if(text.select_range.x != -1) {
-                if(copy) {
-                    Copy_String str;
-                    str.str = text.retrieve();
-                    str.y = text.position.y + text.size.y;
-
-                    copy_strings.push_back(str);
-                }
-            }
-        }
-    }
-
-    if(copy) {
-        std::sort(copy_strings.begin(), copy_strings.end(), 
-            [](const Copy_String& a, const Copy_String& b) {
-                return a.y > b.y;
-            }
-        );
-
-        std::string full_copy;
-        int i = 0;
-        for(auto& cs : copy_strings) {
-            full_copy += cs.str;
-            if(i != copy_strings.size() - 1) full_copy += "\n";
-            ++i;
-        }
-
-        if(full_copy.size()) glfwSetClipboardString(window->window.window, full_copy.c_str());
-    }
-
-    if(text_selected.size() == 1) {
-        auto& p = text_selected[0];
-
-        auto& widget = widgets[p.first];
-        Text& text = widget->texts[p.second];
-
-        if(text.editable && text.focused) {
-            std::string input = window->char_delta;
-            if(paste) {
-                const char* text = glfwGetClipboardString(window->window.window);
-                if(text) {
-                    input = text;
-                }
-            }
-
-            auto wstring = convert_string(text.string);
-
-            if(input.size()) {
-                int minv = min(text.select_range.x, text.select_range.y);
-                int maxv = max(text.select_range.x, text.select_range.y);
-                
-                if(text.select_range.x != text.select_range.y) {
-                    text.string.erase(text.string.begin() + minv, text.string.begin() + maxv);
-                    text.select_range.x = minv;
-                    text.select_range.y = minv;
-                }
-
-                text.string.insert(text.string.begin() + minv, input.begin(), input.end());
-                text.select_range += input.size();
-
-                text.dirty = true;
-            }
-
-            if(window->pressed_buttons.contains(axiom::input_code::KEY_BACKSPACE) || window->repeat_buttons.contains(axiom::input_code::KEY_BACKSPACE)) {
-                int minv = min(text.select_range.x, text.select_range.y);
-                int maxv = max(text.select_range.x, text.select_range.y);
-
-                if(text.select_range.x != text.select_range.y) {
-                    text.string.erase(text.string.begin() + minv, text.string.begin() + maxv);
-                    text.select_range.x = minv;
-                    text.select_range.y = minv;
-
-                    text.dirty = true;
-                    text.start_cursor = window->current_time;
-                } else {
-                    if(text.select_range.x > 0) {
-                        text.string.erase(text.string.begin() + (text.select_range.x - 1), text.string.begin() + text.select_range.x);
-                        text.select_range -= 1;
-
-                        text.dirty = true;
-                        text.start_cursor = window->current_time;
-                    }
-                }
-            }
-
-            if(window->pressed_buttons.contains(axiom::input_code::KEY_LEFT) || window->repeat_buttons.contains(axiom::input_code::KEY_LEFT)) {
-                if(window->input_map[axiom::input_code::KEY_LEFT_SHIFT] || window->input_map[axiom::input_code::KEY_RIGHT_SHIFT]) {
-                    if(text.select_range.y > 0) {
-                        --text.select_range.y;
-
-                        text.dirty = true;
-                        text.start_cursor = window->current_time;
-                    }
-                } else {
-                    if(text.select_range.x != text.select_range.y) {
-                        text.select_range.y = text.select_range.x;
-
-                        text.dirty = true;
-                        text.start_cursor = window->current_time;
-                    } else if(text.select_range.x > 0) {
-                        text.select_range -= 1.0f;
-
-                        text.dirty = true;
-                        text.start_cursor = window->current_time;
-                    }
-                }
-            }
-            if(window->pressed_buttons.contains(axiom::input_code::KEY_RIGHT) || window->repeat_buttons.contains(axiom::input_code::KEY_RIGHT)) {
-                if(window->input_map[axiom::input_code::KEY_LEFT_SHIFT] || window->input_map[axiom::input_code::KEY_RIGHT_SHIFT]) {
-                    if(text.select_range.y < wstring.size()) {
-                        ++text.select_range.y;
-
-                        text.dirty = true;
-                        text.start_cursor = window->current_time;
-                    }
-                } else {
-                    if(text.select_range.x != text.select_range.y) {
-                        text.select_range.x = text.select_range.y;
-
-                        text.dirty = true;
-                        text.start_cursor = window->current_time;
-                    } else if(text.select_range.x < wstring.size()) {
-                        text.select_range += 1;
-
-                        text.dirty = true;
-                        text.start_cursor = window->current_time;
-                    }
-                }
-            }
-        }
-    }
-    
-    if(window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
-        cursor_anchor = window->cursor_pos;
-    }
-    
-    if(text_capture != NULL_WIDGET) {
-        std::set<ulong> c;
-        uint n_focused = 0;
-        
-        std::vector<ulong> path = {text_capture};
-        std::vector<ulong> child_ids = {0};
-        //
-
-        cursor_pos = window->cursor_pos;
-        
-        while(true) {
-            if (path.size() == 0) break;
-
-            auto& widget = widgets[path.back()];
-
-            if(child_ids.back() == 0) {
-                c.insert(path.back());
-            }
-
-            if (widget->children.size() <= child_ids.back()) {
-                // go up
-                path.pop_back();
-                child_ids.pop_back();
-            } else {
-                path.push_back(widget->children[child_ids.back()]);
-
-                ++child_ids.back();
-                child_ids.push_back(0);
-            }
-        }
-
-        for(auto& [key, widget] : widgets) {
-            if(c.contains(key)) {
-                for(Text& text : widget->texts) {
-                    text.select(vec4(cursor_anchor, cursor_pos));
-                    if(text.focused) ++n_focused;
-                }
-            } else {
-                for(Text& text : widget->texts) {
-                    text.select(vec4(-1));
-                }
-            }
-        }
-        
-        if(n_focused) isolate_selection = true;
-        else isolate_selection = false;
-    }
-    
-    
-    if(window->pressed_buttons.contains(axiom::input_code::KEY_ENTER) || window->pressed_buttons.contains(axiom::input_code::KEY_ESCAPE)) {
-        for(auto& [key, widget] : widgets) {
-            for(Text& text : widget->texts) {
-                text.select(vec4(-1));
-            }
-        }
-    }
-    */
 }
 
 //
@@ -653,39 +441,71 @@ void ui_system::handle_capture() {
     capture_global.z = 0.0f;
     capture_data capture_text;
     capture_text.z = 0.0f;
-
-    ulong w = NULL_WIDGET;
-    ulong wt = NULL_WIDGET;
+    
+    //
 
     std::vector<ulong> roots;
-    for(auto& [key, widget] : widgets) {
-        capture_data data = widget->handle_capture();
+    for(auto& [key, widget] : widgets) if(widget->parent == NULL_WIDGET) roots.push_back(key);
 
-        if(data.capture) {
-            if(capture_global.z <= data.z) {
-                w = key;
-                capture_global = data;
+    for(ulong root : roots) {
+        std::vector<ulong> path = {root};
+        std::vector<ulong> child_ids = {0};
+
+        while(true) {
+            if (path.size() == 0) break;
+
+            auto& widget = widgets[path.back()];
+
+            if(child_ids.back() == 0) {
+                capture_data data = widget->handle_capture();
+
+                if(data.capture) {
+                    if(capture_global.z <= data.z) {
+                        capture_global = data;
+                    }
+
+                    if(data.text_capture || data.overwrite) {
+                        if(capture_text.z <= data.z) {
+                            capture_text = data;
+                        }
+                    }
+                }
             }
 
-            if(data.text_capture || data.overwrite) {
-                if(capture_text.z <= data.z) {
-                    wt = key;
-                    capture_text = data;
-                }
+            if (widget->children.size() <= child_ids.back()) {
+                vertices.insert(vertices.end(), widget->vertices_after.begin(), widget->vertices_after.end());
+
+                // go up
+                path.pop_back();
+                child_ids.pop_back();
+            } else {
+                path.push_back(widget->children[child_ids.back()]);
+
+                ++child_ids.back();
+                child_ids.push_back(0);
             }
         }
     }
     
-    hover_capture = w;
+    hover_capture = capture_global.key;
 
     if(window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
         click_capture = hover_capture;
-        if(capture_text.text_capture) text_capture = wt;
+        if(capture_text.text_capture) text_capture = capture_text.key;
     }
     if(!window->input_map[axiom::input_code::MOUSE_LEFT]) {
         click_capture = NULL_WIDGET;
         text_capture = NULL_WIDGET;
     }
 }
+
+void ui_system::hide_cursor() {
+    window->disable_cursor();
+}
+
+void ui_system::show_cursor() {
+    window->hide_cursor();
+}
+
 
 }

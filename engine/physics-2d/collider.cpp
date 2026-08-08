@@ -8,7 +8,7 @@ void collider2d::create_bounding_box() {
     bounding_box.minimum = vec2(FLT_MAX, FLT_MAX);
     bounding_box.maximum = vec2(-FLT_MAX, -FLT_MAX);
 
-    for(collision_shape& cs : shapes) {
+    for(collision_shape2d& cs : shapes) {
         cs.bounding_box.minimum = vec2(FLT_MAX, FLT_MAX);
         cs.bounding_box.maximum = vec2(-FLT_MAX, -FLT_MAX);
         
@@ -28,7 +28,7 @@ void collider2d::create_bounding_box() {
 void collider2d::create_BVH() {
     create_bounding_box();
 
-    BVH_node root;
+    BVH_node2d root;
     for(int i = 0; i < shapes.size(); ++i) root.children.push_back(i);
 
     BVH.push_back(root);
@@ -36,13 +36,13 @@ void collider2d::create_BVH() {
     uint32_t ca;
     uint32_t cb;
 
-    auto split = [&](BVH_node& node) {
+    auto split = [&](BVH_node2d& node) {
         uint32_t index = 0;
 
-        axiom::bounding_box centers;
+        axiom::bounding_box2d centers;
 
         for(int i : node.children) {
-            collision_shape& shape = shapes[i];
+            collision_shape2d& shape = shapes[i];
             vec2 center = (shape.bounding_box.minimum + shape.bounding_box.maximum) * 0.5f;
 
             node.bounding_box.minimum = glm::min(node.bounding_box.minimum, shape.bounding_box.minimum);
@@ -56,14 +56,14 @@ void collider2d::create_BVH() {
             vec2 size = centers.maximum - centers.minimum;
             vec2 center = (centers.minimum + centers.maximum) * 0.5f;
 
-            BVH_node child_a;
-            BVH_node child_b;
+            BVH_node2d child_a;
+            BVH_node2d child_b;
 
             int ii = 0;
             if(size.y > size.x) ii = 1;
 
             for(int i : node.children) {
-                collision_shape& shape = shapes[i];
+                collision_shape2d& shape = shapes[i];
 
                 float c = (shape.bounding_box.minimum[ii] + shape.bounding_box.maximum[ii]) * 0.5f;
                 if(c < center[ii]) child_a.children.push_back(i);
@@ -117,7 +117,7 @@ vec2 support(vec2 direction, vec2 center, mat2 orientation, vec2 radii) {
     return center + point;
 }
 
-vec2 support(vec2 direction, vec2 center, mat2 orientation, vec2 radii, std::vector<clipping_plane>& planes) {
+vec2 support(vec2 direction, vec2 center, mat2 orientation, vec2 radii, std::vector<clipping_plane2d>& planes) {
     vec2 local = transpose(orientation) * direction;
 
     vec2 q = {
@@ -130,7 +130,7 @@ vec2 support(vec2 direction, vec2 center, mat2 orientation, vec2 radii, std::vec
 
     vec2 point = (q / denom);
 
-    for(clipping_plane& p : planes) {
+    for(clipping_plane2d& p : planes) {
         if(dot(p.normal, point - p.origin) > 0.0f) {
             vec2 pp = p.origin / radii;
             vec2 n = normalize(vec2(p.normal.y, -p.normal.x) / radii);
@@ -155,11 +155,11 @@ vec2 support(vec2 direction, vec2 center, mat2 orientation, vec2 radii, std::vec
     return center + orientation * point;
 }
 
-vec2 support(vec2 direction, std::vector<vertex_element> ellipsoids) {
+vec2 support(vec2 direction, std::vector<vertex_element2d> ellipsoids) {
     float max_dot = -FLT_MAX;
     vec2 point = vec2(0.0f);
 
-    for(vertex_element& e : ellipsoids) {
+    for(vertex_element2d& e : ellipsoids) {
         vec2 new_point;
         if(e.planes.size()) new_point = support(direction, e.center, e.orientation, e.radii, e.planes);
         else new_point = support(direction, e.center, e.orientation, e.radii);

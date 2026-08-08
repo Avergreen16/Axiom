@@ -50,6 +50,8 @@ void render_widget::init() {
 void render_widget::handle_inputs() {
     axiom::ui_system* ui_system = &axiom::global_core.ecs->get_system<axiom::ui_system>();
 
+    callback(this, target);
+
     if(target->size != ivec2(size) || target->position != ivec2(position)) target->set_size(ivec2(size), ivec2(position));
     target->call();
 
@@ -63,12 +65,12 @@ axiom::capture_data render_widget::handle_capture() {
         vec4(position, position + size)
     };
 
-    if(includes(ui_system.window->cursor_pos, ranges[0])) return {z, true, false};
+    if(includes(ui_system.window->cursor_pos, ranges[0])) return {self, z, true, false, true};
 
-    return {z, false};
+    return {self, z, false};
 }
 
-ulong render_widget::insert(axiom::render_target* target, uint texture) {
+ulong render_widget::insert(axiom::render_target* target, uint texture, std::function<void(axiom::render_widget*, axiom::render_target*)> callback) {
     axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
 
     render_widget widget;
@@ -76,6 +78,8 @@ ulong render_widget::insert(axiom::render_target* target, uint texture) {
     widget.layout_mode = axiom::layout_mode::VOID;
     widget.target = target;
     widget.texture = texture;
+
+    widget.callback = callback;
 
     widget.min_width = 0.0f;
     widget.max_width = FLT_MAX;

@@ -132,10 +132,10 @@ capture_data slider_widget::handle_capture() {
     };
 
     for(vec4 range : ranges) {
-        if(includes(ui_system.window->cursor_pos, range)) return {z, true};
+        if(includes(ui_system.window->cursor_pos, range)) return {self, z, true};
     }
 
-    return {z, false};
+    return {self, z, false};
 }
 
 }

@@ -62,6 +62,7 @@ struct ui_system : system {
     ulong hover_capture = NULL_WIDGET;
     ulong click_capture = NULL_WIDGET;
     ulong text_capture = NULL_WIDGET;
+    bool text_cursor = false;
 
     std::vector<ulong> delete_buffer;
 
@@ -99,6 +100,11 @@ struct ui_system : system {
 
     void solve_constraints();
     void measure(ulong root);
+
+    //
+
+    void hide_cursor();
+    void show_cursor();
 };
 
 template<typename Type>
@@ -123,11 +129,12 @@ uint64_t ui_system::insert_widget(Type widget, bool step) {
 
     input_state.last_widget = ret;
 
-    ++input_state.next_id;
-
     for(std::shared_ptr<axiom::text>& t : widget.text) {
+        t->parent = input_state.next_id;
         text.push_back(t);
     }
+
+    ++input_state.next_id;
 
     return ret;
 }

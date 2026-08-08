@@ -487,7 +487,7 @@ capture_data split_widget::handle_capture() {
             range += buffer_range;
 
             if(includes(ui_system.window->cursor_pos, range)) {
-                return {z + 0.001f, true};
+                return {self, z + 0.001f, true, false};
             }
         } else if(layout_mode == axiom::layout_mode::COLUMN) {
             auto& w0 = ui_system.widgets[children[i1]];
@@ -498,12 +498,12 @@ capture_data split_widget::handle_capture() {
             range += buffer_range;
 
             if(includes(ui_system.window->cursor_pos, range)) {
-                return {z + 0.001f, true};
+                return {self, z + 0.001f, true};
             }
         }
     }
 
-    return {z, false};
+    return {self, z, false};
 }
 
 }

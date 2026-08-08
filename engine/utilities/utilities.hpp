@@ -62,49 +62,52 @@ auto get_date_time(ulong timestamp);
 
 std::string get_date_time_string(ulong timestamp);
 
-struct Profiler_Entry {
-    double time;
+struct profiler_entry {
     std::string name;
+    ulong start;
+    ulong end;
 };
 
-struct Profiler_Frame {
-    std::vector<Profiler_Entry> steps;
+struct frame {
+    ulong start;
+    ulong end;
+
+    std::deque<profiler_entry> entries;
 };
 
-struct Profiler {
-    uint32_t num_frames = 20;
-    std::deque<Profiler_Frame> prev_frames;
-    Profiler_Frame current_frame;
+struct profiler {
+    uint32_t num_frames = 2000;
 
-    double prev_time;
-    uint32_t iterations = 0;
+    uint current_depth = 0;
+    
+    frame current_frame;
+    std::deque<frame> frames;
 
-    void start() {
-        prev_time = get_time();
+    void insert(std::string name, ulong start, ulong end);
+
+    void start_frame();
+
+    void end_frame();
+
+    void clear();
+};
+
+struct profile_scope {
+    profiler* prof;
+    std::string name;
+    ulong start;
+
+    profile_scope(profiler* prof_, std::string name_) {
+        start = axiom::get_timestamp();
+
+        prof = prof_;
+        name = name_;
     }
 
-    void step(std::string name = "") {
-        double current_time = get_time();
-        double diff = current_time - prev_time;
-        prev_time = current_time;
+    ~profile_scope() {
+        ulong end = axiom::get_timestamp();
 
-        Profiler_Entry entry;
-        entry.name = name;
-        entry.time = diff;
-
-        current_frame.steps.push_back(entry);
-    }
-
-    void loop() {
-        prev_frames.push_back(current_frame);
-        current_frame.steps.clear();
-
-        while(prev_frames.size() > num_frames) prev_frames.pop_front();
-    }
-
-    void clear() {
-        current_frame.steps.clear();
-        prev_frames.clear();
+        prof->insert(name, start, end);
     }
 };
 
@@ -131,5 +134,10 @@ struct Time {
 
     double get_elapsed_time(bool overwrite = false);
 };
+
+extern profiler prof;
+
+#define PROFILE_SCOPE(name) \
+    profile_scope profile_scope_##__LINE__(&prof, name)
 
 }

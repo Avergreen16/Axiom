@@ -108,8 +108,8 @@ void generate_placeholder() {
         "See you again soon! Hopefully next time we can finish the rest of the adventure and discover what happens next."
     };
 
-    int num_messages = 500;
-    ivec2 num_per_person = {1, 6};
+    int num_messages = 1000;
+    ivec2 num_per_person = {1, 2};
 
     int counter = 0;
     int person_num = 0;
@@ -118,7 +118,7 @@ void generate_placeholder() {
     for(int i = 0; i < num_messages; ++i) {
         float frac = float(i) / num_messages;
 
-        if(counter >= person_num) {
+        if(counter > person_num) {
             person_num = floor(num_per_person.x + (num_per_person.y - num_per_person.x) * (rand() * 0.5f + 0.5f)); 
 
             counter = 0;

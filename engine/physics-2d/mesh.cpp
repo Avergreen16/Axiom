@@ -12,7 +12,7 @@ struct mesh_face {
     bool finished = false;
 };
 
-void create_mesh(std::vector<vertex_element> vertices, std::vector<vec2>* perimeter, std::vector<vec2>* area) {
+void create_mesh(std::vector<vertex_element2d> vertices, std::vector<vec2>* perimeter, std::vector<vec2>* area) {
     std::vector<vec2> points = {support(vec2(1.0f, 0.0f), vertices), support(vec2(-1.0f, 0.0f), vertices)};
 
     std::vector<mesh_face> faces = {mesh_face(0, 1, false), mesh_face(1, 0, false)};

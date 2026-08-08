@@ -234,10 +234,10 @@ axiom::capture_data text_box_widget::handle_capture() {
     };
 
     for(vec4 range : ranges) {
-        if(includes(ui_system.window->cursor_pos, range)) return {z, true, true};
+        if(includes(ui_system.window->cursor_pos, range)) return {self, z, true, true};
     }
 
-    return {z, false};
+    return {self, z, false};
 }
 
 }

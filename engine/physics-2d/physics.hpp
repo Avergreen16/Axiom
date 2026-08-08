@@ -166,7 +166,7 @@ struct collision_input {
 };
 
 struct input_data {
-    bounding_box bounding_box;
+    bounding_box2d bounding_box;
     transform2d *transform;
     uint32_t id;
 };
@@ -220,20 +220,20 @@ struct physics_system : axiom::system {
 
     // static std::vector<std::vector<collision_data>> collision(std::vector<collision_input>& input);
     static std::vector<collision_data> collision(collision_input& input);
-    static std::vector<collision_data> collision(transform2d& ta, collision_shape& ca, transform2d& tb, collision_shape& cb, return_tag& tag);
+    static std::vector<collision_data> collision(transform2d& ta, collision_shape2d& ca, transform2d& tb, collision_shape2d& cb, return_tag& tag);
 
-    static bounding_box transform(transform2d& t, bounding_box& b);
-    static bool collision(transform2d& ta, bounding_box& a, transform2d& tb, bounding_box& b);
-    static bool collision(bounding_box& a, bounding_box& b);
+    static bounding_box2d transform(transform2d& t, bounding_box2d& b);
+    static bool collision(transform2d& ta, bounding_box2d& a, transform2d& tb, bounding_box2d& b);
+    static bool collision(bounding_box2d& a, bounding_box2d& b);
 
-    static std::vector<uint32_t> traverse_BVH(transform2d& ta, std::vector<BVH_node>& ca, transform2d& tb, bounding_box& bb);
-    static std::vector<uint64_t> traverse_BVH(transform2d& ta, std::vector<BVH_node>& ca, transform2d& tb, std::vector<BVH_node>& cb);
+    static std::vector<uint32_t> traverse_BVH(transform2d& ta, std::vector<BVH_node2d>& ca, transform2d& tb, bounding_box2d& bb);
+    static std::vector<uint64_t> traverse_BVH(transform2d& ta, std::vector<BVH_node2d>& ca, transform2d& tb, std::vector<BVH_node2d>& cb);
 
     //
 
-    static bool collision_point(std::vector<vertex_element> vertices, vec2 point);
+    static bool collision_point(std::vector<vertex_element2d> vertices, vec2 point);
 
-    static vec2 transform_vertices(transform2d& t, collision_shape& c, std::vector<vertex_element>& vertices, vec2 origin);
+    static vec2 transform_vertices(transform2d& t, collision_shape2d& c, std::vector<vertex_element2d>& vertices, vec2 origin);
 
     static vec2 support_func(std::vector<vec2>& vertices, vec2 radius, vec2 direction);
     static vec2 support_func(std::vector<vec2>& vertices, vec2 radius, vec2 direction, mat2 matrix);
@@ -242,7 +242,7 @@ struct physics_system : axiom::system {
 
     void velocity_solve();
 
-    static vec2 calculate_inertia(collision_shape& c);
+    static vec2 calculate_inertia(collision_shape2d& c);
     static vec2 calculate_inertia(collider2d& c);
 
     std::vector<uint64_t> broad_phase(std::vector<input_data>& input);
@@ -259,7 +259,7 @@ struct physics_system : axiom::system {
 
     void call();
 
-    std::vector<collision_data> collide(transform2d t, std::vector<vertex_element> vs);
+    std::vector<collision_data> collide(transform2d t, std::vector<vertex_element2d> vs);
 };
 
 vec2 get_gravity(vec2 pos);

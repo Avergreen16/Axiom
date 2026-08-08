@@ -45,6 +45,7 @@ struct widget_constraint {
 };
 
 struct capture_data {
+    ulong key = NULL_WIDGET;
     float z;
     bool capture = false;
     bool text_capture = false;

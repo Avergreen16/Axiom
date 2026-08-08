@@ -489,10 +489,10 @@ capture_data window_widget::handle_capture() {
 
     for(vec4 range : ranges) {
         if(includes(ui_system.window->cursor_pos, range))
-            return {z, true};
+            return {self, z, true, false, true};
     }
 
-    return {z, false};
+    return {self, z, false};
 }
 
 }
