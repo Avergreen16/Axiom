@@ -193,7 +193,11 @@ enum class texture_format {
     RF,
     RGF,
     RGBF,
-    RGBAF
+    RGBAF,
+
+    DEPTH16,
+    DEPTH32,
+    DEPTHF,
 };
 
 enum class texture_attachment {

@@ -5,6 +5,18 @@
 
 #include "utilities.hpp"
 
+
+std::ostream& operator<<(std::ostream& stream, const vec2& v) {
+    return stream << v.x << " " << v.y;
+}
+
+std::ostream& operator<<(std::ostream& stream, const vec3& v) {
+    return stream << v.x << " " << v.y << " " << v.z;
+}
+std::ostream& operator<<(std::ostream& stream, const vec4& v) {
+    return stream << v.x << " " << v.y << " " << v.z << " " << v.w;
+}
+
 namespace axiom {
 
 double get_time() {

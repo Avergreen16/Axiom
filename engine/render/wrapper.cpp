@@ -962,6 +962,16 @@ texture_desc get_texture_desc(texture_format f) {
         case axiom::texture_format::RGBAF: {
             return {GL_RGBA32F, GL_RGBA, GL_FLOAT};
         }
+
+        case axiom::texture_format::DEPTH16: {
+            return {GL_DEPTH_COMPONENT16, GL_RED, GL_UNSIGNED_SHORT};
+        }
+        case axiom::texture_format::DEPTH32: {
+            return {GL_DEPTH_COMPONENT32, GL_RED, GL_UNSIGNED_INT};
+        }
+        case axiom::texture_format::DEPTHF: {
+            return {GL_DEPTH_COMPONENT32F, GL_RED, GL_FLOAT};
+        }
     }
 }
 

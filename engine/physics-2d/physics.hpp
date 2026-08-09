@@ -9,7 +9,7 @@ namespace axiom {
 
 //
 
-struct collision_data {
+struct collision_data2d {
     bool collide = false;
 
     uint32_t a;
@@ -29,7 +29,7 @@ struct collision_data {
 };
 
 struct col_constraint {
-    collision_data *d;
+    collision_data2d *d;
 
     vec2 pa;
     vec2 pb;
@@ -52,7 +52,7 @@ struct col_constraint {
     float baumgarteT;
 };
 
-struct collision_constraint {
+struct collision_constraint2d {
     uint32_t a;
     uint32_t b;
 
@@ -130,7 +130,7 @@ struct rot_constraint {
     float lambda = 0.0f;
 };
 
-struct constraint {
+struct constraint2d {
     uint32_t a = NULL_ENTITY;
     uint32_t b = NULL_ENTITY;
 
@@ -171,18 +171,18 @@ struct input_data {
     uint32_t id;
 };
 
-enum class collision_type {
+enum class collision_type2d {
     EDGE, VERTEX
 };
-struct return_tag {
-    collision_type type;
+struct return_tag2d {
+    collision_type2d type;
     ivec2 va[2];
     ivec2 vb[2];
 };
 
 extern transform2d null_transform;
 
-struct physics_system : axiom::system {
+struct physics_system2d : axiom::system {
     bool sim_active = true;
 
     // parameters
@@ -203,11 +203,11 @@ struct physics_system : axiom::system {
 
     //
 
-    std::unordered_map<uint64_t, std::vector<collision_data>> collision_table;
+    std::unordered_map<uint64_t, std::vector<collision_data2d>> collision_table;
 
-    std::vector<constraint> constraints;
+    std::vector<constraint2d> constraints;
     std::vector<constraint_distance> constraints_distance;
-    std::vector<collision_constraint> collision_constraints;
+    std::vector<collision_constraint2d> collision_constraint2ds;
 
     vec2 gravity_aspect = vec2(1.0f, 1.0f);
 
@@ -216,11 +216,11 @@ struct physics_system : axiom::system {
 
     //
 
-    physics_system();
+    physics_system2d();
 
-    // static std::vector<std::vector<collision_data>> collision(std::vector<collision_input>& input);
-    static std::vector<collision_data> collision(collision_input& input);
-    static std::vector<collision_data> collision(transform2d& ta, collision_shape2d& ca, transform2d& tb, collision_shape2d& cb, return_tag& tag);
+    // static std::vector<std::vector<collision_data2d>> collision(std::vector<collision_input>& input);
+    static std::vector<collision_data2d> collision(collision_input& input);
+    static std::vector<collision_data2d> collision(transform2d& ta, collision_shape2d& ca, transform2d& tb, collision_shape2d& cb, return_tag2d& tag);
 
     static bounding_box2d transform(transform2d& t, bounding_box2d& b);
     static bool collision(transform2d& ta, bounding_box2d& a, transform2d& tb, bounding_box2d& b);
@@ -238,7 +238,7 @@ struct physics_system : axiom::system {
     static vec2 support_func(std::vector<vec2>& vertices, vec2 radius, vec2 direction);
     static vec2 support_func(std::vector<vec2>& vertices, vec2 radius, vec2 direction, mat2 matrix);
 
-    void insert_collision(collision_data c);
+    void insert_collision(collision_data2d c);
 
     void velocity_solve();
 
@@ -259,7 +259,7 @@ struct physics_system : axiom::system {
 
     void call();
 
-    std::vector<collision_data> collide(transform2d t, std::vector<vertex_element2d> vs);
+    std::vector<collision_data2d> collide(transform2d t, std::vector<vertex_element2d> vs);
 };
 
 vec2 get_gravity(vec2 pos);

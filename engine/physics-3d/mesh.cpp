@@ -11,8 +11,16 @@ struct mesh_face {
     int i2;
 };
 
-void create_mesh(std::vector<vertex_element3d> elements, std::vector<vec3>* vertices, std::vector<uint>* indices) {
-    std::vector<vec3> points = {support(vec3(1.0f, 0.0f, 0.0f), elements), support(vec3(-1.0f, 0.0f, 0.0f), elements), support(vec3(0.0f, 1.0f, 1.0f), elements)};
+void create_mesh(std::vector<vertex_element3d> elements, std::vector<output_vertex>* vertices, std::vector<uint>* indices) {
+    output_vertex va;
+    output_vertex vb;
+    output_vertex vc;
+
+    va.position = support(vec3(1.0f, 0.0f, 0.0f), elements, va.element);
+    vb.position = support(vec3(-1.0f, 0.0f, 0.0f), elements, vb.element);
+    vc.position = support(vec3(0.0f, 1.0f, 0.0f), elements, vc.element);
+
+    std::vector<output_vertex> points = {va, vb, vc};
 
     std::vector<mesh_face> faces = {mesh_face(0, 1, 2), mesh_face(2, 1, 0)};
     
@@ -26,13 +34,14 @@ void create_mesh(std::vector<vertex_element3d> elements, std::vector<vec3>* vert
         int index = 0;
 
         for(mesh_face& face : faces) {
-            vec3 normal = normalize(cross(points[face.i0] - points[face.i2], points[face.i1] - points[face.i2]));
+            vec3 normal = normalize(cross(points[face.i0].position - points[face.i2].position, points[face.i1].position - points[face.i2].position));
 
-            vec3 s = support(normal, elements);
+            output_vertex s;
+            s.position = support(normal, elements, s.element);
 
             //
 
-            if(dot(s, normal) > dot(points[face.i0], normal) + threshold) {
+            if(dot(s.position, normal) > dot(points[face.i0].position, normal) + threshold) {
                 std::vector<uint> to_erase2 = {};
 
                 int index2 = index;
@@ -40,9 +49,9 @@ void create_mesh(std::vector<vertex_element3d> elements, std::vector<vec3>* vert
                 for(uint i = 0; i < faces.size(); ++i) {
                     mesh_face& face = faces[i];
                     
-                    vec3 nn = normalize(cross(points[face.i0] - points[face.i2], points[face.i1] - points[face.i2]));
+                    vec3 nn = normalize(cross(points[face.i0].position - points[face.i2].position, points[face.i1].position - points[face.i2].position));
                     
-                    if(dot(s, nn) > dot(points[face.i0], nn)) {
+                    if(dot(s.position, nn) > dot(points[face.i0].position, nn)) {
                         to_erase2.push_back(i);
                     }
                 }
@@ -75,17 +84,17 @@ void create_mesh(std::vector<vertex_element3d> elements, std::vector<vec3>* vert
                 }
 
                 vec3 center = vec3(0.0f);
-                for(uint i : indices) center += points[i];
+                for(uint i : indices) center += points[i].position;
                 center /= indices.size();
 
-                vec3 dir = s - center;
+                vec3 dir = s.position - center;
 
                 for(auto [e, n] : edges) {
                     if(n == 1) {
                         uint e0 = e & 0xfFFF;
                         uint e1 = e >> 16;
 
-                        vec3 nn = normalize(cross(points[e0] - s, points[e1] - s));
+                        vec3 nn = normalize(cross(points[e0].position - s.position, points[e1].position - s.position));
                         if(dot(nn, dir) < 0.0f) std::swap(e0, e1);
                         
                         new_faces.push_back(mesh_face(e0, e1, points.size()));
@@ -108,11 +117,9 @@ void create_mesh(std::vector<vertex_element3d> elements, std::vector<vec3>* vert
             faces.erase(faces.begin() + *iter);
         }
         faces.insert(faces.end(), new_faces.begin(), new_faces.end());
-
-        std::cout << faces.size() << " " << points.size() << "\n";
     }
 
-    for(vec3 point : points) {
+    for(auto point : points) {
         vertices->push_back(point);
     }
     

@@ -1,8 +1,12 @@
 
 add_library(AxiomPhysics3D
+    bounding_box.cpp
     collider.cpp
+    collision_constraint.cpp
+    position_constraint.cpp
+    collision.cpp
     mesh.cpp
-    #physics.cpp
+    system.cpp
 )
 
 target_include_directories(AxiomPhysics3D

@@ -8,13 +8,13 @@ namespace axiom {
 
 transform2d null_transform = {vec2(0.0f), glm::identity<glm::mat2>()};
 
-physics_system::physics_system() {
+physics_system2d::physics_system2d() {
     axiom::signature s = axiom::global_core.ecs->update_signature<collider2d>();
     axiom::global_core.ecs->update_signature<transform2d>(s);
     collectors.push_back(collector{s, false});
 }
 
-vec2 physics_system::transform_vertices(transform2d& t, collision_shape2d& c, std::vector<vertex_element2d>& vertices, vec2 origin) {
+vec2 physics_system2d::transform_vertices(transform2d& t, collision_shape2d& c, std::vector<vertex_element2d>& vertices, vec2 origin) {
     vec2 center = vec2(0.0f);
 
     vec2 o = t.position - origin;
@@ -308,10 +308,10 @@ polygon from_simplex(simplex& s) {
     return p;
 }
 
-std::vector<collision_data> physics_system::collision(collision_input& input) {
-    std::vector<collision_data> ret;
+std::vector<collision_data2d> physics_system2d::collision(collision_input& input) {
+    std::vector<collision_data2d> ret;
 
-    return_tag tag;
+    return_tag2d tag;
 
     if(input.ca->BVH.size()) {
         if(input.cb->BVH.size()) {
@@ -324,12 +324,12 @@ std::vector<collision_data> physics_system::collision(collision_input& input) {
                 collision_shape2d& sa = input.ca->shapes[a];
                 collision_shape2d& sb = input.cb->shapes[b];
 
-                std::vector<collision_data> r = collision(*input.ta, sa, *input.tb, sb, tag);
+                std::vector<collision_data2d> r = collision(*input.ta, sa, *input.tb, sb, tag);
                 ret.insert(ret.end(), r.begin(), r.end());
             }
         } else {
-            std::vector<return_tag> tags;
-            std::vector<std::vector<collision_data>> data;
+            std::vector<return_tag2d> tags;
+            std::vector<std::vector<collision_data2d>> data;
 
             for(collision_shape2d& sb : input.cb->shapes) {
                 std::vector<uint32_t> shapes = traverse_BVH(*input.ta, input.ca->BVH, *input.tb, sb.bounding_box);
@@ -337,7 +337,7 @@ std::vector<collision_data> physics_system::collision(collision_input& input) {
                 for(uint32_t shape : shapes) {
                     collision_shape2d& sa = input.ca->shapes[shape];
 
-                    std::vector<collision_data> r = collision(*input.ta, sa, *input.tb, sb, tag);
+                    std::vector<collision_data2d> r = collision(*input.ta, sa, *input.tb, sb, tag);
 
                     tags.push_back(tag);
                     data.push_back(r);
@@ -349,8 +349,8 @@ std::vector<collision_data> physics_system::collision(collision_input& input) {
             std::unordered_set<ivec2, hash_coord> set;
 
             for(uint32_t i = 0; i < tags.size(); ++i) {
-                return_tag& tag = tags[i];
-                if(tag.type == axiom::collision_type::EDGE) {
+                return_tag2d& tag = tags[i];
+                if(tag.type == axiom::collision_type2d::EDGE) {
                     ret.insert(ret.end(), data[i].begin(), data[i].end());
 
                     set.insert(tag.va[0]);
@@ -361,8 +361,8 @@ std::vector<collision_data> physics_system::collision(collision_input& input) {
             // vertices
 
             for(uint32_t i = 0; i < tags.size(); ++i) {
-                return_tag& tag = tags[i];
-                if(tag.type == axiom::collision_type::VERTEX) {
+                return_tag2d& tag = tags[i];
+                if(tag.type == axiom::collision_type2d::VERTEX) {
                     if(set.find(tag.va[0]) == set.end()) {
                         ret.insert(ret.end(), data[i].begin(), data[i].end());
 
@@ -372,8 +372,8 @@ std::vector<collision_data> physics_system::collision(collision_input& input) {
             }
         }
     } else if(input.cb->BVH.size()) {
-        std::vector<return_tag> tags;
-        std::vector<std::vector<collision_data>> data;
+        std::vector<return_tag2d> tags;
+        std::vector<std::vector<collision_data2d>> data;
 
         for(collision_shape2d& sa : input.ca->shapes) {
             std::vector<uint32_t> shapes = traverse_BVH(*input.tb, input.cb->BVH, *input.ta, sa.bounding_box);
@@ -381,7 +381,7 @@ std::vector<collision_data> physics_system::collision(collision_input& input) {
             for(uint32_t shape : shapes) {
                 collision_shape2d& sb = input.cb->shapes[shape];
 
-                std::vector<collision_data> r = collision(*input.ta, sa, *input.tb, sb, tag);
+                std::vector<collision_data2d> r = collision(*input.ta, sa, *input.tb, sb, tag);
 
                 tags.push_back(tag);
                 data.push_back(r);
@@ -394,8 +394,8 @@ std::vector<collision_data> physics_system::collision(collision_input& input) {
         std::unordered_set<ivec2, hash_coord> set;
 
         for(uint32_t i = 0; i < tags.size(); ++i) {
-            return_tag& tag = tags[i];
-            if(tag.type == axiom::collision_type::VERTEX) {
+            return_tag2d& tag = tags[i];
+            if(tag.type == axiom::collision_type2d::VERTEX) {
                 ret.insert(ret.end(), data[i].begin(), data[i].end());
 
                 set.insert(tag.vb[0]);
@@ -406,8 +406,8 @@ std::vector<collision_data> physics_system::collision(collision_input& input) {
         // vertices
 
         for(uint32_t i = 0; i < tags.size(); ++i) {
-            return_tag& tag = tags[i];
-            if(tag.type == axiom::collision_type::EDGE) {
+            return_tag2d& tag = tags[i];
+            if(tag.type == axiom::collision_type2d::EDGE) {
                 if(set.find(tag.vb[0]) == set.end()) {
                     ret.insert(ret.end(), data[i].begin(), data[i].end());
 
@@ -418,7 +418,7 @@ std::vector<collision_data> physics_system::collision(collision_input& input) {
     } else {
         for(collision_shape2d& sa : input.ca->shapes) {
             for(collision_shape2d& sb : input.cb->shapes) {
-                std::vector<collision_data> r = collision(*input.ta, sa, *input.tb, sb, tag);
+                std::vector<collision_data2d> r = collision(*input.ta, sa, *input.tb, sb, tag);
 
                 ret.insert(ret.end(), r.begin(), r.end());
             }
@@ -428,8 +428,8 @@ std::vector<collision_data> physics_system::collision(collision_input& input) {
     return ret;
 }
 
-std::vector<collision_data> physics_system::collision(transform2d& ta, collision_shape2d& ca, transform2d& tb, collision_shape2d& cb, return_tag& tag) {
-    std::vector<collision_data> data;
+std::vector<collision_data2d> physics_system2d::collision(transform2d& ta, collision_shape2d& ca, transform2d& tb, collision_shape2d& cb, return_tag2d& tag) {
+    std::vector<collision_data2d> data;
 
     std::vector<vertex_element2d> a_vertices;
     std::vector<vertex_element2d> b_vertices;
@@ -537,7 +537,7 @@ std::vector<collision_data> physics_system::collision(transform2d& ta, collision
 
                             if(dot(collision_normal, main_dir) < 0.0f) collision_normal = -collision_normal;
 
-                            tag.type = axiom::collision_type::EDGE;
+                            tag.type = axiom::collision_type2d::EDGE;
                             tag.va[0] = ivec2(r.vertices[0].a * 8.0f);
                             tag.va[1] = ivec2(r.vertices[1].a * 8.0f);
                             tag.vb[0] = ivec2(r.vertices[0].b * 8.0f);
@@ -547,7 +547,7 @@ std::vector<collision_data> physics_system::collision(transform2d& ta, collision
 
                             if(dot(collision_normal, main_dir) < 0.0f) collision_normal = -collision_normal;
 
-                            tag.type = axiom::collision_type::VERTEX;
+                            tag.type = axiom::collision_type2d::VERTEX;
                             tag.va[0] = ivec2(r.vertices[0].a * 8.0f);
                             tag.vb[0] = ivec2(r.vertices[0].b * 8.0f);
                             tag.vb[1] = ivec2(r.vertices[1].b * 8.0f);
@@ -606,30 +606,30 @@ std::vector<collision_data> physics_system::collision(transform2d& ta, collision
                         vec2 b3 = pb + sideways * (c1 - glm::dot(pb, sideways));
 
                         if(da0 <= db1 && db0 <= da1) {
-                            collision_data collision_data;
-                            collision_data.collide = true;
-                            collision_data.a = 0;
-                            collision_data.b = 0;
-                            collision_data.pa = a2;
-                            collision_data.pb = b2;
-                            collision_data.normal = collision_normal;
+                            collision_data2d collision_data2d;
+                            collision_data2d.collide = true;
+                            collision_data2d.a = 0;
+                            collision_data2d.b = 0;
+                            collision_data2d.pa = a2;
+                            collision_data2d.pb = b2;
+                            collision_data2d.normal = collision_normal;
 
-                            data.push_back(collision_data);
+                            data.push_back(collision_data2d);
 
-                            collision_data.pa = a3;
-                            collision_data.pb = b3;
+                            collision_data2d.pa = a3;
+                            collision_data2d.pb = b3;
 
-                            data.push_back(collision_data);
+                            data.push_back(collision_data2d);
                         } else {
-                            collision_data collision_data;
-                            collision_data.collide = true;
-                            collision_data.a = 0;
-                            collision_data.b = 0;
-                            collision_data.pa = cp_a;
-                            collision_data.pb = cp_b;
-                            collision_data.normal = collision_normal;
+                            collision_data2d collision_data2d;
+                            collision_data2d.collide = true;
+                            collision_data2d.a = 0;
+                            collision_data2d.b = 0;
+                            collision_data2d.pa = cp_a;
+                            collision_data2d.pb = cp_b;
+                            collision_data2d.normal = collision_normal;
 
-                            data.push_back(collision_data);
+                            data.push_back(collision_data2d);
                         }
 
                         return data;
@@ -652,7 +652,7 @@ std::vector<collision_data> physics_system::collision(transform2d& ta, collision
     }
 }
 
-bool physics_system::collision_point(std::vector<vertex_element2d> vertices, vec2 point) {
+bool physics_system2d::collision_point(std::vector<vertex_element2d> vertices, vec2 point) {
     std::vector<vertex_element2d> a_vertices;
 
     float limit = 0.00001;
@@ -729,17 +729,17 @@ bool physics_system::collision_point(std::vector<vertex_element2d> vertices, vec
     }
 }
 
-void physics_system::insert_collision(collision_data c) {
+void physics_system2d::insert_collision(collision_data2d c) {
     uint64_t a = uint64_t(c.a) | (uint64_t(c.b) << 32);
 
     if(collision_table.find(a) == collision_table.end()) {
-        collision_table.emplace(a, std::vector<collision_data>());
+        collision_table.emplace(a, std::vector<collision_data2d>());
     }
 
-    std::vector<collision_data>& v = collision_table[a];
+    std::vector<collision_data2d>& v = collision_table[a];
 
     for(int i = v.size() - 1; i >= 0; --i) {
-        collision_data& d = v[i];
+        collision_data2d& d = v[i];
         vec2 diff_a = d.pa - c.pa;
         vec2 diff_b = d.pb - c.pb;
 
@@ -768,7 +768,7 @@ void insertion_sort(Iter begin, Iter end, Compare comp) {
     }
 }
 
-bounding_box2d physics_system::transform(transform2d& t, bounding_box2d& b) {
+bounding_box2d physics_system2d::transform(transform2d& t, bounding_box2d& b) {
     bounding_box2d ret;
 
     vec2 center = (b.minimum + b.maximum) * 0.5f;
@@ -786,7 +786,7 @@ bounding_box2d physics_system::transform(transform2d& t, bounding_box2d& b) {
     return ret;
 }
 
-bool physics_system::collision(transform2d& ta, bounding_box2d& a, transform2d& tb, bounding_box2d& b) {
+bool physics_system2d::collision(transform2d& ta, bounding_box2d& a, transform2d& tb, bounding_box2d& b) {
     transform2d t;
     t.position = transpose(ta.orientation) * (tb.position - ta.position);
     t.orientation = transpose(ta.orientation) * tb.orientation;
@@ -796,7 +796,7 @@ bool physics_system::collision(transform2d& ta, bounding_box2d& a, transform2d& 
     return collision(a, nb);
 }
 
-bool physics_system::collision(bounding_box2d& a, bounding_box2d& b) {
+bool physics_system2d::collision(bounding_box2d& a, bounding_box2d& b) {
     bool bx = a.minimum.x < b.maximum.x && b.minimum.x < a.maximum.x;
     bool by = a.minimum.y < b.maximum.y && b.minimum.y < a.maximum.y;
 
@@ -808,7 +808,7 @@ struct spacial_data {
     bounding_box2d bb;
 };
 
-std::vector<uint64_t> physics_system::broad_phase(std::vector<input_data>& input) {
+std::vector<uint64_t> physics_system2d::broad_phase(std::vector<input_data>& input) {
     const std::size_t max_i = 4;
     const float ratio = 4.0f;
     const float start_size = 4.0f;
@@ -910,7 +910,7 @@ std::vector<uint64_t> physics_system::broad_phase(std::vector<input_data>& input
     return std::vector<uint64_t>(set.begin(), set.end());
 }
 
-std::vector<uint32_t> physics_system::traverse_BVH(transform2d& ta, std::vector<BVH_node2d>& ca, transform2d& tb, bounding_box2d& bb) {
+std::vector<uint32_t> physics_system2d::traverse_BVH(transform2d& ta, std::vector<BVH_node2d>& ca, transform2d& tb, bounding_box2d& bb) {
     std::vector<uint32_t> front_buffer = {0};
     std::vector<uint32_t> back_buffer;
     std::vector<uint32_t> shapes;
@@ -921,7 +921,7 @@ std::vector<uint32_t> physics_system::traverse_BVH(transform2d& ta, std::vector<
         for(uint32_t i : front_buffer) {
             BVH_node2d& node = ca[i];
 
-            if(physics_system::collision(ta, node.bounding_box, tb, bb)) {
+            if(physics_system2d::collision(ta, node.bounding_box, tb, bb)) {
                 if(node.children.size() > 1) {
                     back_buffer.push_back(node.children[0]);
                     back_buffer.push_back(node.children[1]);
@@ -938,7 +938,7 @@ std::vector<uint32_t> physics_system::traverse_BVH(transform2d& ta, std::vector<
 
 uint32_t depth = 0;
 
-std::vector<uint64_t> physics_system::traverse_BVH(transform2d& ta, std::vector<BVH_node2d>& ca, transform2d& tb, std::vector<BVH_node2d>& cb) {
+std::vector<uint64_t> physics_system2d::traverse_BVH(transform2d& ta, std::vector<BVH_node2d>& ca, transform2d& tb, std::vector<BVH_node2d>& cb) {
     std::vector<uint64_t> front_buffer = {0};
     std::vector<uint64_t> back_buffer;
     std::vector<uint64_t> shape_pairs;
@@ -953,7 +953,7 @@ std::vector<uint64_t> physics_system::traverse_BVH(transform2d& ta, std::vector<
             BVH_node2d& node_a = ca[ai];
             BVH_node2d& node_b = cb[bi];
 
-            if(physics_system::collision(ta, node_a.bounding_box, tb, node_b.bounding_box)) {
+            if(physics_system2d::collision(ta, node_a.bounding_box, tb, node_b.bounding_box)) {
                 if(node_a.children.size() == 1) {
                     if(node_b.children.size() == 1) {
                         shape_pairs.push_back(uint64_t(node_a.children[0]) | (uint64_t(node_b.children[0]) << 32));
@@ -980,7 +980,7 @@ std::vector<uint64_t> physics_system::traverse_BVH(transform2d& ta, std::vector<
     return shape_pairs;
 }
 
-void physics_system::physics_loop() {
+void physics_system2d::physics_loop() {
     PROFILE_SCOPE("physics");
     
     std::vector<input_data> input;
@@ -1010,7 +1010,7 @@ void physics_system::physics_loop() {
 
     const uint32_t num_threads = 12;
     std::vector<std::thread> threads(num_threads);
-    std::vector<std::vector<collision_data>> cdata(num_threads);
+    std::vector<std::vector<collision_data2d>> cdata(num_threads);
     std::vector<std::vector<uint64_t>> threads_collisions(num_threads);
 
     uint32_t num_collisions = 0;
@@ -1064,10 +1064,10 @@ void physics_system::physics_loop() {
                 }
 
                 for(int j = 0; j < inputs.size(); ++j) {
-                    std::vector<collision_data> cv = collision(inputs[j]);
+                    std::vector<collision_data2d> cv = collision(inputs[j]);
 
                     if(cv.size()) {
-                        for(collision_data& c : cv) {
+                        for(collision_data2d& c : cv) {
                             collision_input& ci = inputs[j];
 
                             //mesh& am = axiom::global_core.ecs->get_component<mesh>(ci.a);
@@ -1117,17 +1117,17 @@ void physics_system::physics_loop() {
     }
 
     for(auto& c : cdata) {
-        for(collision_data& collision_data : c) {
-            insert_collision(collision_data);
+        for(collision_data2d& collision_data2d : c) {
+            insert_collision(collision_data2d);
         }
     }
 
-    collision_constraints.clear();
-    collision_constraints.resize(collision_table.size());
+    collision_constraint2ds.clear();
+    collision_constraint2ds.resize(collision_table.size());
 
     uint32_t i = 0;
     for(auto& [k, d] : collision_table) {
-        collision_constraint cc;
+        collision_constraint2d cc;
         uint32_t a = k & 0xFFFFFFFF;
         uint32_t b = k >> 32;
         cc.a = a;
@@ -1150,13 +1150,13 @@ void physics_system::physics_loop() {
         for(int i = 0; i < d.size(); ++i) {
             col_constraint col;
 
-            collision_data& c = d[i];
+            collision_data2d& c = d[i];
 
             col.d = &c;
 
             cc.constraints.push_back(col);
         }
-        collision_constraints[i] = cc;
+        collision_constraint2ds[i] = cc;
         ++i;
     }
 
@@ -1177,7 +1177,7 @@ void physics_system::physics_loop() {
 
     std::vector<uint64_t> remove_table;
 
-    for(collision_constraint& c : collision_constraints) {
+    for(collision_constraint2d& c : collision_constraint2ds) {
         uint64_t key = uint64_t(c.a) | (uint64_t(c.b) << 32);
         auto& d = collision_table[key];
 
@@ -1191,7 +1191,7 @@ void physics_system::physics_loop() {
 
             if(dot_normal > contact_sep || v > contact_sep) {
 
-                n_erase.push_back((uint64_t(cc.d) - uint64_t(d.data())) / sizeof(collision_data));
+                n_erase.push_back((uint64_t(cc.d) - uint64_t(d.data())) / sizeof(collision_data2d));
             }
         }
 
@@ -1207,7 +1207,7 @@ void physics_system::physics_loop() {
     for(uint64_t k : remove_table) collision_table.erase(k);
 }
 
-void physics_system::integrate() {
+void physics_system2d::integrate() {
     for(uint32_t entity : collectors[0].entities) {
         transform2d& ta = axiom::global_core.ecs->get_component<transform2d>(entity);
         collider2d& ca = axiom::global_core.ecs->get_component<collider2d>(entity);
@@ -1231,7 +1231,7 @@ void physics_system::integrate() {
     }
 }
 
-void physics_system::call() {
+void physics_system2d::call() {
     //Input_system& input_system = axiom::global_core.ecs->get_system<Input_system>();
 
     if(sim_active) {
@@ -1253,7 +1253,7 @@ void physics_system::call() {
 }
 
 
-void physics_system::apply_impulse(collider2d* c, vec2 impulse, vec2 point) {
+void physics_system2d::apply_impulse(collider2d* c, vec2 impulse, vec2 point) {
     c->velocity += impulse / c->mass;
     if(c->allow_rotation) c->angular_velocity += cross(vec3(point, 0.0f), vec3(impulse, 0.0f)).z / c->inertia;
 }
@@ -1278,15 +1278,15 @@ void constraint_distance::get_values() {
     //lambda = 0.0f;
 
     // inertia
-    inertia = physics_system::calculate_inverse_mass(ca, ta, jacobian, pos_a - ta->position);
-    if(b != NULL_ENTITY) inertia += physics_system::calculate_inverse_mass(cb, tb, -jacobian, pos_b - tb->position);
+    inertia = physics_system2d::calculate_inverse_mass(ca, ta, jacobian, pos_a - ta->position);
+    if(b != NULL_ENTITY) inertia += physics_system2d::calculate_inverse_mass(cb, tb, -jacobian, pos_b - tb->position);
 
     // baumgarte
 
     baumgarte = -len;
 }
 
-void physics_system::velocity_solve() {
+void physics_system2d::velocity_solve() {
     float spring = 0.5f;
     float softness = 0.005f;
 
@@ -1295,7 +1295,7 @@ void physics_system::velocity_solve() {
     float factor = 1.0f / physics_step;
     float factor_constraint = 1.0f / physics_step;
 
-    for(collision_constraint& data : collision_constraints) {
+    for(collision_constraint2d& data : collision_constraint2ds) {
         data.get_points();
         data.get_value();
 
@@ -1329,7 +1329,7 @@ void physics_system::velocity_solve() {
         }
     }
 
-    for(constraint& data : constraints) {
+    for(constraint2d& data : constraints) {
         data.ca = &axiom::global_core.ecs->get_component<collider2d>(data.a);
         data.ta = &axiom::global_core.ecs->get_component<transform2d>(data.a);
         if(data.b != NULL_ENTITY) {
@@ -1372,7 +1372,7 @@ void physics_system::velocity_solve() {
     float current_length = 0.0f;
 
     for(int i = 0; i < velocity_iterations; ++i) {
-        for(collision_constraint& data : collision_constraints) {
+        for(collision_constraint2d& data : collision_constraint2ds) {
             for(col_constraint& cc : data.constraints) {
 
                 vec2 velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position);
@@ -1477,8 +1477,8 @@ void physics_system::velocity_solve() {
         }
 
         for(int j = 0; j < constraints.size(); ++j) { 
-        //for(collision_constraint& data : collision_constraints) {
-            int start = 0;//core.random.next() % collision_constraints.size();
+        //for(collision_constraint2d& data : collision_constraint2ds) {
+            int start = 0;//core.random.next() % collision_constraint2ds.size();
             int dir = 1;
 
             if(i % 2 == 1) {
@@ -1486,7 +1486,7 @@ void physics_system::velocity_solve() {
                 dir = -1;
             }
 
-            constraint& data = constraints[start + j * dir];
+            constraint2d& data = constraints[start + j * dir];
 
             float max_grab = FLT_MAX;
 
@@ -1593,7 +1593,7 @@ void physics_system::velocity_solve() {
         }
     }
 
-    for(collision_constraint& c : collision_constraints) {
+    for(collision_constraint2d& c : collision_constraint2ds) {
         for(col_constraint& cc : c.constraints) {
             cc.d->lambdaN = cc.lambdaN;
             cc.d->lambdaT = cc.lambdaT;
@@ -1605,7 +1605,7 @@ vec2 angular_to_linear(vec2 pos, float angular_velocity) {
     return vec2(pos.y, -pos.x) * angular_velocity;
 }
 
-vec2 physics_system::calculate_inertia(collision_shape2d& c) {
+vec2 physics_system2d::calculate_inertia(collision_shape2d& c) {
     ivec2 num_points = ivec2(16);
 
     transform2d temp;
@@ -1670,7 +1670,7 @@ vec2 physics_system::calculate_inertia(collision_shape2d& c) {
     return center;
 }
 
-vec2 physics_system::calculate_inertia(collider2d& c) {
+vec2 physics_system2d::calculate_inertia(collider2d& c) {
     ivec2 num_points = ivec2(16);
 
     vec2 center = vec2(0.0f);
@@ -1698,7 +1698,7 @@ vec2 physics_system::calculate_inertia(collider2d& c) {
     return center;
 }
 
-vec2 physics_system::calculate_point_velocity(collider2d* c, vec2 point) {
+vec2 physics_system2d::calculate_point_velocity(collider2d* c, vec2 point) {
     vec2 velocity;
     float angular_velocity;
 
@@ -1709,7 +1709,7 @@ vec2 physics_system::calculate_point_velocity(collider2d* c, vec2 point) {
     return velocity;
 }
 
-float physics_system::calculate_inverse_mass(collider2d* c, transform2d* t, vec2 impulse_dir, vec2 point) {
+float physics_system2d::calculate_inverse_mass(collider2d* c, transform2d* t, vec2 impulse_dir, vec2 point) {
     float inverse_mass = 1.0f / c->mass;
 
     if(c->allow_rotation) {
@@ -1734,7 +1734,7 @@ float physics_system::calculate_inverse_mass(collider2d* c, transform2d* t, vec2
     return inverse_mass;
 }
 
-void collision_constraint::get_points() {
+void collision_constraint2d::get_points() {
     for(col_constraint& c : constraints) {
         vec2 point_a = ta->orientation * c.d->pa + ta->position;
 
@@ -1750,19 +1750,19 @@ void collision_constraint::get_points() {
     }
 }
 
-void collision_constraint::get_value() {
+void collision_constraint2d::get_value() {
     for(col_constraint& c : constraints) {
         vec2 diff = c.pa - c.pb;
 
         c.tangent = vec2(c.d->normal.y, -c.d->normal.x);
         c.normal = c.d->normal;
 
-        c.inertiaNa = physics_system::calculate_inverse_mass(ca, ta, c.normal, c.pa - ta->position);
-        c.inertiaTa = physics_system::calculate_inverse_mass(ca, ta, c.tangent, c.pa - ta->position);
+        c.inertiaNa = physics_system2d::calculate_inverse_mass(ca, ta, c.normal, c.pa - ta->position);
+        c.inertiaTa = physics_system2d::calculate_inverse_mass(ca, ta, c.tangent, c.pa - ta->position);
 
         if(b != NULL_ENTITY) {
-            c.inertiaNb = physics_system::calculate_inverse_mass(cb, tb, c.normal, c.pb - tb->position);
-            c.inertiaTb = physics_system::calculate_inverse_mass(cb, tb, c.tangent, c.pb - tb->position);
+            c.inertiaNb = physics_system2d::calculate_inverse_mass(cb, tb, c.normal, c.pb - tb->position);
+            c.inertiaTb = physics_system2d::calculate_inverse_mass(cb, tb, c.tangent, c.pb - tb->position);
         }
 
         c.baumgarteN = glm::dot(diff, c.normal);
@@ -1770,19 +1770,19 @@ void collision_constraint::get_value() {
     }
 }
 
-void collision_constraint::refresh(col_constraint& c) {
+void collision_constraint2d::refresh(col_constraint& c) {
     vec2 point_a = ta->orientation * c.d->pa + ta->position;
     c.pa = point_a;
-    c.inertiaNa = physics_system::calculate_inverse_mass(ca, ta, c.normal, c.pa - ta->position);
-    c.inertiaTa = physics_system::calculate_inverse_mass(ca, ta, c.tangent, c.pa - ta->position);
+    c.inertiaNa = physics_system2d::calculate_inverse_mass(ca, ta, c.normal, c.pa - ta->position);
+    c.inertiaTa = physics_system2d::calculate_inverse_mass(ca, ta, c.tangent, c.pa - ta->position);
 
     if(c.d->b == NULL_ENTITY) {
         c.pb = c.d->pb;
     } else {
         vec2 point_b = tb->orientation * c.d->pb + tb->position;
         c.pb = point_b;
-        c.inertiaNb = physics_system::calculate_inverse_mass(cb, tb, c.normal, c.pb - tb->position);
-        c.inertiaTb = physics_system::calculate_inverse_mass(cb, tb, c.tangent, c.pb - tb->position);
+        c.inertiaNb = physics_system2d::calculate_inverse_mass(cb, tb, c.normal, c.pb - tb->position);
+        c.inertiaTb = physics_system2d::calculate_inverse_mass(cb, tb, c.tangent, c.pb - tb->position);
     }
 
     vec2 diff = c.pa - c.pb;
@@ -1790,7 +1790,7 @@ void collision_constraint::refresh(col_constraint& c) {
     c.baumgarteT = glm::dot(diff, c.tangent);
 }
 
-void collision_constraint::refresh_C(col_constraint& c) {
+void collision_constraint2d::refresh_C(col_constraint& c) {
     vec2 point_a = ta->orientation * c.d->pa + ta->position;
     c.pa = point_a;
 
@@ -1806,15 +1806,15 @@ void collision_constraint::refresh_C(col_constraint& c) {
     c.baumgarteT = glm::dot(diff, c.tangent);
 }
 
-void constraint::refresh(pos_constraint& c) {
+void constraint2d::refresh(pos_constraint& c) {
     vec2 point_a = ta->orientation * c.a + ta->position;
     c.pa = point_a;
-    for(int i = 0; i < c.vs.size(); ++i) c.inertia_a[i] = physics_system::calculate_inverse_mass(ca, ta, c.vs[i], c.pa - ta->position);
+    for(int i = 0; i < c.vs.size(); ++i) c.inertia_a[i] = physics_system2d::calculate_inverse_mass(ca, ta, c.vs[i], c.pa - ta->position);
 
     if(b != NULL_ENTITY) {
         vec2 point_b = tb->orientation * c.b + tb->position;
         c.pb = point_b;
-        for(int i = 0; i < c.vs.size(); ++i) c.inertia_b[i] = physics_system::calculate_inverse_mass(cb, tb, c.vs[i], c.pb - tb->position);
+        for(int i = 0; i < c.vs.size(); ++i) c.inertia_b[i] = physics_system2d::calculate_inverse_mass(cb, tb, c.vs[i], c.pb - tb->position);
     }
 
     for(int i = 0; i < c.vs.size(); ++i) {
@@ -1824,7 +1824,7 @@ void constraint::refresh(pos_constraint& c) {
     }
 }
 
-void constraint::get_points() {
+void constraint2d::get_points() {
     for(pos_constraint& pc : pos) {
         pc.pa = ta->orientation * pc.a + ta->position;
 
@@ -1836,7 +1836,7 @@ void constraint::get_points() {
     }
 }
 
-void constraint::get_values() {
+void constraint2d::get_values() {
     for(pos_constraint& pc : pos) {
         pc.inertia_a.resize(pc.vs.size());
         pc.inertia_b.resize(pc.vs.size());
@@ -1850,8 +1850,8 @@ void constraint::get_values() {
             float v_diff = glm::dot(diff, v);
             pc.baumgarte[i] = v_diff;
 
-            pc.inertia_a[i] = physics_system::calculate_inverse_mass(ca, ta, v, pc.pa - ta->position);
-            if(b != NULL_ENTITY) pc.inertia_b[i] = physics_system::calculate_inverse_mass(cb, tb, v, pc.pb - tb->position);
+            pc.inertia_a[i] = physics_system2d::calculate_inverse_mass(ca, ta, v, pc.pa - ta->position);
+            if(b != NULL_ENTITY) pc.inertia_b[i] = physics_system2d::calculate_inverse_mass(cb, tb, v, pc.pb - tb->position);
             
             //pc.lambda[i] = 0.0f;
         }
@@ -1882,15 +1882,15 @@ void constraint::get_values() {
 }
 
 vec2 get_gravity(vec2 pos) {
-    physics_system& ps = axiom::global_core.ecs->get_system<physics_system>();
+    physics_system2d& ps = axiom::global_core.ecs->get_system<physics_system2d>();
 
     //vec2 rel_pos = pos;
     //return normalize(vec2(rel_pos.x / (ps.gravity_aspect.x * ps.gravity_aspect.x), rel_pos.y / (ps.gravity_aspect.y * ps.gravity_aspect.y)));
     return vec2(0.0f, 1.0f);
 }
 
-std::vector<collision_data> physics_system::collide(transform2d t, std::vector<vertex_element2d> vs) {
-    std::vector<collision_data> ret;
+std::vector<collision_data2d> physics_system2d::collide(transform2d t, std::vector<vertex_element2d> vs) {
+    std::vector<collision_data2d> ret;
 
     collider2d c;
     collision_shape2d cs;

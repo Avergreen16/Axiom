@@ -3,6 +3,8 @@
 layout(location = 0) out vec4 frag_color;
 
 layout(location = 0) uniform mat4 model;
+layout(location = 1) uniform mat4 view;
+layout(location = 2) uniform mat4 proj;
 
 layout(location = 0) in vec2 cs;
 layout(location = 1) in mat4 inv_model;
@@ -79,7 +81,7 @@ vec4 get_color(vec2 pos, float dist, vec3 camera_pos, vec3 view_dir, mat3 norm) 
             
             //p += (fract(offset_minor / r) * r + fract(offset_major * (4294967296.0 / r)) * r) * 256.0;
 
-            float lw = 1.0 / 32;
+            float lw = 1.0 / 32.0;
 
             vec4 x_color = vec4(0.0);
             vec4 y_color = vec4(0.0);
@@ -89,19 +91,18 @@ vec4 get_color(vec2 pos, float dist, vec3 camera_pos, vec3 view_dir, mat3 norm) 
             //
 
             vec2 tex_pos = p / radius;
+            bool cont = dist > 0.0;
+            
             vec2 dx = dFdx(tex_pos);
             vec2 dy = dFdy(tex_pos);
 
-            bool cont = dist > 0.0;
             //if(isnan(dx.x) || isnan(dy.y) || isinf(dx.x) || isinf(dy.y)) cont = false;
 
-            //
             if(cont) {
-
                 vec2 ax = vec2(dx.x, dy.x);
                 vec2 ay = vec2(dx.y, dy.y);
-                float ddx = length(ax);
-                float ddy = length(ay);
+                float ddx = clamp(length(ax), 0.0, 1.0);
+                float ddy = clamp(length(ay), 0.0, 1.0);
 
                 float draw_width_x = ddx;//clamp(lw * fade1, ddx, 1.0);
                 float draw_width_y = ddy;//clamp(lw * fade1, ddy, 1.0);
@@ -122,7 +123,7 @@ vec4 get_color(vec2 pos, float dist, vec3 camera_pos, vec3 view_dir, mat3 norm) 
                     float x_d = abs(tex_pos_basis.x / radius) * 2.0 / draw_width_x;
                     float y_d = abs(tex_pos_basis.y / radius) * 2.0 / draw_width_y;
 
-                    if(!(draw_width_x >= 1.0 || draw_width_y >= 1.0) && !isnan(draw_width_x) && !isnan(draw_width_y) && !isinf(draw_width_x) && !isinf(draw_width_y)) { 
+                    if(!isnan(draw_width_x) && !isnan(draw_width_y) && !isinf(draw_width_x) && !isinf(draw_width_y)) { 
                         if(x_d < 2.0) {
                             axis = true;
                             if(y_d < 2.0) {
@@ -159,14 +160,14 @@ vec4 get_color(vec2 pos, float dist, vec3 camera_pos, vec3 view_dir, mat3 norm) 
                     
                     draw_width_x = min(ddx, 1.0);
                     draw_width_y = min(ddy, 1.0);
-                    x_d = abs(tex_pos_basis.x / radius) * 2.0 / draw_width_x;
-                    y_d = abs(tex_pos_basis.y / radius) * 2.0 / draw_width_y;
+                    x_d = abs(tex_pos_basis.x / radius) * 4.0 / draw_width_x;
+                    y_d = abs(tex_pos_basis.y / radius) * 4.0 / draw_width_y;
 
                     if(!axis) {
                         x_width = abs(fract(tex_pos.x + 0.5) - 0.5) * 2.0;
                         y_width = abs(fract(tex_pos.y + 0.5) - 0.5) * 2.0;
-                        if(x_width / draw_width_x <= 1.0) x_color = vec4(1.0, 1.0, 1.0, lw / draw_width_x);
-                        if(y_width / draw_width_y <= 1.0) y_color = vec4(1.0, 1.0, 1.0, lw / draw_width_y);
+                        if(x_width / draw_width_x <= 1.0) x_color = vec4(1.0, 1.0, 1.0, lw / draw_width_x + 0.3);
+                        if(y_width / draw_width_y <= 1.0) y_color = vec4(1.0, 1.0, 1.0, lw / draw_width_y + 0.3);
 
                         float start_v = 0.5;
                         float end_v = 1.0;
@@ -188,7 +189,7 @@ vec4 get_color(vec2 pos, float dist, vec3 camera_pos, vec3 view_dir, mat3 norm) 
                     if(axis) {
                         color = x_color;
                     } else {
-                        color = vec4(max(color, min(vec4(line_color, 1.0), x_color + y_color)));
+                        color = vec4(max(color, min(vec4(line_color, 1.0), max(x_color, y_color))));
                     }
                 }
             }
@@ -253,7 +254,10 @@ void main() {
 
     vec4 color = vec4(0.0);
     //if(dist > 0) {
-        //gl_FragDepth = p.z;
+        vec4 d = proj * (view * vec4((ray * dist), 1.0));
+        d /= d.w;
+
+        gl_FragDepth = d.z;
 
         vec2 plane_pos = p.xy;
 
@@ -266,7 +270,7 @@ void main() {
         if(color.w == 0.0) color.w = 0.0;
     //}
     
-    frag_color = vec4(base_color, 1.0) * (1.0 - color.w) + color * color.w;
+    frag_color = vec4(base_color, 0.0) * (1.0 - color.w) + color * color.w;
     frag_color = min(frag_color, 1.0);
     //frag_normal = vec4(0.0);
 

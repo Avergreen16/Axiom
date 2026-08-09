@@ -9,6 +9,7 @@
 #include <thread>
 #include <functional>
 #include <shared_mutex>
+#include <iostream>
 
 #define GLM_FORCE_SWIZZLE
 #define GLM_FORCE_RADIANS
@@ -39,6 +40,10 @@ using uint = unsigned int;
 using ulong = uint64_t;
 using byte = uint8_t;
 
+std::ostream& operator<<(std::ostream& stream, const vec2& v);
+std::ostream& operator<<(std::ostream& stream, const vec3& v);
+std::ostream& operator<<(std::ostream& stream, const vec4& v);
+
 namespace axiom {
 
 double get_time();
@@ -56,7 +61,6 @@ std::vector<byte> get_bytes_from_file(std::string path);
 
 void write_text_to_file(std::string path, std::string data);
 void write_bytes_to_file(std::string path, std::vector<byte> data);
-
 
 auto get_date_time(ulong timestamp);
 
