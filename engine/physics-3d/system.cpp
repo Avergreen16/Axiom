@@ -33,7 +33,6 @@ void physics_system3d::physics_loop() {
     prune_manifolds();
 
     build_constraints();
-    std::cout << narrow_collisions.size() << " " << constraints.size() << "\n";
 
     solver();
 }
@@ -306,6 +305,8 @@ void physics_system3d::prune_manifolds() {
 
         std::vector<uint> delete_manifolds;
 
+        debug_vertices[0].clear();
+
         uint d = 0;
         uint vv = 0;
         for(axiom::manifold& manifold : new_manifolds) {
@@ -320,6 +321,9 @@ void physics_system3d::prune_manifolds() {
 
                 contact_point p = get_points(v, manifold.a, manifold.b);
 
+                debug_vertices[0].push_back(p.a);
+                debug_vertices[0].push_back(p.b);
+
                 vec3 diff = p.a - p.b;
                 
                 float dot_normal = dot(v.normal, diff);
@@ -327,6 +331,7 @@ void physics_system3d::prune_manifolds() {
 
                 if((dot_normal > contact_sep) || tangent > contact_sep) {
                     manifold.points.erase(manifold.points.begin() + i);
+
                     --i;
                 } else if(dot_normal < max_pen) {
                     max_id = i;
@@ -444,6 +449,8 @@ void physics_system3d::build_constraints() {
 
     constraints.reserve(constraints.size() + temp_constraints);
 
+    debug_vertices[1].clear();
+
     uint i = 0;
     for(auto& [k, d] : collision_table) {
         for(manifold& manifold : d) {
@@ -468,6 +475,10 @@ void physics_system3d::build_constraints() {
                 }
                 
                 collision_data3d& c = manifold.points[j];
+                contact_point p = get_points(c, cc.a, cc.b);
+
+                debug_vertices[1].push_back(p.a);
+                debug_vertices[1].push_back(p.b);
                 
                 cc.normal = c.normal;
                 cc.data = &c;
@@ -504,13 +515,13 @@ contact_point physics_system3d::get_points(collision_data3d& data, uint a, uint 
     transform3d& at = axiom::global_core.ecs->get_component<transform3d>(a);
     collider3d& ac = axiom::global_core.ecs->get_component<collider3d>(a);
     
-    vec3 pa = at.orientation * data.point.a;
+    vec3 pa = at.orientation * data.point.a + at.position;
     vec3 pb;
     if(b != NULL_ENTITY) {
         transform3d& bt = axiom::global_core.ecs->get_component<transform3d>(b);
         collider3d& bc = axiom::global_core.ecs->get_component<collider3d>(b);
-        pb = bt.orientation * data.point.b + vec3(bt.position - at.position);
-    } else pb = data.point.b - at.position;
+        pb = bt.orientation * data.point.b + bt.position;//(bt.position - at.position);
+    } else pb = data.point.b;// - at.position;
 
     return contact_point{pa, pb};
 }
@@ -583,8 +594,6 @@ bool physics_system3d::raycast(vec3 start, vec3 direction, float step, float dis
             vertex_element3d(direction * length, vec3(inflate, inflate, 0.0f)),
         };
         collider.collision_shapes[0].elements = vs2;
-
-        //std::cout << pos << " " << length << " " << direction << " " << inflate << "\n";
         
         create_bounding_box(collider);
 
@@ -592,7 +601,7 @@ bool physics_system3d::raycast(vec3 start, vec3 direction, float step, float dis
             if(!mask.contains(entity)) {
                 collider3d& ec = axiom::global_core.ecs->get_component<collider3d>(entity);
                 transform3d& et = axiom::global_core.ecs->get_component<transform3d>(entity);
-                create_bounding_box(ec);
+                //create_bounding_box(ec);
             
                 if(collide(et, ec.bounding_box, t, collider.bounding_box)) {
                     if(ec.bvh.nodes.size()) {

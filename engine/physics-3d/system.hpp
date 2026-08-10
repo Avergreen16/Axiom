@@ -45,6 +45,9 @@ struct physics_system3d : system {
 
     //std::vector<Debug_point> debug_points;
 
+    std::vector<vec3> debug_points_a;
+    std::vector<vec3> debug_points_b;
+
     //
 
     physics_system3d();

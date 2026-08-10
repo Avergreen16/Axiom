@@ -1,5 +1,6 @@
 #include <physics-3d/collider.hpp>
 #include <physics-3d/collision.hpp>
+#include <include/utilities.hpp>
 
 #include <iostream>
 

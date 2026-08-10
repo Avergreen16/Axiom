@@ -56,7 +56,7 @@ void position_constraint::before() {
         vec3 impulse = v * lambda[i];
 
         ca->apply_impulse(impulse, ra);
-        if(b == NULL_ENTITY) {
+        if(b != NULL_ENTITY) {
             cb->apply_impulse(-impulse, rb);
         }
 

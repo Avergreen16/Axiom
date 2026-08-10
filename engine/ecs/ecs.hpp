@@ -405,9 +405,15 @@ struct ecs {
         delta_time = glm::max(0.0, current_time - prev_time);
         prev_time = current_time;
 
+        int i = 0;
+
         for(std::size_t& code : system_manager_.call_order) {
             auto& system = system_manager_.systems[code];
+
+            std::cout << i << "\n";
             system->call();
+
+            ++i;
         }
     }
 };

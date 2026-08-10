@@ -2,6 +2,7 @@
 #include <physics-3d/collider.hpp>
 #include <physics-3d/bounding_box.hpp>
 #include <include/math.hpp>
+#include <include/utilities.hpp>
 
 #include <iostream>
 
@@ -316,20 +317,23 @@ bool contains(std::vector<vertex_element3d>& elements, vec3 point) {
     }
 }
 
+std::vector<std::vector<vec3>> debug_vertices = {{}, {}};
+
+//
 
 std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transform3d& tb, collision_shape3d& cb, return_tag& tag) {
     std::vector<vertex_element3d> a_vertices = ca.elements;
     std::vector<vertex_element3d> b_vertices = cb.elements;
 
     float limit = 0.0001f;
-    uint32_t iter_limit = 64;
+    uint32_t iter_limit = 256;
 
     transform3d tta = ta;
-    //tta.orientation = tta.orientation * ca.orientation;
-    //tta.position += tta.orientation * ca.position;
+    tta.orientation = tta.orientation * ca.orientation;
+    tta.position += tta.orientation * ca.position;
     transform3d ttb = tb;
-    //ttb.orientation = ttb.orientation * cb.orientation;
-    //ttb.position += ttb.orientation * cb.position;
+    ttb.orientation = ttb.orientation * cb.orientation;
+    ttb.position += ttb.orientation * cb.position;
 
     vec3 a_rel_pos = transform_vertices(a_vertices, tta, ta.position);
     vec3 b_rel_pos = transform_vertices(b_vertices, ttb, ta.position);
@@ -409,10 +413,14 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
 
                 float dist = length(difference);
 
-                if(dist == 0.0f) return {};
+                if(dist == 0.0f) {
+                    return {};
+                }
             }
 
-            if(glm::dot(point_m, direction) <= limit) return {};
+            if(glm::dot(point_m, direction) <= limit) {
+                return {};
+            }
 
             simplex.vertices.push_back(simplex_vertex{point_m, point_a, point_b});
 
@@ -559,8 +567,10 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
                         if(af) dot_a = dot(af->normal, -collision_normal);
                         if(bf) dot_b = dot(bf->normal, collision_normal);
                         
-                        if(ca.faces.size() == 0 || cb.faces.size() == 0 || af == nullptr || bf == nullptr) return_points.push_back(return_point(contact_point_a, contact_point_b, collision_normal));
-                        else {
+                        if(ca.faces.size() == 0 || cb.faces.size() == 0 || af == nullptr || bf == nullptr || true) {
+                            collision_normal = glm::normalize(contact_point_b - contact_point_a);
+                            return_points.push_back(return_point(contact_point_a, contact_point_b, collision_normal));
+                        } else {
                             shape_face& a_face = *af;
                             shape_face& b_face = *bf;
 
@@ -877,9 +887,16 @@ bool gjk(collision_shape3d& ca, transform3d& ta, collision_shape3d& cb, transfor
 
     float limit = 0.001f;
     uint32_t iter_limit = 128;
+    
+    transform3d tta = ta;
+    tta.orientation = tta.orientation * ca.orientation;
+    tta.position += tta.orientation * ca.position;
+    transform3d ttb = tb;
+    ttb.orientation = ttb.orientation * cb.orientation;
+    ttb.position += ttb.orientation * cb.position;
 
-    vec3 a_rel_pos = transform_vertices(a_vertices, ta, ta.position);
-    vec3 b_rel_pos = transform_vertices(b_vertices, tb, ta.position);
+    vec3 a_rel_pos = transform_vertices(a_vertices, tta, ta.position);
+    vec3 b_rel_pos = transform_vertices(b_vertices, ttb, ta.position);
 
     axiom::simplex simplex;
 

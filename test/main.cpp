@@ -46,9 +46,9 @@ struct main_system : axiom::system {
         // input
 
         if(win->pressed_buttons.contains(axiom::input_code::KEY_F5)) {
-            //axiom::physics_system2d& physics_system2d = axiom::global_core.ecs->get_system<axiom::physics_system2d>();
+            axiom::physics_system3d& physics_system3d = axiom::global_core.ecs->get_system<axiom::physics_system3d>();
 
-            //physics_system2d.sim_active = !physics_system2d.sim_active;
+            physics_system3d.sim_active = !physics_system3d.sim_active;
         }
 
         ++frames;
@@ -799,18 +799,6 @@ void create_ui() {
             }
 
             //
-            
-            std::vector<vec2> vs = {
-                vec2(-1.0f, -1.0f),
-                vec2(1.0f, -1.0f),
-                vec2(-1.0f, 1.0f),
-                vec2(1.0f, 1.0f)
-            };
-
-            vs = {vs[0], vs[1], vs[3], vs[0], vs[3], vs[2]};
-
-            vertices.vertex_buffer_data(vs.data(), vs.size(), sizeof(vec2), GL_STATIC_DRAW);
-            vertices.add_vertex_attribute(0, 2, GL_FLOAT, false, sizeof(vec2), 0);
 
             uint camera = *axiom::global_core.ecs->collectors["camera"].entities.begin();
 
@@ -849,8 +837,194 @@ void create_ui() {
                 mesh.vertices->draw_vertices(GL_TRIANGLES);
             }
 
+            {
+                auto& psystem = axiom::global_core.ecs->get_system<axiom::physics_system3d>();
+
+                /*
+                for(uint entity : psystem.collectors[0].entities) {
+                    axiom::collider3d& collider = axiom::global_core.ecs->get_component<axiom::collider3d>(entity);
+                    axiom::transform3d& transform = axiom::global_core.ecs->get_component<axiom::transform3d>(entity);
+
+                    axiom::bounding_box3d bounding_box = axiom::transform_bounding_box(collider.bounding_box, transform.position, transform.orientation);
+
+                    std::vector<vec3> vs = {
+                        vec3(bounding_box.minimum.x, bounding_box.minimum.y, bounding_box.minimum.z),
+                        vec3(bounding_box.maximum.x, bounding_box.minimum.y, bounding_box.minimum.z),
+                        vec3(bounding_box.minimum.x, bounding_box.maximum.y, bounding_box.minimum.z),
+                        vec3(bounding_box.maximum.x, bounding_box.maximum.y, bounding_box.minimum.z),
+                        vec3(bounding_box.minimum.x, bounding_box.minimum.y, bounding_box.maximum.z),
+                        vec3(bounding_box.maximum.x, bounding_box.minimum.y, bounding_box.maximum.z),
+                        vec3(bounding_box.minimum.x, bounding_box.maximum.y, bounding_box.maximum.z),
+                        vec3(bounding_box.maximum.x, bounding_box.maximum.y, bounding_box.maximum.z),
+                    };
+
+                    vs = {
+                        vs[0], vs[4],
+                        vs[1], vs[5],
+                        vs[2], vs[6],
+                        vs[3], vs[7],
+
+                        vs[0], vs[2],
+                        vs[1], vs[3],
+                        vs[4], vs[6],
+                        vs[5], vs[7],
+                        
+                        vs[0], vs[1],
+                        vs[2], vs[3],
+                        vs[4], vs[5],
+                        vs[6], vs[7],
+                    };
+
+                    std::vector<axiom::color_vertex3d> vvs;
+
+                    for(vec3 v : vs) {
+                        axiom::color_vertex3d vertex;
+                        vertex.position = v - transform.position;
+                        vertex.normal = vec3(0.0f, 0.0f, 1.0f);
+                        vertex.color = vec3(1.0f);
+
+                        vvs.push_back(vertex);
+                    }
+
+                    vertices.vertex_buffer_data(vvs.data(), vvs.size(), sizeof(axiom::color_vertex3d), GL_STREAM_DRAW);
+                    vertices.add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(axiom::color_vertex3d), 0);
+                    vertices.add_vertex_attribute(1, 3, GL_FLOAT, false, sizeof(axiom::color_vertex3d), sizeof(float) * 3);
+                    vertices.add_vertex_attribute(2, 3, GL_FLOAT, false, sizeof(axiom::color_vertex3d), sizeof(float) * 6);
+
+                    //
+
+
+                    axiom::transform3d i_transform;
+                    i_transform.position = transform.position;
+                    i_transform.orientation = glm::identity<mat3>();
+                    
+                    mat4 model = axiom::get_model(i_transform, camera_transform);
+                    axiom::shader& color_shader = msystem->shaders["color3d"];
+                    
+                    vec3 light_dir = vec3(0.0f, 0.0f, 1.0f);
+
+                    //
+                    
+                    color_shader.use();
+
+                    glUniformMatrix4fv(0, 1, false, &model[0][0]);
+                    glUniformMatrix4fv(1, 1, false, &view[0][0]);
+                    glUniformMatrix4fv(2, 1, false, &proj[0][0]);
+                    glUniform3fv(3, 1, &light_dir.x);
+
+                    vertices.draw_vertices(GL_LINES);
+                }
+                */
+
+                /*
+                glDisable(GL_DEPTH_TEST);
+
+                {
+                    std::vector<vec3> vs = axiom::debug_vertices[0];
+
+                    axiom::transform3d i_transform;
+                    i_transform.position = vec3(0.0f);
+                    i_transform.orientation = glm::identity<mat3>();
+
+                    std::vector<axiom::color_vertex3d> vvs;
+
+                    for(vec3 v : vs) {
+                        axiom::color_vertex3d vertex;
+                        vertex.position = v;
+                        vertex.normal = vec3(0.0f, 0.0f, 1.0f);
+                        vertex.color = vec3(1.0f, 0.0f, 1.0f);
+
+                        vvs.push_back(vertex);
+                    }
+
+                    vertices.vertex_buffer_data(vvs.data(), vvs.size(), sizeof(axiom::color_vertex3d), GL_STREAM_DRAW);
+                    vertices.add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(axiom::color_vertex3d), 0);
+                    vertices.add_vertex_attribute(1, 3, GL_FLOAT, false, sizeof(axiom::color_vertex3d), sizeof(float) * 3);
+                    vertices.add_vertex_attribute(2, 3, GL_FLOAT, false, sizeof(axiom::color_vertex3d), sizeof(float) * 6);
+
+                    //
+
+                    mat4 model = axiom::get_model(i_transform, camera_transform);
+                    axiom::shader& color_shader = msystem->shaders["color3d"];
+                    
+                    vec3 light_dir = vec3(0.0f, 0.0f, 1.0f);
+
+                    //
+                    
+                    color_shader.use();
+
+                    glUniformMatrix4fv(0, 1, false, &model[0][0]);
+                    glUniformMatrix4fv(1, 1, false, &view[0][0]);
+                    glUniformMatrix4fv(2, 1, false, &proj[0][0]);
+                    glUniform3fv(3, 1, &light_dir.x);
+
+                    glPointSize(3);
+                    vertices.draw_vertices(GL_POINTS);
+                }
+                
+                {
+                    std::vector<vec3> vs = axiom::debug_vertices[1];
+
+                    axiom::transform3d i_transform;
+                    i_transform.position = vec3(0.0f);
+                    i_transform.orientation = glm::identity<mat3>();
+
+                    std::vector<axiom::color_vertex3d> vvs;
+
+                    for(vec3 v : vs) {
+                        axiom::color_vertex3d vertex;
+                        vertex.position = v;
+                        vertex.normal = vec3(0.0f, 0.0f, 1.0f);
+                        vertex.color = vec3(1.0f, 1.0f, 0.0f);
+
+                        vvs.push_back(vertex);
+                    }
+
+                    vertices.vertex_buffer_data(vvs.data(), vvs.size(), sizeof(axiom::color_vertex3d), GL_STREAM_DRAW);
+                    vertices.add_vertex_attribute(0, 3, GL_FLOAT, false, sizeof(axiom::color_vertex3d), 0);
+                    vertices.add_vertex_attribute(1, 3, GL_FLOAT, false, sizeof(axiom::color_vertex3d), sizeof(float) * 3);
+                    vertices.add_vertex_attribute(2, 3, GL_FLOAT, false, sizeof(axiom::color_vertex3d), sizeof(float) * 6);
+
+                    //
+
+                    mat4 model = axiom::get_model(i_transform, camera_transform);
+                    axiom::shader& color_shader = msystem->shaders["color3d"];
+                    
+                    vec3 light_dir = vec3(0.0f, 0.0f, 1.0f);
+
+                    //
+                    
+                    color_shader.use();
+
+                    glUniformMatrix4fv(0, 1, false, &model[0][0]);
+                    glUniformMatrix4fv(1, 1, false, &view[0][0]);
+                    glUniformMatrix4fv(2, 1, false, &proj[0][0]);
+                    glUniform3fv(3, 1, &light_dir.x);
+
+                    glPointSize(3);
+                    vertices.draw_vertices(GL_POINTS);
+                }
+                */
+                
+                glEnable(GL_DEPTH_TEST);
+            }
+
             // render grid
             //glDisable(GL_DEPTH_TEST);
+
+            std::vector<vec2> vs = {
+                vec2(-1.0f, -1.0f),
+                vec2(1.0f, -1.0f),
+                vec2(-1.0f, 1.0f),
+                vec2(1.0f, 1.0f)
+            };
+
+            vs = {vs[0], vs[1], vs[3], vs[0], vs[3], vs[2]};
+
+            vertices.vertex_buffer_data(vs.data(), vs.size(), sizeof(vec2), GL_STATIC_DRAW);
+            vertices.add_vertex_attribute(0, 2, GL_FLOAT, false, sizeof(vec2), 0);
+
+            //
 
             axiom::transform3d grid_transform;
             grid_transform.position = vec3(0.0f);
@@ -869,7 +1043,7 @@ void create_ui() {
 
             vertices.draw_vertices(GL_TRIANGLES);
 
-            glDisable(GL_DEPTH_TEST);
+            //glDisable(GL_DEPTH_TEST);
         };
 
         std::vector<axiom::texture_format> formats = {axiom::texture_format::RGBA8, axiom::texture_format::DEPTHF};
@@ -1282,13 +1456,13 @@ int main(int argc, char* argv[]) {
         
         axiom::create_bounding_box(collider);
         
-        std::cout << collider.bounding_box.minimum << " " << collider.bounding_box.maximum << "\n";
+        //std::cout << collider.bounding_box.minimum << " " << collider.bounding_box.maximum << "\n";
     };
 
     axiom::random32 rand(0xFF55FF55);
 
     {   
-        ivec3 array = ivec3(1, 1, 1);
+        ivec3 array = ivec3(8, 8, 8);
         vec3 origin = vec3(0.0f, 0.0f, 6.0f);
         float sep = 0.75f;
 
@@ -1335,19 +1509,36 @@ int main(int argc, char* argv[]) {
                     axiom::collider3d collider;
 
                     transform.position = pos;
-                    transform.orientation = axiom::rotate_to(vec3(0.0f, 0.0f, 1.0f), rand.unit_vector());
+                    transform.orientation = glm::identity<mat3>();//axiom::rotate_to(vec3(0.0f, 0.0f, 1.0f), rand.unit_vector());
+                    
+                    float w = 0.25f;
 
                     std::vector<axiom::vertex_element3d> elements = {
-                        axiom::vertex_element3d{vec3(0.0f, 0.0f, -0.264706f), vec3(1.0f, 1.0f, 0.0f)},
-                        axiom::vertex_element3d{vec3(0.0f, 0.0f, 0.735294f), vec3(0.0f)},
-                        //axiom::vertex_element3d{vec3(0.0f, 0.0f, 0.0f), vec3(2.0f, 2.0f, 1.0f)},
-                        //axiom::vertex_element3d{vec3(0.0f, 0.0f, 4.0f), vec3(2.0f, 2.0f, 1.0f)},
+                        /*
+                        axiom::vertex_element3d{vec3(-1.0f, -1.0f, -1.0f) * w},
+                        axiom::vertex_element3d{vec3(1.0f, -1.0f, -1.0f) * w},
+                        axiom::vertex_element3d{vec3(-1.0f, 1.0f, -1.0f) * w},
+                        axiom::vertex_element3d{vec3(1.0f, 1.0f, -1.0f) * w},
+                        axiom::vertex_element3d{vec3(-1.0f, -1.0f, 1.0f) * w},
+                        axiom::vertex_element3d{vec3(1.0f, -1.0f, 1.0f) * w},
+                        axiom::vertex_element3d{vec3(-1.0f, 1.0f, 1.0f) * w},
+                        axiom::vertex_element3d{vec3(1.0f, 1.0f, 1.0f) * w},
+                        */
+
+                        //axiom::vertex_element3d{vec3(0.0f, 0.0f, 0.5f), vec3(0.0f)},
+                        //axiom::vertex_element3d{vec3(0.0f, 0.0f, 0.0f), vec3(0.25f, 0.25f, 0.0f)},
+                        
+                        axiom::vertex_element3d{vec3(0.0f, 0.0f, 0.0f), vec3(0.25f, 0.25f, 0.0f)},
+                        axiom::vertex_element3d{vec3(0.0f, 0.0f, 0.5f), vec3(0.25f, 0.25f, 0.0f)},
                     };
                     
                     create_collider(collider, transform, elements);
 
                     for(auto& element : elements) element.center += collider.collision_shapes[0].position;
-                    create_mesh(mesh, elements, axiom::hsv_color(2.0f, 0.75f, 0.5f));
+                    create_mesh(mesh, elements, axiom::hsv_color(4.0f, 0.7f, 1.0f)); // axiom::hsv_color(0.85f, 0.75f, 1.0f)
+                    // axiom::hsv_color(0.0f, 0.7f, 1.0f) RED
+                    // axiom::hsv_color(2.0f, 0.7f, 0.5f) GREEN
+                    // axiom::hsv_color(4.0f, 0.7f, 1.0f)  BLUE
 
                     uint entity = axiom::global_core.ecs->insert_entity();
                     axiom::global_core.ecs->insert_component(entity, transform);

@@ -105,6 +105,8 @@ struct polytope {
     void expand(simplex_vertex vertex);
 };
 
+extern std::vector<std::vector<vec3>> debug_vertices;
+
 vec3 transform_vertices(std::vector<vertex_element3d>& elements, transform3d& transform, vec3 origin);
 
 bool contains(std::vector<vertex_element3d>& elements, vec3 point);
