@@ -44,13 +44,6 @@ struct main_system : axiom::system {
 
     void call() {
         // input
-
-        if(win->pressed_buttons.contains(axiom::input_code::KEY_F5)) {
-            axiom::physics_system3d& physics_system3d = axiom::global_core.ecs->get_system<axiom::physics_system3d>();
-
-            physics_system3d.sim_active = !physics_system3d.sim_active;
-        }
-
         ++frames;
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -914,9 +907,7 @@ void create_ui() {
 
                     vertices.draw_vertices(GL_LINES);
                 }
-                */
 
-                /*
                 glDisable(GL_DEPTH_TEST);
 
                 {
@@ -1111,13 +1102,13 @@ void create_ui() {
     axiom::button_widget::insert(vec2(30.0f), axiom::color_purple, vec4(0, 116, 12, 12), 
         [ui_system](axiom::button_widget& self) {
             static bool update = true;
+            static bool psym = false;
 
             auto* physics = &axiom::global_core.ecs->get_system<axiom::physics_system3d>();
             auto& parent_widget = ui_system->widgets[self.parent];
 
-            if(self.pressed) {
+            if(self.pressed || ui_system->window->pressed_buttons.contains(axiom::input_code::KEY_F5)) {
                 physics->sim_active = !physics->sim_active;
-
                 update = true;
             }
 
@@ -1137,6 +1128,23 @@ void create_ui() {
                 } else {
                     ui_system->input_set(self.parent);
                     ui_system->buffer(vec4(6.0f));
+
+                    //
+                    
+                    ulong continue_button = axiom::button_widget::insert(vec2(30.0f), axiom::color_purple, vec4(36, 116, 12, 12), 
+                        [physics](axiom::button_widget& self) {
+                            if(self.held) {
+                                physics->sim_active = true;
+                            } else {
+                                physics->sim_active = false;
+                            }
+                        }
+                    );
+
+                    parent_widget->children.pop_back();
+                    parent_widget->children.insert(parent_widget->children.begin(), continue_button);
+                    
+                    //
 
                     ulong step_button = axiom::button_widget::insert(vec2(30.0f), axiom::color_purple, vec4(24, 116, 12, 12), 
                         [physics](axiom::button_widget& self) {
@@ -1443,7 +1451,74 @@ int main(int argc, char* argv[]) {
         mesh.load();
     };
 
-    auto create_collider = [](axiom::collider3d& collider, axiom::transform3d& transform, std::vector<axiom::vertex_element3d>& elements, bool is_static = false) {
+    auto get_faces = [](std::vector<axiom::vertex_element3d>& elements) -> std::vector<axiom::shape_face> {
+        std::vector<axiom::output_vertex> surface_vertices;
+        std::vector<uint> surface_indices;
+        axiom::create_mesh(elements, &surface_vertices, &surface_indices);
+
+        std::vector<axiom::shape_face> faces;
+
+        for(int i = 0; i < surface_indices.size(); i += 3) {
+            uint a = surface_indices[i];
+            uint b = surface_indices[i + 1];
+            uint c = surface_indices[i + 2];
+            a = surface_vertices[a].element;
+            b = surface_vertices[b].element;
+            c = surface_vertices[c].element;
+
+            vec3 va = elements[a].center;
+            vec3 vb = elements[b].center;
+            vec3 vc = elements[c].center;
+
+            vec3 normal = glm::normalize(cross(va - vc, vb - vc));
+            if(dot(normal, va) < 0.0f) normal = -normal;
+            
+            std::vector<uint> is = {a, b, c};
+            std::sort(is.begin(), is.end());
+
+            faces.push_back({is, normal});
+        }
+
+        for(int i = 0; i < faces.size(); ++i) {
+            for(int j = i + 1; j < faces.size(); ++j) {
+                axiom::shape_face face_i = faces[i];
+                axiom::shape_face face_j = faces[j];
+
+                if(dot(face_i.normal, face_j.normal) > 0.98f) {
+                    std::vector<uint> new_i;
+                    std::set_union(face_i.vertices.begin(), face_i.vertices.end(), face_j.vertices.begin(), face_j.vertices.end(), std::back_inserter(new_i));
+
+                    face_i.normal = normalize(face_i.normal + face_j.normal);
+                    face_i.vertices = new_i;
+                    faces[i] = face_i;
+
+                    faces.erase(faces.begin() + j);
+                    --j;
+                }
+            }
+        }
+
+        for(auto& face : faces) {
+            vec3 center = vec3(0.0f);
+            for(uint i : face.vertices) center += elements[i].center;
+            center /= float(face.vertices.size());
+
+            std::sort(face.vertices.begin(), face.vertices.end(), 
+                [center, norm = face.normal, &elements](const uint& a, const uint& b) {
+                    vec3 va = elements[a].center;
+                    vec3 vb = elements[b].center;
+
+                    float s = glm::dot(norm, glm::cross(va - center, vb - center));
+
+                    return s > 0.0f;
+                }
+            );
+        }
+
+        return faces;
+    };
+
+    auto create_collider = [&get_faces](axiom::collider3d& collider, axiom::transform3d& transform, std::vector<axiom::vertex_element3d>& elements, bool is_static = false) {
         axiom::collision_shape3d shape;
         shape.elements = elements;
         collider.collision_shapes = {shape};
@@ -1455,14 +1530,18 @@ int main(int argc, char* argv[]) {
         transform.position += transform.orientation * offset;
         
         axiom::create_bounding_box(collider);
-        
-        //std::cout << collider.bounding_box.minimum << " " << collider.bounding_box.maximum << "\n";
+
+
+        // get faces
+        std::vector<axiom::shape_face> faces;
+
+        collider.collision_shapes[0].faces = get_faces(collider.collision_shapes[0].elements);
     };
 
     axiom::random32 rand(0xFF55FF55);
 
     {   
-        ivec3 array = ivec3(8, 8, 8);
+        ivec3 array = ivec3(8);
         vec3 origin = vec3(0.0f, 0.0f, 6.0f);
         float sep = 0.75f;
 
@@ -1514,7 +1593,6 @@ int main(int argc, char* argv[]) {
                     float w = 0.25f;
 
                     std::vector<axiom::vertex_element3d> elements = {
-                        /*
                         axiom::vertex_element3d{vec3(-1.0f, -1.0f, -1.0f) * w},
                         axiom::vertex_element3d{vec3(1.0f, -1.0f, -1.0f) * w},
                         axiom::vertex_element3d{vec3(-1.0f, 1.0f, -1.0f) * w},
@@ -1523,19 +1601,17 @@ int main(int argc, char* argv[]) {
                         axiom::vertex_element3d{vec3(1.0f, -1.0f, 1.0f) * w},
                         axiom::vertex_element3d{vec3(-1.0f, 1.0f, 1.0f) * w},
                         axiom::vertex_element3d{vec3(1.0f, 1.0f, 1.0f) * w},
-                        */
 
                         //axiom::vertex_element3d{vec3(0.0f, 0.0f, 0.5f), vec3(0.0f)},
                         //axiom::vertex_element3d{vec3(0.0f, 0.0f, 0.0f), vec3(0.25f, 0.25f, 0.0f)},
                         
-                        axiom::vertex_element3d{vec3(0.0f, 0.0f, 0.0f), vec3(0.25f, 0.25f, 0.0f)},
-                        axiom::vertex_element3d{vec3(0.0f, 0.0f, 0.5f), vec3(0.25f, 0.25f, 0.0f)},
+                        //axiom::vertex_element3d{vec3(0.0f, 0.0f, 0.0f), vec3(0.25f, 0.25f, 0.0f)},
+                        //axiom::vertex_element3d{vec3(0.0f, 0.0f, 0.5f), vec3(0.25f, 0.25f, 0.0f)},
                     };
                     
-                    create_collider(collider, transform, elements);
 
-                    for(auto& element : elements) element.center += collider.collision_shapes[0].position;
-                    create_mesh(mesh, elements, axiom::hsv_color(4.0f, 0.7f, 1.0f)); // axiom::hsv_color(0.85f, 0.75f, 1.0f)
+                    create_mesh(mesh, elements, axiom::hsv_color(0.0f, 0.7f, 1.0f));
+                    create_collider(collider, transform, elements);
                     // axiom::hsv_color(0.0f, 0.7f, 1.0f) RED
                     // axiom::hsv_color(2.0f, 0.7f, 0.5f) GREEN
                     // axiom::hsv_color(4.0f, 0.7f, 1.0f)  BLUE
@@ -1574,7 +1650,7 @@ int main(int argc, char* argv[]) {
             axiom::vertex_element3d{vec3(1.0f, 1.0f, 1.0f) * w},
         };
         
-        create_mesh(mesh, elements, axiom::hsv_color(0.0f, 0.0f, 0.6f));
+        create_mesh(mesh, elements, axiom::hsv_color(0.0f, 0.0f, 0.4f));
         create_collider(collider, transform, elements, true);
 
         uint entity = axiom::global_core.ecs->insert_entity();

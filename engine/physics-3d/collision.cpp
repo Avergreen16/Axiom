@@ -220,8 +220,6 @@ void polytope::expand(simplex_vertex vertex) {
         edges.push_back(edge_b);
         edges.push_back(edge_c);
     }
-
-    //std::sort(faces_seen.begin(), faces_seen.end());
     
     int i = 0;
     for(uint f : faces_seen) {
@@ -237,8 +235,6 @@ void polytope::expand(simplex_vertex vertex) {
             insert_face({a, b, v_n});
         }
     }
-
-    //if(ii == false) std::cout << "ERROR " << min_d << "\n";
 }
 
 bool contains(std::vector<vertex_element3d>& elements, vec3 point) {
@@ -567,7 +563,9 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
                         if(af) dot_a = dot(af->normal, -collision_normal);
                         if(bf) dot_b = dot(bf->normal, collision_normal);
                         
-                        if(ca.faces.size() == 0 || cb.faces.size() == 0 || af == nullptr || bf == nullptr || true) {
+                        collision_normal = glm::normalize(contact_point_b - contact_point_a);
+                        
+                        if(ca.faces.size() == 0 || cb.faces.size() == 0 || af == nullptr || bf == nullptr) {
                             collision_normal = glm::normalize(contact_point_b - contact_point_a);
                             return_points.push_back(return_point(contact_point_a, contact_point_b, collision_normal));
                         } else {
