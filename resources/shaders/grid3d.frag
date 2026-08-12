@@ -23,6 +23,8 @@ vec3 pos_x_color = hex_color(0xFF4040);
 vec3 neg_x_color = hex_color(0x40FFFF);
 vec3 pos_y_color = hex_color(0x40FF40);
 vec3 neg_y_color = hex_color(0xFF40FF);
+vec3 pos_z_color = hex_color(0x4040FF);
+vec3 neg_z_color = hex_color(0xFFFF40);
 
 //
 
@@ -43,7 +45,51 @@ float map(float v, float min1, float max1, float min2, float max2) {
     return i * (max2 - min2) + min2;
 }
 
-vec4 get_color(vec2 pos, float dist, vec3 camera_pos, vec3 view_dir, mat3 norm) {
+vec3 cycle_color(float angle, float saturation, float value) {
+    float x = mod(angle, 1.0) * 6.0;
+    float fracx = fract(x);
+
+    if(x < 1.0) return vec3(1.0, fracx, 0.0);
+    if(x < 2.0) return vec3(1.0 - fracx, 1.0, 0.0);
+    if(x < 3.0) return vec3(0.0, 1.0, fracx);
+    if(x < 4.0) return vec3(0.0, 1.0 - fracx, 1.0);
+    if(x < 5.0) return vec3(fracx, 0.0, 1.0);
+    return vec3(1.0, 0.0, 1.0 - fracx);
+}
+
+void render_line(vec3 line_origin, vec3 line_direction, vec3 ray_origin, vec3 ray_direction, mat3 view_mat, vec3 color) {
+    vec3 W = line_origin - ray_origin;
+    float a = dot(W, line_direction);
+    float b = dot(W, ray_direction);
+    float c = dot(line_direction, ray_direction);
+    float d = dot(line_direction, line_direction);
+    float e = dot(ray_direction, ray_direction);
+
+    float denom = (d * e - c * c);
+    float s = (b * c - a * e) / denom;
+    float t = (b * d - c * a) / denom;
+
+    vec3 ps = line_origin + line_direction * s;
+    vec3 pt = ray_origin + ray_direction * t;
+
+    float between_dist_x = dot(view_mat[0], ps - pt);
+    float between_dist_y = dot(view_mat[1], ps - pt);
+
+    float dx = dFdx(between_dist_x);
+    float dy = dFdy(between_dist_y);
+    float dl = length(vec2(dx, dy));
+
+    if(length(ps - pt) / dl < 1.0 && t > 0.0) {
+        frag_color = vec4(color, 1.0);
+
+        vec4 d = proj * (view * vec4((ray_direction * t), 1.0));
+        d /= d.w;
+
+        gl_FragDepth = d.z;
+    }
+}
+
+vec4 get_color(vec2 p, float dist, vec3 camera_pos, vec3 view_dir, mat3 norm, float h) {
     uint num_scales = 4;
     uint scale_p = 4;
     uint scale = uint(pow(2, scale_p));
@@ -55,7 +101,14 @@ vec4 get_color(vec2 pos, float dist, vec3 camera_pos, vec3 view_dir, mat3 norm) 
     int min_s = 0;
     int max_s = int(floor(log(bounds) / log(16)));
 
+
     vec4 color = vec4(0.0);
+    
+    float ddistx = dFdx(dist);
+    float ddisty = dFdx(dist);
+    
+
+    //
 
     for(int i = -2; i <= 2; ++i) {
         int ii = i + starting_scale;
@@ -63,7 +116,20 @@ vec4 get_color(vec2 pos, float dist, vec3 camera_pos, vec3 view_dir, mat3 norm) 
             uint pp = ii * scale_p;
 
             float radius = pow(2, pp);
-            vec2 p = pos;
+
+            //
+
+            vec2 pos = p / radius;
+            
+            vec2 dx = dFdx(pos);
+            vec2 dy = dFdy(pos);
+            vec2 ax = vec2(dx.x, dy.x);
+            vec2 ay = vec2(dx.y, dy.y);
+            float ddx = length(ax);
+            float ddy = length(ay);
+
+            float dhdx = dFdx(h);
+            float dhdy = dFdy(h);
 
             /*
             p += fract(offset_minor1 / radius) * radius * 256.0;
@@ -88,113 +154,42 @@ vec4 get_color(vec2 pos, float dist, vec3 camera_pos, vec3 view_dir, mat3 norm) 
 
             float fade1 = min(abs(camera_pos.z) / (radius * 0.125), 1.0);
 
-            //
+            bool axis = false;
 
-            vec2 tex_pos = p / radius;
-            bool cont = dist > 0.0;
-            
-            vec2 dx = dFdx(tex_pos);
-            vec2 dy = dFdy(tex_pos);
+            float x_d = abs(pos.x) / ddx;
+            float y_d = abs(pos.y) / ddy;
 
-            //if(isnan(dx.x) || isnan(dy.y) || isinf(dx.x) || isinf(dy.y)) cont = false;
+            x_d = abs(pos.x) * 4.0 / ddx;
+            y_d = abs(pos.y) * 4.0 / ddy;
 
-            if(cont) {
-                vec2 ax = vec2(dx.x, dy.x);
-                vec2 ay = vec2(dx.y, dy.y);
-                float ddx = clamp(length(ax), 0.0, 1.0);
-                float ddy = clamp(length(ay), 0.0, 1.0);
+            if(!axis) {
+                float x_width = abs(fract(pos.x + 0.5) - 0.5) * 2.0;
+                float y_width = abs(fract(pos.y + 0.5) - 0.5) * 2.0;
+                if(x_width / ddx <= 1.0) x_color = vec4(1.0, 1.0, 1.0, lw / ddx + 0.3);
+                if(y_width / ddy <= 1.0) y_color = vec4(1.0, 1.0, 1.0, lw / ddy + 0.3);
 
-                float draw_width_x = ddx;//clamp(lw * fade1, ddx, 1.0);
-                float draw_width_y = ddy;//clamp(lw * fade1, ddy, 1.0);
-                
-                bool axis = false;
-                float x_width = abs(tex_pos.x) * 2.0;
-                float y_width = abs(tex_pos.y) * 2.0;
+                float start_v = 0.5;
+                float end_v = 1.0;
 
-                float x = pos.x;// + ((float(offset_major.x) * 16777216.0 + float(offset_minor0.x)) * 16777216.0 + float(offset_minor1.x)) * 256.0;
-                float y = pos.y;// + ((float(offset_major.y) * 16777216.0 + float(offset_minor0.y)) * 16777216.0 + float(offset_minor1.y)) * 256.0;
-                
-                vec2 tex_pos_basis = vec2(x, y);
-                
-                //if(draw_width_x <= 0.001 || draw_width_y <= 0.001 || isnan(draw_width_x) || isnan(draw_width_y) || isinf(draw_width_x) || isinf(draw_width_y)) cont = false;
-
-                
-                if(cont) {
-                    float x_d = abs(tex_pos_basis.x / radius) * 2.0 / draw_width_x;
-                    float y_d = abs(tex_pos_basis.y / radius) * 2.0 / draw_width_y;
-
-                    if(!isnan(draw_width_x) && !isnan(draw_width_y) && !isinf(draw_width_x) && !isinf(draw_width_y)) { 
-                        if(x_d < 2.0) {
-                            axis = true;
-                            if(y_d < 2.0) {
-                                if(abs(x_d) > abs(y_d)) {
-                                    if(tex_pos_basis.x < 0.0) {
-                                        x_color = vec4(neg_x_color, 1.0);
-                                    } else {
-                                        x_color = vec4(pos_x_color, 1.0);
-                                    }
-                                } else {
-                                    if(tex_pos_basis.y < 0.0) {
-                                        x_color = vec4(neg_y_color, 1.0);
-                                    } else {
-                                        x_color = vec4(pos_y_color, 1.0);
-                                    }
-                                }
-                            } else {
-                                if(tex_pos_basis.y < 0.0) {
-                                    x_color = vec4(neg_y_color, 1.0);
-                                } else {
-                                    x_color = vec4(pos_y_color, 1.0);
-                                }
-                            }
-                        } else if(y_d < 2.0) {
-                            axis = true;
-
-                            if(tex_pos_basis.x < 0.0) {
-                                x_color = vec4(neg_x_color, 1.0);
-                            } else {
-                                x_color = vec4(pos_x_color, 1.0);
-                            }
-                        }
-                    }
-                    
-                    draw_width_x = min(ddx, 1.0);
-                    draw_width_y = min(ddy, 1.0);
-                    x_d = abs(tex_pos_basis.x / radius) * 4.0 / draw_width_x;
-                    y_d = abs(tex_pos_basis.y / radius) * 4.0 / draw_width_y;
-
-                    if(!axis) {
-                        x_width = abs(fract(tex_pos.x + 0.5) - 0.5) * 2.0;
-                        y_width = abs(fract(tex_pos.y + 0.5) - 0.5) * 2.0;
-                        if(x_width / draw_width_x <= 1.0) x_color = vec4(1.0, 1.0, 1.0, lw / draw_width_x + 0.3);
-                        if(y_width / draw_width_y <= 1.0) y_color = vec4(1.0, 1.0, 1.0, lw / draw_width_y + 0.3);
-
-                        float start_v = 0.5;
-                        float end_v = 1.0;
-
-                        if(ddx / radius > start_v) x_color = mix(x_color, vec4(1.0, 1.0, 1.0, lw * fade1), (ddx / radius - start_v) / (end_v - start_v));
-                        if(ddy / radius > start_v) y_color = mix(y_color, vec4(1.0, 1.0, 1.0, lw * fade1), (ddy / radius - start_v) / (end_v - start_v));
-                    }
-
-                    vec2 dd = vec2(draw_width_x, draw_width_y);
-
-                    vec2 c = ceil(abs(tex_pos) - dd * 0.5) * radius;
-                    if(c.x > bounds || c.y > bounds) {
-                        x_color = vec4(0.0);
-                        y_color = vec4(0.0);
-                    }
-
-                    float opacity = 0.75;
-
-                    if(axis) {
-                        color = x_color;
-                    } else {
-                        color = vec4(max(color, min(vec4(line_color, 1.0), max(x_color, y_color))));
-                    }
-                }
+                if(ddx / radius > start_v) x_color = mix(x_color, vec4(1.0, 1.0, 1.0, lw * fade1), (ddx / radius - start_v) / (end_v - start_v));
+                if(ddy / radius > start_v) y_color = mix(y_color, vec4(1.0, 1.0, 1.0, lw * fade1), (ddy / radius - start_v) / (end_v - start_v));
             }
+
+            vec2 dd = vec2(ddx, ddy);
+
+            vec2 c = ceil(abs(pos) - dd * 0.5) * radius;
+            if(c.x > bounds || c.y > bounds) {
+                x_color = vec4(0.0);
+                y_color = vec4(0.0);
+            }
+
+            float opacity = 0.75;
+
+            color = vec4(max(color, min(vec4(line_color, 1.0), max(x_color, y_color))));
         }
     }
+
+    if(dist < 0.0) return vec4(0.0);
 
     return color;
 }
@@ -243,6 +238,8 @@ void main() {
     cc = inv_view * cc;
 
     vec3 ray = normalize(cc.xyz);
+    
+    float denom = dot(ray, vec3(0.0, 0.0, 1.0));
 
     vec3 origin = vec3(model * vec4(0.0, 0.0, 0.0, 1.0));
 
@@ -265,13 +262,17 @@ void main() {
 
         mat3 norm_mat = mat3(1, 0, 0, 0, 1, 0, 0, 0, 1);
 
-        color = get_color(plane_pos, dist, -origin, ray, norm_mat);
+        color = get_color(plane_pos, dist, -origin, ray, norm_mat, denom);
 
         if(color.w == 0.0) color.w = 0.0;
     //}
     
     frag_color = vec4(base_color, 0.0) * (1.0 - color.w) + color * color.w;
     frag_color = min(frag_color, 1.0);
+
+    render_line(origin, vec3(1.0, 0.0, 0.0), vec3(0.0), ray, mat3(inv_view), pos_x_color);
+    render_line(origin, vec3(0.0, 1.0, 0.0), vec3(0.0), ray, mat3(inv_view), pos_y_color);
+    render_line(origin, vec3(0.0, 0.0, 1.0), vec3(0.0), ray, mat3(inv_view), pos_z_color);
     //frag_normal = vec4(0.0);
 
     /*float x_a = floor(x) / 10;

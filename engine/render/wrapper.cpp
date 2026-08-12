@@ -237,6 +237,7 @@ bool shader::compile(text_asset vertex_shader, text_asset fragment_shader) {
 
         std::vector<char> error_log(log_size);
         glGetShaderInfoLog(vs, log_size, &log_size, &error_log[0]);
+        std::cout << "error in file: " << vertex_shader.filepath << "\n";
         std::cout << "ERROR: Vertex shader failed to compile:\n" << error_log.data() << "\n";
         //std::cout << "Filepath: " << vertex_shader.filepath << "\n";
 
@@ -255,6 +256,7 @@ bool shader::compile(text_asset vertex_shader, text_asset fragment_shader) {
 
         std::vector<char> error_log(log_size);
         glGetShaderInfoLog(fs, log_size, &log_size, &error_log[0]);
+        std::cout << "error in file: " << fragment_shader.filepath << "\n";
         std::cout << "ERROR: Fragment shader failed to compile:\n" << error_log.data() << "\n";
         //std::cout << "Filepath: " << fragment_shader.filepath << "\n";
 
@@ -326,6 +328,7 @@ bool shader::compile(text_asset vertex_shader, text_asset geometry_shader, text_
 
         std::vector<char> error_log(log_size);
         glGetShaderInfoLog(gs, log_size, &log_size, &error_log[0]);
+        std::cout << "error in file: " << geometry_shader.filepath << "\n";
         std::cout << "ERROR: Geometry shader failed to compile:\n" << error_log.data() << "\n";
         //std::cout << "Filepath: " << gspath << "\n";
 
@@ -345,6 +348,7 @@ bool shader::compile(text_asset vertex_shader, text_asset geometry_shader, text_
 
         std::vector<char> error_log(log_size);
         glGetShaderInfoLog(fs, log_size, &log_size, &error_log[0]);
+        std::cout << "error in file: " << fragment_shader.filepath << "\n";
         std::cout << "ERROR: Fragment shader failed to compile:\n" << error_log.data() << "\n";
         //std::cout << "Filepath: " << fspath << "\n";
 
@@ -387,6 +391,7 @@ bool shader::compile(text_asset vertex_shader, text_asset tess_ctrl_shader, text
 
         std::vector<char> error_log(log_size);
         glGetShaderInfoLog(vs, log_size, &log_size, &error_log[0]);
+        std::cout << "error in file: " << vertex_shader.filepath << "\n";
         std::cout << "ERROR: Vertex shader failed to compile:\n" << error_log.data() << "\n";
         //std::cout << "Filepath: " << vspath << "\n";
 
@@ -405,6 +410,7 @@ bool shader::compile(text_asset vertex_shader, text_asset tess_ctrl_shader, text
 
         std::vector<char> error_log(log_size);
         glGetShaderInfoLog(tcs, log_size, &log_size, &error_log[0]);
+        std::cout << "error in file: " << tess_ctrl_shader.filepath << "\n";
         std::cout << "ERROR: Tesselation control shader failed to compile:\n" << error_log.data() << "\n";
         //std::cout << "Filepath: " << tcspath << "\n";
 
@@ -424,6 +430,7 @@ bool shader::compile(text_asset vertex_shader, text_asset tess_ctrl_shader, text
 
         std::vector<char> error_log(log_size);
         glGetShaderInfoLog(tes, log_size, &log_size, &error_log[0]);
+        std::cout << "error in file: " << tess_eval_shader.filepath << "\n";
         std::cout << "ERROR: Tesselation evaluation shader failed to compile:\n" << error_log.data() << "\n";
         //std::cout << "Filepath: " << tespath << "\n";
 
@@ -444,6 +451,7 @@ bool shader::compile(text_asset vertex_shader, text_asset tess_ctrl_shader, text
 
         std::vector<char> error_log(log_size);
         glGetShaderInfoLog(gs, log_size, &log_size, &error_log[0]);
+        std::cout << "error in file: " << geometry_shader.filepath << "\n";
         std::cout << "ERROR: Geometry shader failed to compile:\n" << error_log.data() << "\n";
         //std::cout << "Filepath: " << gspath << "\n";
 
@@ -463,6 +471,7 @@ bool shader::compile(text_asset vertex_shader, text_asset tess_ctrl_shader, text
 
         std::vector<char> error_log(log_size);
         glGetShaderInfoLog(fs, log_size, &log_size, &error_log[0]);
+        std::cout << "error in file: " << fragment_shader.filepath << "\n";
         std::cout << "ERROR: Fragment shader failed to compile:\n" << error_log.data() << "\n";
         //std::cout << "Filepath: " << fspath << "\n";
 
@@ -506,6 +515,7 @@ bool shader::compile(text_asset compute_shader) {
 
         std::vector<char> error_log(log_size);
         glGetShaderInfoLog(cs, log_size, &log_size, &error_log[0]);
+        std::cout << "error in file: " << compute_shader.filepath << "\n";
         std::cout << "ERROR: Compute shader failed to compile:\n" << error_log.data() << "\n";
         //std::cout << "Filepath: " << cspath << "\n";
 
@@ -738,7 +748,7 @@ texture::~texture() {
     glDeleteTextures(1, &id);
 }
 
-framebuffer::framebuffer(glm::ivec2 size_, std::vector<fb_tex_params>&& tp, uint filter) {
+framebuffer::framebuffer(glm::ivec2 size_, std::vector<fb_tex_params> tp, uint filter) {
     size = size_;
     tex_params = std::move(tp);
     this->filter = filter;
@@ -787,7 +797,10 @@ framebuffer::framebuffer(glm::ivec2 size_, std::vector<fb_tex_params>&& tp, uint
 
         glFramebufferTexture(GL_FRAMEBUFFER, get_texture_attachment(p.attachment), t.id, 0);
 
-        if(p.binding != -1) {
+        bool insert = true;
+        if(p.attachment == axiom::texture_attachment::DEPTH || p.attachment == axiom::texture_attachment::STENCIL || p.attachment == axiom::texture_attachment::DEPTH_STENCIL) insert = false;
+
+        if(p.binding != -1 && insert) {
             int buffers_size = draw_buffers.size();
 
             if(p.binding >= buffers_size) {
@@ -829,7 +842,7 @@ framebuffer& framebuffer::operator=(framebuffer&& a) noexcept {
 void framebuffer::bind() {
     glBindFramebuffer(GL_FRAMEBUFFER, id);
     
-    //glDrawBuffers(draw_buffers.size(), draw_buffers.data());
+    glDrawBuffers(draw_buffers.size(), draw_buffers.data());
 
     glViewport(0, 0, size.x, size.y);
 }

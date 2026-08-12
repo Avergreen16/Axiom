@@ -307,7 +307,7 @@ struct framebuffer {
     framebuffer(framebuffer&& a) noexcept;
     framebuffer& operator=(framebuffer&& a) noexcept;
 
-    framebuffer(glm::ivec2 size_, std::vector<fb_tex_params>&& tp, uint filter = GL_NEAREST);
+    framebuffer(glm::ivec2 size_, std::vector<fb_tex_params> tp, uint filter = GL_NEAREST);
 
     void bind_texture(std::shared_ptr<texture> texture_, uint attachment, int32_t binding);
 

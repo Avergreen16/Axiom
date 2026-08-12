@@ -35,6 +35,10 @@ ecs::ecs() {
     entity_manager_.init();
 }
 
+axiom::collector& get_collector(std::string name) {
+    return axiom::global_core.ecs->collectors[name];
+};
+
 axiom::core global_core;
 
 }

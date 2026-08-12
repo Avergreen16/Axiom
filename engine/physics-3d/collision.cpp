@@ -388,6 +388,7 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
         int size = simplex.vertices.size();
         if(size < 4) {
             if(iterations > iter_limit) {
+                std::cout << "ITER LIMIT\n";
                 return {};
             }
 
@@ -563,7 +564,7 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
                         if(af) dot_a = dot(af->normal, -collision_normal);
                         if(bf) dot_b = dot(bf->normal, collision_normal);
                         
-                        collision_normal = glm::normalize(contact_point_b - contact_point_a);
+                        //collision_normal = glm::normalize(contact_point_b - contact_point_a);
                         
                         if(ca.faces.size() == 0 || cb.faces.size() == 0 || af == nullptr || bf == nullptr) {
                             collision_normal = glm::normalize(contact_point_b - contact_point_a);

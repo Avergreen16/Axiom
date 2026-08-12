@@ -44,6 +44,17 @@ mat4 get_infinite_proj_matrix(vec2 window_size, float fov, float near_plane, flo
     return matrix;
 }
 
+mat4 get_ortho_proj_matrix(float left, float right, float bottom, float top, float near, float far) {
+    float x = (right - left) * 0.5f;
+    float y = (top - bottom) * 0.5f;
+    float z = (far - near) * 0.5f;
+
+    vec3 pos = vec3(right + left, top + bottom, far + near) * 0.5f;
+    vec3 scale = vec3(right - left, top - bottom, far - near) * 0.5f;
+
+    return glm::translate(vec3(0.0f, 0.0f, 0.5f)) * glm::scale(vec3(1.0f, 1.0f, 0.5f)) * glm::scale(1.0f / scale) * glm::translate(-pos);
+}
+
 mat4 get_model(transform3d& object, transform3d& camera) {
     return glm::translate(object.position - camera.position) * mat4(object.orientation);
 }
@@ -53,7 +64,7 @@ mat4 get_view(camera3d& camera, transform3d& transform) {
 }
 
 mat4 get_proj(camera3d& camera) {
-    return get_infinite_proj_matrix(camera.aspect, camera.fov, 0.01f, 1.0f, 0.0f);
+    return get_infinite_proj_matrix(camera.aspect, camera.fov, camera.near, 1.0f, 0.0f);
 }
 
 }

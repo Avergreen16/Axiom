@@ -417,4 +417,16 @@ struct ecs {
     }
 };
 
+template<typename type>
+type& get_component(uint entity) {
+    return axiom::global_core.ecs->get_component<type>(entity);
+};
+
+template<typename type>
+type& get_system() {
+    return axiom::global_core.ecs->get_system<type>();
+};
+
+axiom::collector& get_collector(std::string name);
+
 }

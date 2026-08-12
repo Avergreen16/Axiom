@@ -66,6 +66,7 @@ void position_constraint::before() {
 
 void position_constraint::solve(float delta_time) {
     if(b == NULL_ENTITY) {
+        //std::cout << "CALLED!\n";
         uint32_t i = 0;
         for(vec3 v : vs) {
             vec3 velocity = ca->get_velocity(ra);
@@ -82,6 +83,7 @@ void position_constraint::solve(float delta_time) {
             lambda[i] = new_lambda;
             
             vec3 impulse = v * L;
+            //std::cout << impulse << " " << a << "\n";
             
             ca->apply_impulse(impulse, ra);
 
