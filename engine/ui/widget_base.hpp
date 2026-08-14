@@ -112,6 +112,7 @@ struct widget {
     virtual void on_measure() {};
     virtual void on_transform() {};
     virtual void on_place() {};
+    virtual void on_delete() {};
 
     virtual capture_data handle_capture() {
         return {0.0f, false, false};

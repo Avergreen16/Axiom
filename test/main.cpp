@@ -28,8 +28,8 @@ struct main_system : axiom::system {
 
     uint frames = 0;
 
-    float light_altitude = 0.0f;
-    float light_azimuth = 0.0f;
+    float light_altitude = 50.0f;
+    float light_azimuth = 35.0f;
 
     main_system(axiom::window* win_) {
         win = win_;
@@ -436,6 +436,7 @@ void base_render(uint camera, axiom::render_target& f) {
 
     //
 
+    /*
     mat4 inv_proj = glm::inverse(proj);
 
     for(uint camera_entity : axiom::global_core.ecs->collectors["camera"].entities) {
@@ -575,17 +576,6 @@ void base_render(uint camera, axiom::render_target& f) {
 
                 prev = size;
 
-                /*
-                
-
-                //
-                
-                vvs = get_vertices(frustum, cam.near, size);
-
-                vs = {
-                    
-                    */
-
                 //
                 
                 vvs = get_vertices(frustum, cam.near, size);
@@ -679,6 +669,7 @@ void base_render(uint camera, axiom::render_target& f) {
             glEnable(GL_DEPTH_TEST);
         }
     }
+    */
 
     // render grid
 
@@ -701,6 +692,7 @@ void base_render(uint camera, axiom::render_target& f) {
     glUniformMatrix4fv(0, 1, false, &model[0][0]);
     glUniformMatrix4fv(1, 1, false, &view[0][0]);
     glUniformMatrix4fv(2, 1, false, &proj[0][0]);
+    glUniform3f(3, axiom::max_float, axiom::max_float, axiom::max_float);
 
     vertices.draw_vertices(GL_TRIANGLES);
 
@@ -879,7 +871,7 @@ void create_ui() {
         ui_system->buffer(vec4(0.0f));
 
         vec2 window_size = vec2(384, 384);
-        axiom::window_widget::insert("Profiler", window_size, (vec2(ui_system->window->screen_size) - window_size) * 0.5f, axiom::color_purple);
+        axiom::window_widget::insert("Profiler", window_size, (vec2(ui_system->window->screen_size) - window_size) * 0.5f, axiom::color_blue);
         axiom::panel_widget::insert();
         axiom::scroll_widget::insert(6.0f, true);
 
@@ -951,10 +943,6 @@ void create_ui() {
         ui_system->input_reset();
         ui_system->input_z(0.1f);
         ui_system->buffer(vec4(0.0f));
-
-        vec2 window_size = vec2(384, 384);
-        axiom::window_widget::insert("Camera", window_size, (vec2(ui_system->window->screen_size) - window_size) * 0.5f, axiom::color_purple);
-        axiom::panel_widget::insert();
 
         // insert camera
         
@@ -1058,23 +1046,203 @@ void create_ui() {
         std::function<void(axiom::render_target&)> render_func = [camera = camera_entity](axiom::render_target& f) {
             base_render(camera, f);
         };
+        
+        std::function<void()> on_close = [camera_entity]() {
+            axiom::global_core.ecs->erase_entity(camera_entity);
+        };
 
         std::vector<axiom::texture_format> formats = {axiom::texture_format::RGBA8, axiom::texture_format::RGBA8, axiom::texture_format::RGBA8, axiom::texture_format::DEPTHF};
         std::vector<axiom::texture_attachment> attachments = {axiom::texture_attachment::COLOR0, axiom::texture_attachment::COLOR1, axiom::texture_attachment::COLOR2, axiom::texture_attachment::DEPTH};
 
         msystem->targets.push_back(std::make_unique<axiom::render_target>(axiom::render_target::create(render_func, ivec2(400, 400), ivec2(0, 0), formats, attachments)));
         
+        vec2 window_size = vec2(384, 384);
+
+        axiom::window_widget::insert("Camera", window_size, (vec2(ui_system->window->screen_size) - window_size) * 0.5f, axiom::color_blue, on_close);
+        axiom::panel_widget::insert();
         axiom::render_widget::insert(msystem->targets.back().get(), 0, callback_func);
+    };
+
+    std::function<void()> switch_debugger = [msystem, ui_system]() {
+        uint camera_entity = axiom::global_core.ecs->insert_entity();
+
+        axiom::camera3d cam;
+        axiom::transform3d tf;
+
+        cam.fov = 90.0f;
+
+        tf.position = vec3(0.0f, 0.0f, 1.0f);
+        tf.orientation = glm::identity<mat3>();
+
+        axiom::global_core.ecs->insert_component(camera_entity, cam);
+        axiom::global_core.ecs->insert_component(camera_entity, tf);
+
+        //
+
+        std::function<void(axiom::render_widget*, axiom::render_target*)> callback_func = [msystem, ui_system, camera = camera_entity](axiom::render_widget* self, axiom::render_target* target) {
+            static bool movement_capture = false;
+            static vec3 center = vec3(0.0f);
+            static float dist = 4.0f;
+            
+            axiom::transform3d& camera_transform = axiom::global_core.ecs->get_component<axiom::transform3d>(camera);
+
+            if(ui_system->click_capture == self->self) {
+                if(movement_capture == false) {
+                    std::cout << "x";
+                    ui_system->hide_cursor();
+                    movement_capture = true;
+                }
+            } else {
+                if(movement_capture) {
+                    std::cout << "y";
+                    ui_system->show_cursor();
+                    movement_capture = false;
+                }
+            }
+
+            if(ui_system->hover_capture == self->self) {
+                if(ui_system->window->scroll_delta != 0.0f) {
+                    dist *= pow(2, -ui_system->window->scroll_delta * 0.5f);
+                }
+            }
+
+            if(ui_system->click_capture == self->self) {
+                if(movement_capture) {
+                    glm::vec3 raw_movement = {0, 0, 0};
+                    float rotate_value = 0.0f;
+
+                    vec3 rotate = vec3(0.0f);
+                    rotate.x = ui_system->window->cursor_delta.x;
+                    rotate.y = ui_system->window->cursor_delta.y;
+
+                    if(ui_system->window->input_map[axiom::input_code::KEY_Q]) {
+                        rotate.z -= 1;
+                    }
+                    if(ui_system->window->input_map[axiom::input_code::KEY_E]) {
+                        rotate.z += 1;
+                    }
+
+                    //
+
+                    float len = length(raw_movement);
+                    if(len != 0.0f) raw_movement = glm::normalize(raw_movement);
+                    
+                    glm::vec3 translation_vec = camera_transform.orientation * raw_movement;
+                    
+                    vec3 dir = -camera_transform.orientation[2];
+                    vec3 u = camera_transform.orientation[1];
+                    glm::mat3 rotate_y_mat = (mat3)glm::rotate(float(2 * axiom::pi * (1.0 / 1024) * -rotate.y), glm::normalize(glm::cross(u, dir)));
+                    glm::mat3 rotate_x_mat = (mat3)glm::rotate(float(2 * axiom::pi * (1.0 / 1024) * -rotate.x), u);
+                    glm::mat3 rotate_z_mat = (mat3)glm::rotate(float(2 * axiom::pi * (1.0 / 128) * rotate.z * (axiom::global_core.ecs->delta_time * 60)), dir);
+
+                    camera_transform.orientation = rotate_z_mat * rotate_x_mat * rotate_y_mat * camera_transform.orientation;
+                    camera_transform.position = center + normalize(rotate_x_mat * rotate_y_mat * (camera_transform.position - center)) * dist;
+                }
+            }
+            
+            camera_transform.position = center + normalize(camera_transform.position - center) * dist;
+        };
+
+        std::function<void(axiom::render_target&)> render_func = [msystem, camera = camera_entity](axiom::render_target& f) {
+            main_system& msystem = axiom::get_system<main_system>();
+            axiom::ui_system& ui_system = axiom::get_system<axiom::ui_system>();
+
+            vec3 background = axiom::hex_color(0x1E1F2E);
+            glClearColor(background.x, background.y, background.z, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            //
+
+            glEnable(GL_CULL_FACE);
+            
+            static axiom::vertices vertices;
+            if(!vertices.initialized) {
+                vertices.init();
+            }
+
+            //
+
+            axiom::transform3d& camera_transform = axiom::global_core.ecs->get_component<axiom::transform3d>(camera);
+            axiom::camera3d& camera_cam = axiom::global_core.ecs->get_component<axiom::camera3d>(camera);
+
+            camera_cam.aspect = vec2(f.size) / (float)glm::min(f.size.x, f.size.y);
+            
+            mat4 view = axiom::get_view(camera_cam, camera_transform);
+            mat4 proj = axiom::get_proj(camera_cam);
+
+            // render grid
+
+            std::vector<vec2> vs = {
+                vec2(-1.0f, -1.0f),
+                vec2(1.0f, -1.0f),
+                vec2(-1.0f, 1.0f),
+                vec2(1.0f, 1.0f)
+            };
+
+            vs = {vs[0], vs[1], vs[3], vs[0], vs[3], vs[2]};
+
+            vertices.vertex_buffer_data(vs.data(), vs.size(), sizeof(vec2), GL_STATIC_DRAW);
+            vertices.add_vertex_attribute(0, 2, GL_FLOAT, false, sizeof(vec2), 0);
+            vertices.vertex_buffer_data(vs.data(), vs.size(), sizeof(vec2), GL_STATIC_DRAW);
+            vertices.add_vertex_attribute(0, 2, GL_FLOAT, false, sizeof(vec2), 0);
+
+            //
+
+            axiom::transform3d grid_transform;
+            grid_transform.position = vec3(0.0f);
+            grid_transform.orientation = glm::identity<mat3>();
+            
+            mat4 model = axiom::get_model(grid_transform, camera_transform);
+
+            axiom::shader& grid_shader = msystem.shaders["grid3d"];
+
+            grid_shader.use();
+            vertices.bind();
+
+            glUniformMatrix4fv(0, 1, false, &model[0][0]);
+            glUniformMatrix4fv(1, 1, false, &view[0][0]);
+            glUniformMatrix4fv(2, 1, false, &proj[0][0]);
+            glUniform3f(3, 8, 8, 8);
+
+            vertices.draw_vertices(GL_TRIANGLES);
+        };
+
+        std::function<void()> on_close = [camera_entity]() {
+            axiom::global_core.ecs->erase_entity(camera_entity);
+        };
+        
+        std::vector<axiom::texture_format> formats = {axiom::texture_format::RGBA8, axiom::texture_format::DEPTHF};
+        std::vector<axiom::texture_attachment> attachments = {axiom::texture_attachment::COLOR0, axiom::texture_attachment::DEPTH};
+
+        msystem->targets.push_back(std::make_unique<axiom::render_target>(axiom::render_target::create(render_func, ivec2(400, 400), ivec2(0), formats, attachments)));
+
+        //
+        ui_system->input_reset();
+        ui_system->input_z(0.1f);
+        ui_system->buffer(vec4(0.0f));
+
+        vec2 window_size = vec2(768, 384);
+        axiom::window_widget::insert("Render", window_size, (vec2(ui_system->window->screen_size) - window_size) * 0.5f, axiom::color_blue, on_close);
+        axiom::split_widget::insert(axiom::layout_mode::ROW, {{0.75f, axiom::panel_mode::SCALE}, {0.25f, axiom::panel_mode::SIZE}});
+        
+        msystem->targets.push_back(std::make_unique<axiom::render_target>(axiom::render_target::create(render_func, ivec2(400, 400), ivec2(0, 0), formats, attachments)));
+
+        axiom::panel_widget::insert();
+        axiom::render_widget::insert(msystem->targets.back().get(), 0, callback_func);
+
+        ui_system->input_step();
+        axiom::panel_widget::insert();
     };
     
     std::shared_ptr<axiom::menu_node> node(new axiom::menu_node{
         "",
         {
             axiom::menu_node("Debug Windows", {
-                axiom::menu_node("Lipsum", {}, switch_lipsum),
-                axiom::menu_node("Render", {}, switch_render),
                 axiom::menu_node("Profiler", {}, switch_profiler),
+                axiom::menu_node("Phyiscs Debugger", {}, switch_debugger),
                 axiom::menu_node("Camera", {}, switch_camera),
+                axiom::menu_node("Render", {}, switch_render),
+                axiom::menu_node("Lipsum", {}, switch_lipsum),
             })
         }
     });
@@ -1299,7 +1467,7 @@ void create_ui() {
 
     cam.fov = 90.0f;
 
-    tf.position = vec3(0.0f, 0.0f, 1.0f);
+    tf.position = vec3(0.0f, -16.0f, 8.0f);
     tf.orientation = axiom::rotate_to(vec3(0.0f, 0.0f, -1.0f), vec3(0.0f, 1.0f, 0.0f));
 
     axiom::global_core.ecs->insert_component(camera_entity, cam);
@@ -1308,7 +1476,7 @@ void create_ui() {
     std::function<void(axiom::render_widget*, axiom::render_target*)> callback_func = [msystem, ui_system, camera = camera_entity](axiom::render_widget* self, axiom::render_target* target) {
         static bool movement_capture = false;
         static bool raycast_capture = false;
-        static float movement_speed = 1.0f;
+        static float movement_speed = 8.0f;
 
         static uint constraint_index = 0xFFFFFFFF;
         static float constraint_dist = 0.0f;
@@ -1379,7 +1547,7 @@ void create_ui() {
                 constraint_index = 0xFFFFFFFF;
             }
 
-            ui_system->show_cursor();
+            if(movement_capture) ui_system->show_cursor();
             movement_capture = false;
             raycast_capture = false;
         }

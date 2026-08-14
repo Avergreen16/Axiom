@@ -7,6 +7,7 @@ add_library(AxiomPhysics3D
     collision.cpp
     mesh.cpp
     system.cpp
+    debugger.cpp
 )
 
 target_include_directories(AxiomPhysics3D

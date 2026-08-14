@@ -5,7 +5,7 @@
 
 namespace axiom {
 
-ulong window_widget::insert(std::string label, ivec2 size, ivec2 position, vec3 color) {
+ulong window_widget::insert(std::string label, ivec2 size, ivec2 position, vec3 color, std::function<void()> on_close) {
     axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
 
     window_widget widget;
@@ -16,6 +16,8 @@ ulong window_widget::insert(std::string label, ivec2 size, ivec2 position, vec3 
 
     widget.layout_mode = axiom::layout_mode::VOID;
     widget.position_mode = axiom::position_mode::STATIC;
+
+    widget.on_close = on_close;
 
     //
 
@@ -493,6 +495,10 @@ capture_data window_widget::handle_capture() {
     }
 
     return {self, z, false};
+}
+
+void window_widget::on_delete() {
+    on_close();
 }
 
 }

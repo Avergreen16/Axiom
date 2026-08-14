@@ -333,6 +333,8 @@ void ui_system::call() {
     }
 
     for(ulong k : delete_buffer) {
+        if(widgets.contains(k)) widgets[k]->on_delete();
+
         widgets.erase(k);
     }
     delete_buffer.clear();

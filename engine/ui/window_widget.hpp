@@ -13,12 +13,16 @@ struct window_widget : widget {
     bool hover_close = false;
     uint operation = NULL_OPERATION;
 
+    std::function<void()> on_close = []() {};
+
     void handle_inputs();
     void mesh();
     void init();
     capture_data handle_capture();
+    
+    void on_delete();
 
-    static ulong insert(std::string label, ivec2 size, ivec2 position, vec3 color);
+    static ulong insert(std::string label, ivec2 size, ivec2 position, vec3 color, std::function<void()> on_close = []() {});
 };
 
 }

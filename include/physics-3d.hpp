@@ -7,3 +7,4 @@
 #include <physics-3d/collision_constraint.hpp>
 #include <physics-3d/position_constraint.hpp>
 #include <physics-3d/collision.hpp>
+#include <physics-3d/debugger.hpp>

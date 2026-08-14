@@ -3,6 +3,7 @@
 #include <include/ecs.hpp>
 #include <physics-3d/collision.hpp>
 #include <physics-3d/constraint.hpp>
+#include <physics-3d/debugger.hpp>
 
 namespace axiom {
 
@@ -47,6 +48,11 @@ struct physics_system3d : system {
 
     std::vector<vec3> debug_points_a;
     std::vector<vec3> debug_points_b;
+
+    physics_debugger debugger;
+    bool capture_events = false;
+    debugger_frame current_frame;
+    ulong frame_count = 0;
 
     //
 

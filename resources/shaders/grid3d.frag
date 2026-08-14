@@ -5,6 +5,7 @@ layout(location = 0) out vec4 frag_color;
 layout(location = 0) uniform mat4 model;
 layout(location = 1) uniform mat4 view;
 layout(location = 2) uniform mat4 proj;
+layout(location = 3) uniform vec3 extents;
 
 layout(location = 0) in vec2 cs;
 layout(location = 1) in mat4 inv_model;
@@ -57,7 +58,9 @@ vec3 cycle_color(float angle, float saturation, float value) {
     return vec3(1.0, 0.0, 1.0 - fracx);
 }
 
-void render_line(vec3 line_origin, vec3 line_direction, vec3 ray_origin, vec3 ray_direction, mat3 view_mat, vec3 color) {
+float flt_max = 1.0 / 0.0;
+
+void render_line(vec3 line_origin, vec3 line_direction, vec3 ray_origin, vec3 ray_direction, mat3 view_mat, vec3 color, float min_len, float max_len) {
     vec3 W = line_origin - ray_origin;
     float a = dot(W, line_direction);
     float b = dot(W, ray_direction);
@@ -79,7 +82,7 @@ void render_line(vec3 line_origin, vec3 line_direction, vec3 ray_origin, vec3 ra
     float dy = dFdy(between_dist_y);
     float dl = length(vec2(dx, dy));
 
-    if(length(ps - pt) / dl < 1.0 && t > 0.0) {
+    if(length(ps - pt) / dl < 1.0 && t > 0.0 && s > min_len && s < max_len) {
         frag_color = vec4(color, 1.0);
 
         vec4 d = proj * (view * vec4((ray_direction * t), 1.0));
@@ -96,7 +99,7 @@ vec4 get_color(vec2 p, float dist, vec3 camera_pos, vec3 view_dir, mat3 norm, fl
     float width = 1.0;
     int starting_scale = max(0, int(floor(log(abs(camera_pos.z)) / log(scale))));
 
-    float bounds = pow(2, 71);
+    float bounds = min(max(extents.x, extents.y), pow(2, 71));
     
     int min_s = 0;
     int max_s = int(floor(log(bounds) / log(16)));
@@ -152,7 +155,7 @@ vec4 get_color(vec2 p, float dist, vec3 camera_pos, vec3 view_dir, mat3 norm, fl
             vec4 x_color = vec4(0.0);
             vec4 y_color = vec4(0.0);
 
-            float fade1 = min(abs(camera_pos.z) / (radius * 0.125), 1.0);
+            float fade1 = min(min(abs(camera_pos.z), bounds) / (radius * 0.125), 1.0);
 
             bool axis = false;
 
@@ -270,9 +273,12 @@ void main() {
     frag_color = vec4(base_color, 0.0) * (1.0 - color.w) + color * color.w;
     frag_color = min(frag_color, 1.0);
 
-    render_line(origin, vec3(1.0, 0.0, 0.0), vec3(0.0), ray, mat3(inv_view), pos_x_color);
-    render_line(origin, vec3(0.0, 1.0, 0.0), vec3(0.0), ray, mat3(inv_view), pos_y_color);
-    render_line(origin, vec3(0.0, 0.0, 1.0), vec3(0.0), ray, mat3(inv_view), pos_z_color);
+    render_line(origin, vec3(1.0, 0.0, 0.0), vec3(0.0), ray, mat3(inv_view), pos_x_color, 0.0, min(extents.x, flt_max));
+    render_line(origin, vec3(0.0, 1.0, 0.0), vec3(0.0), ray, mat3(inv_view), pos_y_color, 0.0, min(extents.y, flt_max));
+    render_line(origin, vec3(0.0, 0.0, 1.0), vec3(0.0), ray, mat3(inv_view), pos_z_color, 0.0, min(extents.z, flt_max));
+    render_line(origin, vec3(1.0, 0.0, 0.0), vec3(0.0), ray, mat3(inv_view), neg_x_color, -min(extents.x, flt_max), 0.0);
+    render_line(origin, vec3(0.0, 1.0, 0.0), vec3(0.0), ray, mat3(inv_view), neg_y_color, -min(extents.y, flt_max), 0.0);
+    render_line(origin, vec3(0.0, 0.0, 1.0), vec3(0.0), ray, mat3(inv_view), neg_z_color, -min(extents.z, flt_max), 0.0);
     //frag_normal = vec4(0.0);
 
     /*float x_a = floor(x) / 10;

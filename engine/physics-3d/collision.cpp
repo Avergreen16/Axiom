@@ -192,7 +192,7 @@ void polytope::from_simplex(simplex s) {
     insert_face({1, 2, 3});
 }
 
-void polytope::expand(simplex_vertex vertex) {
+std::vector<uint> polytope::expand(simplex_vertex vertex) {
     uint v_n = vertices.size();
     vertices.push_back(vertex);
     center += vertex.m;
@@ -235,6 +235,8 @@ void polytope::expand(simplex_vertex vertex) {
             insert_face({a, b, v_n});
         }
     }
+
+    return faces_seen;
 }
 
 bool contains(std::vector<vertex_element3d>& elements, vec3 point) {
@@ -317,7 +319,7 @@ std::vector<std::vector<vec3>> debug_vertices = {{}, {}};
 
 //
 
-std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transform3d& tb, collision_shape3d& cb, return_tag& tag) {
+std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transform3d& tb, collision_shape3d& cb, return_tag& tag, collision_event& c_event) {
     std::vector<vertex_element3d> a_vertices = ca.elements;
     std::vector<vertex_element3d> b_vertices = cb.elements;
 
@@ -382,6 +384,9 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
 
     std::vector<uint32_t> selected;
 
+    axiom::gjk_step gjk_step;
+    axiom::epa_step epa_step;
+
     while(loop) {
         ++iterations;
         
@@ -405,17 +410,27 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
 
             vec3 point_m = point_a - point_b;
 
+            gjk_step.input_point = point_m;
+
             for(simplex_vertex& v : simplex.vertices) {
                 vec3 difference = point_m - v.m;
 
                 float dist = length(difference);
 
                 if(dist == 0.0f) {
+                    gjk_step.search_direction = vec3(0.0f);
+
+                    c_event.gjk.push_back(gjk_step);
+
                     return {};
                 }
             }
 
             if(glm::dot(point_m, direction) <= limit) {
+                gjk_step.search_direction = vec3(0.0f);
+
+                c_event.gjk.push_back(gjk_step);
+                
                 return {};
             }
 
@@ -423,12 +438,18 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
 
             if(size == 0) {
                 direction = -glm::normalize(point_m);
+
+                gjk_step.search_direction = direction;
+                gjk_step.search_origin = point_m;
             } else if(size == 1) {
                 vec3 line_direction = normalize(simplex.vertices[0].m - simplex.vertices[1].m);
                 vec3 rel_origin_pos = -simplex.vertices[1].m;
 
                 vec3 closest_point = line_direction * glm::dot(rel_origin_pos, line_direction) + simplex.vertices[1].m;
                 direction = glm::normalize(-closest_point);
+                
+                gjk_step.search_direction = direction;
+                gjk_step.search_origin = closest_point;
             } else if(size == 2) {
                 vec3 center = (simplex.vertices[0].m + simplex.vertices[1].m + simplex.vertices[2].m) / 3.0f;
                 vec3 normal = glm::normalize(glm::cross(simplex.vertices[0].m - simplex.vertices[2].m, simplex.vertices[1].m - simplex.vertices[2].m));
@@ -436,7 +457,12 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
                 d = glm::dot(normal, -center);
 
                 direction = normal;
+                
+                gjk_step.search_direction = direction;
+                gjk_step.search_origin = center;
             }
+            
+            c_event.gjk.push_back(gjk_step);
         } else {
             int n = simplex.contains(vec3(0, 0, 0), iterations > iter_limit);
             if(n == -1) {
@@ -468,6 +494,17 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
                     }
 
                     direction = r.normal;
+
+                    //
+
+                    epa_step.search_direction = direction;
+
+                    vec3 center = vec3(0.0f);
+                    for(auto i : r.vertices) center += i.m;
+                    center /= r.vertices.size();
+                    epa_step.search_origin = center;
+
+                    //
                 
                     uint32_t ia, ib;
                     vec3 point_a = support(direction, a_vertices);
@@ -479,6 +516,10 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
                     
                     if(iterations > iter_limit) {
                         std::cout << "limit EPA";
+
+                        epa_step.erase_triangles.clear();
+                        c_event.epa.push_back(epa_step);
+
                         return {};
                     }
 
@@ -488,6 +529,11 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
 
                     if(abs(dist - dot(r.vertices[0].m, r.normal)) < limit_2) {
                         ++pass;
+                        
+                        epa_step.erase_triangles.clear();
+                        c_event.epa.push_back(epa_step);
+
+                        //
 
                         contact_point_a = r.vertices[0].a * r.weights.x + r.vertices[1].a * r.weights.y + r.vertices[2].a * r.weights.z;
                         contact_point_b = r.vertices[0].b * r.weights.x + r.vertices[1].b * r.weights.y + r.vertices[2].b * r.weights.z;
@@ -713,10 +759,15 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
                         */
                         return return_points;
                     } else {
-                        p.expand({point_m, point_a, point_b});
+                        std::vector<uint> removed = p.expand({point_m, point_a, point_b});
+                        
+                        epa_step.erase_triangles = removed;
+                        c_event.epa.push_back(epa_step);
                     }
                 }
             } else {
+                gjk_step.erase_index = n;
+
                 simplex.vertices.erase(simplex.vertices.begin() + n);
 
                 vec3 center = (simplex.vertices[0].m + simplex.vertices[1].m + simplex.vertices[2].m) / 3.0f;
@@ -729,7 +780,7 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
     }
 }
 
-std::vector<return_point> collide(transform3d& ta, collider3d& ca, transform3d& tb, collider3d& cb) {
+std::vector<return_point> collide(transform3d& ta, collider3d& ca, transform3d& tb, collider3d& cb, std::vector<collision_event>& c_events) {
     std::vector<return_point> ret;
 
     return_tag tag;
@@ -745,7 +796,13 @@ std::vector<return_point> collide(transform3d& ta, collider3d& ca, transform3d& 
                 collision_shape3d& sa = ca.collision_shapes[a];
                 collision_shape3d& sb = cb.collision_shapes[b];
 
-                std::vector<return_point> r = collide(ta, sa, tb, sb, tag);
+                collision_event c_event;
+
+                std::vector<return_point> r = collide(ta, sa, tb, sb, tag, c_event);
+
+                c_event.shape_a = a;
+                c_event.shape_b = b;
+                c_events.push_back(c_event);
 
                 ret.insert(ret.end(), r.begin(), r.end());
             }
@@ -759,7 +816,13 @@ std::vector<return_point> collide(transform3d& ta, collider3d& ca, transform3d& 
                 for(uint32_t shape : shapes) {
                     collision_shape3d& sa = ca.collision_shapes[shape];
 
-                    std::vector<return_point> r = collide(ta, sa, tb, sb, tag);
+                    collision_event c_event;
+
+                    std::vector<return_point> r = collide(ta, sa, tb, sb, tag, c_event);
+                    
+                    c_event.shape_a = shape;
+                    c_event.shape_b = 0;
+                    c_events.push_back(c_event);
 
                     tags.push_back(tag);
                     points.push_back(r);
@@ -818,7 +881,13 @@ std::vector<return_point> collide(transform3d& ta, collider3d& ca, transform3d& 
             for(uint32_t shape : shapes) {
                 collision_shape3d& sb = cb.collision_shapes[shape];
 
-                std::vector<return_point> r = collide(ta, sa, tb, sb, tag);
+                collision_event c_event;
+
+                std::vector<return_point> r = collide(ta, sa, tb, sb, tag, c_event);
+                
+                c_event.shape_a = 0;
+                c_event.shape_b = shape;
+                c_events.push_back(c_event);
 
                 tags.push_back(tag);
                 points.push_back(r);
@@ -869,8 +938,13 @@ std::vector<return_point> collide(transform3d& ta, collider3d& ca, transform3d& 
     } else {
         for(collision_shape3d& sa : ca.collision_shapes) {
             for(collision_shape3d& sb : cb.collision_shapes) {
+                collision_event c_event;
 
-                std::vector<return_point> r = collide(ta, sa, tb, sb, tag);
+                std::vector<return_point> r = collide(ta, sa, tb, sb, tag, c_event);
+
+                c_event.shape_a = 0;
+                c_event.shape_b = 0;
+                c_events.push_back(c_event);
                 
                 ret.insert(ret.end(), r.begin(), r.end());
             }

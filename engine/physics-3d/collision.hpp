@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <physics-3d/collider.hpp>
+#include <physics-3d/debugger.hpp>
 
 namespace axiom {
 
@@ -102,7 +103,7 @@ struct polytope {
     polytope_return find_closest_face();
     void insert_face(std::vector<uint> v);
     void from_simplex(simplex s);
-    void expand(simplex_vertex vertex);
+    std::vector<uint> expand(simplex_vertex vertex);
 };
 
 extern std::vector<std::vector<vec3>> debug_vertices;
@@ -110,13 +111,14 @@ extern std::vector<std::vector<vec3>> debug_vertices;
 vec3 transform_vertices(std::vector<vertex_element3d>& elements, transform3d& transform, vec3 origin);
 
 bool contains(std::vector<vertex_element3d>& elements, vec3 point);
-std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transform3d& tb, collision_shape3d& cb, return_tag& tag);
-std::vector<return_point> collide(transform3d& ta, collider3d& ca, transform3d& tb, collider3d& cb);
+std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transform3d& tb, collision_shape3d& cb, return_tag& tag, collision_event& c_event);
+std::vector<return_point> collide(transform3d& ta, collider3d& ca, transform3d& tb, collider3d& cb, std::vector<collision_event>& c_event);
 
 //static bool GJK(Temporary_collider3d& a, Temporary_collider3d& b);
 bool gjk(collision_shape3d& ca, transform3d& ta, collision_shape3d& cb, transform3d& tb);
 std::vector<uint> gjk_bvh(collider3d& ca, transform3d& ta, collider3d& cb, collision_shape3d& ccb, transform3d& tb);
 
-
+extern collision_event c_event;
+extern std::vector<collision_event> c_events;
 
 }

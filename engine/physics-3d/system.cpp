@@ -35,6 +35,18 @@ void physics_system3d::physics_loop() {
     build_constraints();
 
     solver();
+
+    debugger.insert_frame(frame_count, current_frame);
+    current_frame = debugger_frame();
+
+    uint count = 0;
+    for(auto& frame : debugger.frames) {
+        count += frame.second.collision_events.size();
+    }
+
+    ++frame_count;
+
+    std::cout << count << " " << debugger.frames.size() << "\n";
 }
 
 struct spacial_data {
@@ -214,10 +226,11 @@ manifold create_manifold(std::vector<return_point> contacts, uint32_t a, uint32_
 }
 
 void physics_system3d::narrow_phase() {
-    const uint num_threads = 12;
+    const uint num_threads = 6;
     std::vector<std::thread> threads(num_threads);
     std::vector<std::vector<manifold>> cdata(num_threads);
     std::vector<std::vector<ulong>> threads_collisions(num_threads);
+    std::vector<std::vector<collision_event>> thread_events(num_threads);
 
     uint num_collisions = 0;
     float num_per_thread = float(broad_collisions.size()) / num_threads;
@@ -245,7 +258,16 @@ void physics_system3d::narrow_phase() {
                 collider3d& bc = axiom::global_core.ecs->get_component<collider3d>(b);
                 transform3d& bt = axiom::global_core.ecs->get_component<transform3d>(b);
 
-                std::vector<return_point> data = collide(at, ac, bt, bc);
+                std::vector<collision_event> events;
+
+                std::vector<return_point> data = collide(at, ac, bt, bc, events);
+
+                for(collision_event& e : events) {
+                    e.collider_a = a;
+                    e.collider_b = b;
+                }
+
+                thread_events[j].insert(thread_events[j].end(), events.begin(), events.end());
 
                 if(data.size()) {
                     manifold m = create_manifold(data, a, b, ac, at, bc, bt);
@@ -261,6 +283,10 @@ void physics_system3d::narrow_phase() {
     
     for(int i = 0; i < num_threads; ++i) {
         threads[i].join();
+    }
+    
+    for(int i = 0; i < num_threads; ++i) {
+        current_frame.collision_events.insert(current_frame.collision_events.end(), thread_events[i].begin(), thread_events[i].end());
     }
 
     narrow_collisions.clear();
@@ -684,7 +710,9 @@ bool physics_system3d::raycast(vec3 start, vec3 direction, float step, float dis
             transform3d& et = axiom::global_core.ecs->get_component<transform3d>(entity);
 
             if(collide(et, ec.bounding_box, t, collider.bounding_box)) {
-                auto rp = collide(et, ec, t, collider);
+                std::vector<collision_event> events;
+
+                auto rp = collide(et, ec, t, collider, events);
 
                 if(rp.size()) {
                     *normal = -rp[0].normal;

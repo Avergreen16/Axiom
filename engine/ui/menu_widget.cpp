@@ -102,7 +102,7 @@ void menu_widget::handle_inputs() {
             if(!rootn->children[clicked].children.size()) {
                 ui_system.delete_buffer.push_back(self);
             }
-
+            
             rootn->children[clicked].callback();
         }
     } else {
