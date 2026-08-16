@@ -1,5 +1,6 @@
 #pragma once
 #include <include/math.hpp>
+#include <include/scene.hpp>
 
 #include <deque>
 
@@ -7,7 +8,7 @@ namespace axiom {
 
 struct gjk_step {
     vec3 input_point;
-    vec3 search_direction;
+    vec3 search_direction = vec3(0.0f);
     vec3 search_origin;
     
     uint erase_index = 0xFFFFFFFF;
@@ -15,7 +16,7 @@ struct gjk_step {
 
 struct epa_step {
     vec3 input_point;
-    vec3 search_direction;
+    vec3 search_direction = vec3(0.0f);
     vec3 search_origin;
 
     std::vector<uint> erase_triangles;
@@ -27,9 +28,21 @@ struct collision_event {
     uint collider_b;
     uint shape_a;
     uint shape_b;
+    transform3d transform_a;
+    transform3d transform_b;
+
+    bool finished = false;
+    vec3 point_a;
+    vec3 point_b;
+    vec3 point_m;
+    std::vector<vec3> manifold_a;
+    std::vector<vec3> manifold_b;
+    std::vector<vec3> collision_normal;
 
     std::vector<gjk_step> gjk;
     std::vector<epa_step> epa;
+    
+    std::vector<vec3> data;
 };
 
 struct debugger_frame {

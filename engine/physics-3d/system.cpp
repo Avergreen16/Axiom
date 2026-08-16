@@ -46,7 +46,7 @@ void physics_system3d::physics_loop() {
 
     ++frame_count;
 
-    std::cout << count << " " << debugger.frames.size() << "\n";
+    //std::cout << count << " " << debugger.frames.size() << "\n";
 }
 
 struct spacial_data {

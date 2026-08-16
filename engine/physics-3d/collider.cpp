@@ -7,7 +7,7 @@
 namespace axiom {
 
 vec3 support(vec3 direction, vec3 center, mat3 orientation, vec3 radii) {
-    /*vec3 local = glm::transpose(orientation) * direction;
+    vec3 local = glm::transpose(orientation) * direction;
 
     vec3 q = {
         radii.x * radii.x * local.x,
@@ -18,9 +18,9 @@ vec3 support(vec3 direction, vec3 center, mat3 orientation, vec3 radii) {
     float denom = sqrt(q.x * local.x + q.y * local.y + q.z * local.z);
     if(denom == 0) denom = 1.0f;
 
-    vec3 point = orientation * (q / denom);*/
+    vec3 point = orientation * (q / denom);
 
-    return center;// + point;
+    return center + point;
 }
 
 vec3 support(vec3 direction, std::vector<vertex_element3d> ellipsoids) {

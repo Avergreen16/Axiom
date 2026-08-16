@@ -61,34 +61,6 @@ vec3 axis_angle(quat q) {
     return aaa * angle;
 }
 
-void Physics_system::integrate() {
-    for(uint32_t c : collectors[0].entities) {
-        Transform& c_transform = ecs.get_component<Transform>(c);
-        Collider& c_collider = ecs.get_component<Collider>(c);
-
-        if(!c_collider.is_static) {
-            c_transform.position += c_collider.velocity * sub_dt;
-
-            if(c_collider.allow_rotation && glm::length(c_collider.angular_momentum)) {
-                glm::vec3 angular_velocity = (c_transform.orientation * c_collider.inverse_inertia_tensor * transpose(c_transform.orientation)) * c_collider.angular_momentum;
-                
-                float len_av = length(angular_velocity);
-                vec3 norm_av = angular_velocity / len_av;
-                if(len_av * sub_dt != 0.0f) {
-                    glm::mat3 rotation = glm::rotate(len_av * sub_dt, norm_av);
-        
-                    c_transform.orientation = rotation * c_transform.orientation;
-                }
-            }
-            
-            if(c_collider.allow_gravity) {
-                vec3 gravity_acceleration = -get_gravity(c_transform.position) * gravity;
-
-                c_collider.velocity += gravity_acceleration * sub_dt;
-            }
-        }
-    }
-}
 
 float max_velocity = 5.0f;
 
@@ -106,160 +78,6 @@ void Physics_system::compute_velocities() {
         c_collider.am_delta = vec3(0.0f);
     }
 }
-
-std::vector<Return_point> Physics_system::collision(Transform& ta, Collider& ca, Transform& tb, Collider& cb) {
-    std::vector<Return_point> ret;
-
-    Return_tag tag;
-
-    if(ca.bvh.size()) {
-        if(cb.bvh.size()) {
-            std::vector<uint64_t> pairs = ca.traverse_bvh(ta, tb, cb);
-
-            for(uint64_t pair : pairs) {
-                uint32_t a = pair & 0xFFFFFFFF;
-                uint32_t b = pair >> 32;
-
-                Convex_collider& sa = ca.collision_shapes[a];
-                Convex_collider& sb = cb.collision_shapes[b];
-
-                std::vector<Return_point> r = collision(ta, sa, tb, sb, tag);
-
-                ret.insert(ret.end(), r.begin(), r.end());
-            }
-        } else {
-            std::vector<Return_tag> tags;
-            std::vector<std::vector<Return_point>> points;
-            
-            for(Convex_collider& sb : cb.collision_shapes) {
-                std::vector<uint32_t> shapes = ca.traverse_bvh(ta, tb, sb.bounding_box);
-
-                for(uint32_t shape : shapes) {
-                    Convex_collider& sa = ca.collision_shapes[shape];
-
-                    std::vector<Return_point> r = collision(ta, sa, tb, sb, tag);
-
-                    tags.push_back(tag);
-                    points.push_back(r);
-                }
-            }
-
-            // faces first
-
-            std::unordered_set<ivec3, Hash_coord> set;
-
-            for(uint32_t i = 0; i < tags.size(); ++i) {
-                Return_tag& tag = tags[i];
-                if(tag.type == COLLISION_TYPE_FACE) {
-                    ret.insert(ret.end(), points[i].begin(), points[i].end());
-
-                    set.insert(tag.vid_a[0]);
-                    set.insert(tag.vid_a[1]);
-                    set.insert(tag.vid_a[2]);
-                }
-            }
-
-            // then edges
-            
-            for(uint32_t i = 0; i < tags.size(); ++i) {
-                Return_tag& tag = tags[i];
-                if(tag.type == COLLISION_TYPE_EDGE) {
-                    if(!(set.contains(tag.vid_a[0]) && set.contains(tag.vid_a[1]))) {
-                        ret.insert(ret.end(), points[i].begin(), points[i].end());
-                    
-                        set.insert(tag.vid_a[0]);
-                        set.insert(tag.vid_a[1]);
-                    }
-                }
-            }
-
-            // and finally vertices
-            
-            for(uint32_t i = 0; i < tags.size(); ++i) {
-                Return_tag& tag = tags[i];
-                if(tag.type == COLLISION_TYPE_VERTEX) {
-                    if(!set.contains(tag.vid_a[0])) {
-                        ret.insert(ret.end(), points[i].begin(), points[i].end());
-                    
-                        set.insert(tag.vid_a[0]);
-                    }
-                }
-            }
-        }
-    } else if(cb.bvh.size()) {
-        std::vector<Return_tag> tags;
-        std::vector<std::vector<Return_point>> points;
-        
-        for(Convex_collider& sa : ca.collision_shapes) {
-            std::vector<uint32_t> shapes = cb.traverse_bvh(tb, ta, sa.bounding_box);
-
-            for(uint32_t shape : shapes) {
-                Convex_collider& sb = cb.collision_shapes[shape];
-
-                std::vector<Return_point> r = collision(ta, sa, tb, sb, tag);
-
-                tags.push_back(tag);
-                points.push_back(r);
-            }
-        }
-
-        // faces first
-
-        std::unordered_set<ivec3, Hash_coord> set;
-
-        for(uint32_t i = 0; i < tags.size(); ++i) {
-            Return_tag& tag = tags[i];
-            if(tag.type == COLLISION_TYPE_VERTEX) {
-                ret.insert(ret.end(), points[i].begin(), points[i].end());
-
-                set.insert(tag.vid_b[0]);
-                set.insert(tag.vid_b[1]);
-                set.insert(tag.vid_b[2]);
-            }
-        }
-
-        // then edges
-        
-        for(uint32_t i = 0; i < tags.size(); ++i) {
-            Return_tag& tag = tags[i];
-            if(tag.type == COLLISION_TYPE_EDGE) {
-                if(!(set.contains(tag.vid_b[0]) && set.contains(tag.vid_b[1]))) {
-                    ret.insert(ret.end(), points[i].begin(), points[i].end());
-                
-                    set.insert(tag.vid_b[0]);
-                    set.insert(tag.vid_b[1]);
-                }
-            }
-        }
-
-        // and finally vertices
-        
-        for(uint32_t i = 0; i < tags.size(); ++i) {
-            Return_tag& tag = tags[i];
-            if(tag.type == COLLISION_TYPE_FACE) {
-                if(!set.contains(tag.vid_b[0])) {
-                    ret.insert(ret.end(), points[i].begin(), points[i].end());
-                    
-                    set.insert(tag.vid_b[0]);
-                }
-            }
-        }
-    } else {
-        for(Convex_collider& sa : ca.collision_shapes) {
-            for(Convex_collider& sb : cb.collision_shapes) {
-
-                std::vector<Return_point> r = collision(ta, sa, tb, sb, tag);
-                
-                ret.insert(ret.end(), r.begin(), r.end());
-            }
-        }
-    }
-
-    return ret;
-
-
-
-
 
 std::vector<shape_face> Physics_system::triangulate_merge(std::vector<vec3> vertices) {
     vec3 center = vec3(0.0f);
@@ -1994,3 +1812,26 @@ std::vector<vec2> convex_hull2(std::vector<vec2> points) {
 
     return ret;
 }
+
+/*
+
+
+glm::vec3 triangle_project(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3& point) {
+    vec3 e0 = a - c;
+    vec3 e1 = b - c;
+
+    float v = dot(c, e0);
+    float w = dot(c, e1);
+    float x = dot(e0, e0);
+    float y = dot(e1, e1);
+    float z = dot(e0, e1);
+
+    float denom = (x * y - z * z);
+    float alpha = (w * z - v * y) / denom;
+    float beta = (v * z - w * x) / denom;
+    float gamma = 1.0f - alpha - beta;
+
+    point = a * alpha + b * beta + c * gamma;
+
+    return {alpha, beta, gamma};
+}*/
