@@ -37,6 +37,8 @@ namespace axiom {
 
 const float pi = 3.14159265358979323846f;
 const float max_float = FLT_MAX;
+const float sqrt2 = sqrt(2.0f);
+const float sqrt3 = sqrt(3.0f);
     
 std::string to_base(int32_t num, int base, bool use_i2 = false);
 std::string to_base(int64_t num, int base, bool use_i2 = false);

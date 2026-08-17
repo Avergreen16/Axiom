@@ -599,7 +599,7 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
                         c_event.point_a = contact_point_a;
                         c_event.point_b = contact_point_b;
                         c_event.point_m = contact_point_a - contact_point_b;
-                        c_event.data = {r.vertices[0].m, r.vertices[1].m, r.vertices[2].m, r.weights};
+                        c_event.data = {r.vertices[0].m, r.vertices[1].m, r.vertices[2].m};
 
                         vec3 main_dir = a_rel_pos - b_rel_pos;
                         vec3 collision_normal;

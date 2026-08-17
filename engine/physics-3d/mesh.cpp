@@ -17,8 +17,8 @@ void create_mesh(std::vector<vertex_element3d> elements, std::vector<output_vert
     output_vertex vc;
 
     va.position = support(vec3(1.0f, 0.0f, 0.0f), elements, va.element);
-    vb.position = support(vec3(-1.0f, 0.0f, 0.0f), elements, vb.element);
-    vc.position = support(vec3(0.0f, 1.0f, 0.0f), elements, vc.element);
+    vb.position = support(vec3(0.0f, 1.0f, 0.0f), elements, vb.element);
+    vc.position = support(vec3(0.0f, 0.0f, 1.0f), elements, vc.element);
 
     std::vector<output_vertex> points = {va, vb, vc};
 

@@ -155,6 +155,7 @@ vec3 hex_color(uint color) {
 vec3 hsv_color(float hue, float saturation, float value) {
     vec3 color;
 
+    hue = glm::fract(hue / 6.0f) * 6.0f;
     float f = glm::fract(hue);
 
     if(hue < 1) {

@@ -64,8 +64,6 @@ ulong hash(glm::vec<4, ulong> v);
 
 float to_float(uint m);
 
-float to_float_10(uint m);
-
 int hash(ivec3 v, uint seed);
 
 struct hash_coord {

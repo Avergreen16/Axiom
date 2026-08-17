@@ -57,27 +57,15 @@ ulong hash(glm::vec<4, ulong> v) {
 }
 
 float to_float(uint m) {
-    const uint ieeeMantissa = 0x007FFFFFu; // binary32 mantissa bitmask
-    const uint ieeeOne = 0x3F800000u; // 1.0 in IEEE binary32
+    const uint ieeeMantissa = 0x007FFFFFu; // mantissa bitmask
+    const uint ieeeOne = 0x3F800000u; // 1.0
 
-    m &= ieeeMantissa;                     // Keep only mantissa bits (fractional part)
-    m |= ieeeOne;                          // Add fractional part to 1.0
+    m &= ieeeMantissa; // keep mantissa bits
+    m |= ieeeOne; // add fractional part to 1.0
 
-    float  f = std::bit_cast<float, uint>(m);       // Range [1:2]
-    return f * 2.0f - 3.0f;                // Range [-1:1]
+    float  f = std::bit_cast<float, uint>(m); // range 1 -> 2
+    return f - 1.0f; // range 0 -> 1
 }
-
-float to_float_10(uint m) {
-    const uint ieeeMantissa = 0x007FFFFFu; // binary32 mantissa bitmask
-    const uint ieeeOne = 0x3F800000u; // 1.0 in IEEE binary32
-
-    m &= ieeeMantissa;                     // Keep only mantissa bits (fractional part)
-    m |= ieeeOne;                          // Add fractional part to 1.0
-
-    float  f = std::bit_cast<float, uint>(m);       // Range [1:2]
-    return f - 1.0f;                // Range [0, 1]
-}
-
 
 std::size_t hash_coord::operator()(const ivec2& v) const {
     int hash = v.x * PRIME_X;
