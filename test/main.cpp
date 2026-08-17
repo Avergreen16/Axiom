@@ -2878,7 +2878,7 @@ int main(int argc, char* argv[]) {
 
                     uint n = rand.next();
 
-                    if(n % 4 < 2) {
+                    if(n % 6 < 3) {
                         std::vector<float> dimensions = {rand(), rand(), rand(), rand(), rand()};
                         dimensions = {1, 1, 1, 1, 1};
 
@@ -2899,7 +2899,7 @@ int main(int argc, char* argv[]) {
 
                         create_mesh(mesh, elements, color);
                         create_collider(collider, transform, elements);
-                    } else if(n % 4 < 3) {
+                    } else if(n % 6 < 4) {
                         float side_length = sqrt(6.0f) * 0.5f;
 
                         std::vector<axiom::vertex_element3d> elements = {
@@ -2915,7 +2915,7 @@ int main(int argc, char* argv[]) {
 
                         create_mesh(mesh, elements, color);
                         create_collider(collider, transform, elements);
-                    } else {
+                    } else if(n % 6 < 5) {
                         std::vector<axiom::vertex_element3d> elements = {
                             axiom::vertex_element3d{vec3(1.0f, -1.0f, -1.0f) * w * 0.5f},
                             axiom::vertex_element3d{vec3(-1.0f, 1.0f, -1.0f) * w * 0.5f},
@@ -2924,6 +2924,27 @@ int main(int argc, char* argv[]) {
                         };
 
                         vec3 color = axiom::hsv_color(rand() * -0.125f + 1.0f, 0.75f, 1.0f);
+
+                        create_mesh(mesh, elements, color);
+                        create_collider(collider, transform, elements);
+                    } else if(n % 6 < 6) {
+                        uint n = floor(rand() * 5) + 5;
+
+                        float crad = axiom::sqrt3;
+
+                        std::vector<axiom::vertex_element3d> elements = {
+                            axiom::vertex_element3d{vec3(0.0f, 0.0f, 1.0f) * crad * w * 0.5f},
+                            axiom::vertex_element3d{vec3(0.0f, 0.0f, -1.0f) * crad * w * 0.5f},
+                        };
+
+                        for(int i = 0; i < n; ++i) {
+                            float angle = axiom::pi * 2.0f * (float(i) / n);
+                            
+                            auto element = axiom::vertex_element3d{vec3(cos(angle), sin(angle), 0) * crad * w * 0.5f};
+                            elements.push_back(element);
+                        }
+
+                        vec3 color = axiom::hsv_color(rand() * -0.125f + 4.0f + (n - 5) * 0.125f, 0.75f, 1.0f);
 
                         create_mesh(mesh, elements, color);
                         create_collider(collider, transform, elements);
