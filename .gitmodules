@@ -4,20 +4,20 @@
 [submodule "external/assimp"]
 	path = external/assimp
 	url = https://github.com/assimp/assimp.git
-[submodule "External/glfw"]
-	path = External/glfw
+[submodule "external/glfw"]
+	path = external/glfw
 	url = https://github.com/glfw/glfw.git
 [submodule "external/glm"]
 	path = external/glm
 	url = https://github.com/g-truc/glm.git
-[submodule "External/lua"]
-	path = External/lua
+[submodule "external/lua"]
+	path = external/lua
 	url = https://github.com/lua/lua.git
-[submodule "External/xsimd"]
-	path = External/xsimd
+[submodule "external/xsimd"]
+	path = external/xsimd
 	url = https://github.com/xtensor-stack/xsimd.git
-[submodule "External/stb"]
-	path = External/stb
+[submodule "external/stb"]
+	path = external/stb
 	url = https://github.com/nothings/stb.git
 [submodule "external/json"]
 	path = external/json
