@@ -66,10 +66,13 @@ struct text_event {
 class window {
     public:
     GLFWwindow* window_handle = nullptr;
+    bool decorated = true;
     
     float resize_border;
     ivec2 screen_size;
     ivec2 viewport_size;
+    
+    std::function<void()> on_resize = []() {};
 
     private: 
     
@@ -123,6 +126,8 @@ class window {
     void hide_cursor();
     void disable_cursor();
     void show_cursor();
+
+    void clear_events();
 
     friend void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
     friend void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos);

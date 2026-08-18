@@ -14,7 +14,7 @@ void screen_widget::handle_inputs() {
     else fullscreen = false;
 
     if(ui_system.hover_capture == self && (ui_system.click_capture == NULL_WIDGET || ui_system.click_capture == self)) {
-        region = vec4(size.x - header, size.y - header, header, header);
+        region = vec4(position.x + size.x - header, position.y + size.y - header, header, header);
         region.z += region.x;
         region.w += region.y;
         if(includes(ui_system.window->cursor_pos, region)) {
@@ -27,7 +27,7 @@ void screen_widget::handle_inputs() {
             }
         } else hover_close = false;
 
-        region = vec4(size.x - header * 2.0f, size.y - header, header, header);
+        region = vec4(position.x + size.x - header * 2.0f, position.y + size.y - header, header, header);
         region.z += region.x;
         region.w += region.y;
         if(includes(ui_system.window->cursor_pos, region)) {
@@ -46,7 +46,7 @@ void screen_widget::handle_inputs() {
             }
         } else hover_maximize = false;
 
-        region = vec4(size.x - header * 3.0f, size.y - header, header, header);
+        region = vec4(position.x + size.x - header * 3.0f, position.y + size.y - header, header, header);
         region.z += region.x;
         region.w += region.y;
         if(includes(ui_system.window->cursor_pos, region)) {
@@ -82,7 +82,7 @@ void screen_widget::mesh() {
     ui_vertex d = {vec3(1.0f, 1.0f, 0.0f), vec2(1.0f, 1.0f), vec4(1.0f)};
     std::vector<ui_vertex> ret;
 
-    if(fullscreen || true) {
+    if(fullscreen || !win->decorated) {
         // title bar
         ret = {a, b, d, a, d, c};
         for(ui_vertex& v : ret) {
@@ -96,7 +96,7 @@ void screen_widget::mesh() {
         // icons
         
         // axiom icon
-        vec4 r = vec4(0.0f, size.y - header, header, header);
+        vec4 r = vec4(position.x, position.y + size.y - header, header, header);
         vec2 nsize = vec2(16);
         vec4 texture_range = vec4(32, 16, 16, 16);
 
@@ -131,7 +131,7 @@ void screen_widget::mesh() {
         vec3 col;
         
         // close
-        r = vec4(size.x - header, size.y - header, header, header);
+        r = vec4(position.x + size.x - header, position.y + size.y - header, header, header);
         nsize = vec2(10);
         texture_range = vec4(14, 54, 10, 10);
         
@@ -156,7 +156,7 @@ void screen_widget::mesh() {
         vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
 
         // maximize
-        r = vec4(size.x - header * 2.0f, size.y - header, header, header);
+        r = vec4(position.x + size.x - header * 2.0f, position.y + size.y - header, header, header);
         nsize = vec2(10);
         texture_range = vec4(14, 24, 10, 10);
         if(glfwGetWindowAttrib(ui_system.window->window_handle, GLFW_MAXIMIZED) || fullscreen) texture_range = vec4(14, 34, 10, 10);
@@ -181,7 +181,7 @@ void screen_widget::mesh() {
         vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
 
         // minimize
-        r = vec4(size.x - header * 3.0f, size.y - header, header, header);
+        r = vec4(position.x + size.x - header * 3.0f, position.y + size.y - header, header, header);
         nsize = vec2(10);
         texture_range = vec4(14, 44, 10, 10);
 
@@ -223,6 +223,131 @@ void screen_widget::mesh() {
         }
         vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
     }
+
+    if(!win->decorated && win->is_windowed()) {
+        float shadow_w = 0.8f;
+        int shadow_width = 6;
+
+        std::vector<ui_vertex> shadow_vs;
+
+        // left
+        ret = {a, b, d, a, d, c};
+        ret[0].color.w = 0.0f;
+        ret[3].color.w = 0.0f;
+        ret[5].color.w = 0.0f;
+        range = {position + vec2(-shadow_width, 0.0), position + vec2(0.0, size.y)};
+        for(ui_vertex &v : ret) {
+            v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
+            v.tex_pos = vec2(1.0f, 63.0f);
+            v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
+            v.data = 1;
+        }
+        shadow_vs.insert(shadow_vs.end(), ret.begin(), ret.end());
+
+        // top left
+        ret = {a, b, c, b, d, c};
+        ret[0].color.w = 0.0f;
+        ret[2].color.w = 0.0f;
+        ret[4].color.w = 0.0f;
+        ret[5].color.w = 0.0f;
+        range = {position + vec2(-shadow_width, size.y), position + vec2(0.0f, shadow_width + size.y)};
+        for(ui_vertex &v : ret) {
+            v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
+            v.tex_pos = vec2(1.0f, 63.0f);
+            v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
+            v.data = 1;
+        }
+        shadow_vs.insert(shadow_vs.end(), ret.begin(), ret.end());
+
+        // bottom left
+        ret = {a, b, d, a, d, c};
+        ret[0].color.w = 0.0f;
+        ret[1].color.w = 0.0f;
+        ret[3].color.w = 0.0f;
+        ret[5].color.w = 0.0f;
+        range = {position + vec2(-shadow_width, -shadow_width), position + vec2(0.0f, 0.0f)};
+        for(ui_vertex &v : ret) {
+            v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
+            v.tex_pos = vec2(1.0f, 63.0f);
+            v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
+            v.data = 1;
+        }
+        shadow_vs.insert(shadow_vs.end(), ret.begin(), ret.end());
+
+        // right
+        ret = {a, b, d, a, d, c};
+        ret[1].color.w = 0.0f;
+        ret[2].color.w = 0.0f;
+        ret[4].color.w = 0.0f;
+        range = {position + vec2(size.x, 0.0f), position + vec2(size.x + shadow_width, size.y)};
+        for(ui_vertex &v : ret) {
+            v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
+            v.tex_pos = vec2(1.0f, 63.0f);
+            v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
+            v.data = 1;
+        }
+        shadow_vs.insert(shadow_vs.end(), ret.begin(), ret.end());
+
+        // top right
+        ret = {a, b, d, a, d, c};
+        ret[1].color.w = 0.0f;
+        ret[2].color.w = 0.0f;
+        ret[4].color.w = 0.0f;
+        ret[5].color.w = 0.0f;
+        range = {position + vec2(size.x, size.y), position + vec2(size.x + shadow_width, shadow_width + size.y)};
+        for(ui_vertex &v : ret) {
+            v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
+            v.tex_pos = vec2(1.0f, 63.0f);
+            v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
+            v.data = 1;
+        }
+        shadow_vs.insert(shadow_vs.end(), ret.begin(), ret.end());
+
+        // bottom right
+        ret = {a, b, c, b, d, c};
+        ret[0].color.w = 0.0f;
+        ret[1].color.w = 0.0f;
+        ret[3].color.w = 0.0f;
+        ret[4].color.w = 0.0f;
+        range = {position + vec2(size.x, -shadow_width), position + vec2(size.x + shadow_width, 0.0f)};
+        for(ui_vertex &v : ret) {
+            v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
+            v.tex_pos = vec2(1.0f, 63.0f);
+            v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
+            v.data = 1;
+        }
+        shadow_vs.insert(shadow_vs.end(), ret.begin(), ret.end());
+
+        // top
+        ret = {a, b, d, a, d, c};
+        ret[2].color.w = 0.0f;
+        ret[4].color.w = 0.0f;
+        ret[5].color.w = 0.0f;
+        range = {position + vec2(0.0f, size.y), position + vec2(size.x, shadow_width + size.y)};
+        for(ui_vertex &v : ret) {
+            v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
+            v.tex_pos = vec2(1.0f, 63.0f);
+            v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
+            v.data = 1;
+        }
+        shadow_vs.insert(shadow_vs.end(), ret.begin(), ret.end());
+
+        // bottom
+        ret = {a, b, d, a, d, c};
+        ret[0].color.w = 0.0f;
+        ret[1].color.w = 0.0f;
+        ret[3].color.w = 0.0f;
+        range = {position + vec2(0.0f, -shadow_width), position + vec2(size.x, 0.0f)};
+        for(ui_vertex &v : ret) {
+            v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
+            v.tex_pos = vec2(1.0f, 63.0f);
+            v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
+            v.data = 1;
+        }
+        shadow_vs.insert(shadow_vs.end(), ret.begin(), ret.end());
+        
+        vertices_before.insert(vertices_before.end(), shadow_vs.begin(), shadow_vs.end());
+    }
 }
 
 void screen_widget::init() {
@@ -231,7 +356,17 @@ void screen_widget::init() {
     widget_constraint c;
     c.func = [this, ui_system]() {
         position = vec2(0.0f);
-        if(!ui_system->window->is_minimized()) size = ui_system->window->screen_size;
+        if(!ui_system->window->is_minimized()) {
+            ivec4 range = ivec4(0, 0, win->screen_size);
+            if(!win->decorated && win->is_windowed()) range = ivec4(6, 6, win->screen_size - 12);
+            else if(win->is_fullscreen()) range = ivec4(1, 1, win->screen_size - 2);
+
+            std::cout << range.x << " " << range.y << " " << range.z << " " << range.w << '\n';
+            std::cout << win->screen_size.x << " " << win->screen_size.y << "\n";
+
+            position = range.xy();
+            size = range.zw();
+        }
     };
     before.push_back(c);
 
@@ -252,7 +387,7 @@ void screen_widget::init() {
     before.push_back(c);
 }
 
-ulong screen_widget::insert(std::string name, vec3 color) {
+ulong screen_widget::insert(std::string name, vec3 color, axiom::window* win) {
     axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
 
     screen_widget widget;
@@ -262,6 +397,8 @@ ulong screen_widget::insert(std::string name, vec3 color) {
     
     widget.layout_mode = axiom::layout_mode::VOID;
     widget.position_mode = axiom::position_mode::STATIC;
+
+    widget.win = win;
 
     return ui_system.insert_widget(widget, true);
 }

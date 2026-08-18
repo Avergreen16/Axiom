@@ -2,6 +2,7 @@
 
 #include <ui/widget_base.hpp>
 #include <ui/ui_system.hpp>
+#include <include/window.hpp>
 
 namespace axiom {
 
@@ -10,6 +11,8 @@ struct screen_widget : widget {
     std::string label;
     vec2 text_size;
     vec3 color;
+
+    axiom::window* win;
 
     bool fullscreen = false;
     bool hover_minimize = false;
@@ -21,7 +24,7 @@ struct screen_widget : widget {
     void init();
     capture_data handle_capture();
 
-    static ulong insert(std::string name, vec3 color);
+    static ulong insert(std::string name, vec3 color, axiom::window* win);
 };
 
 }
