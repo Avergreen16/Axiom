@@ -44,6 +44,10 @@ std::ostream& operator<<(std::ostream& stream, const vec2& v);
 std::ostream& operator<<(std::ostream& stream, const vec3& v);
 std::ostream& operator<<(std::ostream& stream, const vec4& v);
 
+std::ostream& operator<<(std::ostream& stream, const ivec2& v);
+std::ostream& operator<<(std::ostream& stream, const ivec3& v);
+std::ostream& operator<<(std::ostream& stream, const ivec4& v);
+
 namespace axiom {
 
 double get_time();

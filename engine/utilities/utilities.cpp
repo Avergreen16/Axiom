@@ -13,7 +13,20 @@ std::ostream& operator<<(std::ostream& stream, const vec2& v) {
 std::ostream& operator<<(std::ostream& stream, const vec3& v) {
     return stream << v.x << " " << v.y << " " << v.z;
 }
+
 std::ostream& operator<<(std::ostream& stream, const vec4& v) {
+    return stream << v.x << " " << v.y << " " << v.z << " " << v.w;
+}
+
+std::ostream& operator<<(std::ostream& stream, const ivec2& v) {
+    return stream << v.x << " " << v.y;
+}
+
+std::ostream& operator<<(std::ostream& stream, const ivec3& v) {
+    return stream << v.x << " " << v.y << " " << v.z;
+}
+
+std::ostream& operator<<(std::ostream& stream, const ivec4& v) {
     return stream << v.x << " " << v.y << " " << v.z << " " << v.w;
 }
 

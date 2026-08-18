@@ -6,6 +6,9 @@
 #include <window/window.hpp>
 #include <platform/platform.hpp>
 
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include "GLFW/glfw3native.h"
+
 namespace axiom {
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -60,8 +63,12 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 
     w->screen_size.x = width;
     w->screen_size.y = height;
-    w->viewport_size.x = width + 1 * (width & 1);
-    w->viewport_size.y = height + 1 * (height & 1);
+    w->viewport_size.x = width;
+    w->viewport_size.y = height;
+
+    glViewport(0, 0, w->viewport_size.x, w->viewport_size.y);
+
+    w->on_resize();
 }
 
 void window::init_callbacks() {
@@ -75,7 +82,7 @@ void window::init_callbacks() {
     glfwSetCharCallback(window_handle, character_callback);
 }
 
-window::window(ivec2 position, ivec2 size, float border, std::string name, bool title_bar) {
+window::window(ivec2 position, ivec2 size, float border, std::string name, bool decorated) {
     if(glfwInit() == GLFW_FALSE) {
         std::cout << "ERROR: GLFW failed to load.\n";
         exit(-1);
@@ -83,6 +90,9 @@ window::window(ivec2 position, ivec2 size, float border, std::string name, bool 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+    if(!decorated) glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
+    this->decorated = decorated;
     
     //glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
 
@@ -93,7 +103,7 @@ window::window(ivec2 position, ivec2 size, float border, std::string name, bool 
     glfwMakeContextCurrent(window_handle);
     glfwShowWindow(window_handle);
 
-    if(!title_bar) remove_header(window_handle);
+    if(!decorated) remove_header(window_handle);
 
     int width, height;
     glfwGetWindowSize(window_handle, &width, &height);
@@ -136,6 +146,18 @@ window::window(ivec2 position, ivec2 size, float border, std::string name, bool 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     */
+}
+
+void window::clear_events() {
+    pressed_buttons.clear();
+    repeat_buttons.clear();
+    released_buttons.clear();
+    key_events.clear();
+    mouse_button_events.clear();
+    scroll_events.clear();
+    cursor_events.clear();
+    text_events.clear();
+    for(auto& [k, b] : input_map) b = false;
 }
 
 void window::poll_events() {
@@ -244,12 +266,12 @@ void window::make_fullscreen() {
 
     //
 
-    glfwSetWindowMonitor(window_handle, monitor, 0, 0, mode->width, mode->height, 0);
+    glfwSetWindowMonitor(window_handle, nullptr, -1, -1, mode->width + 2, mode->height + 2, 60);
 }
 
 void window::make_windowed() {
     glfwRestoreWindow(window_handle);
-    glfwSetWindowMonitor(window_handle, nullptr, prev_pos.x, prev_pos.y, prev_size.x, prev_size.y, 0);
+    glfwSetWindowMonitor(window_handle, nullptr, prev_pos.x, prev_pos.y, prev_size.x, prev_size.y, 60);
 }
 
 void window::make_minimized() {

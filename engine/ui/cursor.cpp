@@ -11,12 +11,12 @@ std::vector<ui_vertex> mesh_cursor(cursor_mode mode, ivec2 position) {
         case axiom::cursor_mode::DEFAULT: 
             size = {10, 16};
             tex_range = {80, 0, 10, 16};
-            rel_pos = {0, 0};
+            rel_pos = {0, 1};
             break;
         case axiom::cursor_mode::CLICK: 
             size = {16, 16};
             tex_range = {96, 0, 16, 16};
-            rel_pos = {-5, 0};
+            rel_pos = {-5, 1};
             break;
         case axiom::cursor_mode::DRAG_T: 
             size = {11, 17};

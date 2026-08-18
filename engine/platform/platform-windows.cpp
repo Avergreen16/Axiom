@@ -177,36 +177,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     switch (msg)
     {   
         case WM_NCCALCSIZE:
-        {
             if (wParam)
-            {   
-                int border = GetSystemMetrics(SM_CXSIZEFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER);
-                
-                NCCALCSIZE_PARAMS* params = (NCCALCSIZE_PARAMS*)lParam;
-                //auto prev = params->rgrc[0];
-
-                //float border = core.window.resize_border;
-
-                //DefWindowProc(hwnd, msg, wParam, lParam);
-                
-                if(IsFullscreen(hwnd, lParam)) {
-                    
-                } else if(maximized) {
-                    params->rgrc[0].top += border;
-                    params->rgrc[0].bottom -= border;
-                    params->rgrc[0].left += border;
-                    params->rgrc[0].right -= border;
-                } else {
-                    params->rgrc[0].bottom -= border;
-                    params->rgrc[0].left += border;
-                    params->rgrc[0].right -= border;
-                }
-
                 return 0;
-            }
             break;
-        }
-       
         case WM_NCHITTEST: {
             LRESULT result;
             if (DwmDefWindowProc(hwnd, msg, wParam, lParam, &result))
@@ -219,13 +192,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             RECT rect;
             GetClientRect(hwnd, &rect);
 
-            const int BORDER = GetSystemMetrics(SM_CXSIZEFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER);
+            const int BORDER = 6;
 
             if(windowed) {
-                bool left   = p.x < 0.0f;
-                bool right  = p.x > rect.right;
+                bool left   = p.x < BORDER;
+                bool right  = p.x > rect.right - BORDER;
                 bool top    = p.y < BORDER;
-                bool bottom = p.y > rect.bottom;
+                bool bottom = p.y > rect.bottom - BORDER;
 
                 if (top && left) return HTTOPLEFT;
                 if (top && right) return HTTOPRIGHT;
@@ -298,17 +271,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 }
 
 void remove_header(GLFWwindow* window) {
+    glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_FALSE);
+
     HWND hwnd = glfwGetWin32Window(window);
 
-    /*
     LONG_PTR style = GetWindowLongPtr(hwnd, GWL_STYLE);
-
-    style &= ~WS_CAPTION; // keep native resize border
-    style &= ~WS_OVERLAPPED;
-    style &= ~WS_THICKFRAME;
-    
+    style |= WS_THICKFRAME;
     SetWindowLongPtr(hwnd, GWL_STYLE, style);
-    */
     
     oldWndProc = (WNDPROC)SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
 
@@ -324,15 +293,19 @@ void remove_header(GLFWwindow* window) {
 }
 
 bool is_fullscreen(GLFWwindow* window) {
-    HWND hwnd = glfwGetWin32Window(window);
+    int width, height;
+    glfwGetWindowSize(window, &width, &height);
 
-    return IsFullscreen(hwnd);
-}
+    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+    
+    return width >= mode->width && height >= mode->height;
+}   
 
 bool is_maximized(GLFWwindow* window) {
     HWND hwnd = glfwGetWin32Window(window);
 
-    return IsZoomed(hwnd);
+    return is_fullscreen(window) || IsZoomed(hwnd);
 }
 
 bool is_minimized(GLFWwindow* window) {
