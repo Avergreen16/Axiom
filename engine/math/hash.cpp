@@ -1,5 +1,7 @@
 #include "hash.hpp"
 
+#include <bit>
+
 namespace axiom {
     
 uint hash(ivec3 v) {

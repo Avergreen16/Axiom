@@ -29,7 +29,7 @@ target_link_libraries(AxiomPlatform
 
 if(WIN32)
     target_link_libraries(AxiomPlatform
-        PRIVATE
+        PUBLIC
             dwmapi
             gdi32
             user32
@@ -43,7 +43,7 @@ if(WIN32)
     )
 elseif(UNIX)
     target_link_libraries(AxiomPlatform
-        PRIVATE
+        PUBLIC
             GL
             X11
             dl

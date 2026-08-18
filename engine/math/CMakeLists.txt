@@ -41,7 +41,6 @@ if(WIN32)
             wsock32
             mingw32
             mingwex 
-            atomic
     )
 elseif(UNIX)
     target_link_libraries(AxiomMath
