@@ -1,8 +1,6 @@
-cmake_minimum_required(VERSION 3.25)
-
-#include(AxiomIcon)
-
 set(AXIOM_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
+
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/assimp)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/glad)
