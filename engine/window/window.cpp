@@ -91,8 +91,9 @@ window::window(ivec2 position, ivec2 size, float border, std::string name, bool 
     window_handle = glfwCreateWindow(size.x, size.y, name.c_str(), NULL, NULL);
 
     glfwMakeContextCurrent(window_handle);
+    glfwShowWindow(window_handle);
 
-    if(!title_bar) remove_header(window_handle);
+    //if(!title_bar) remove_header(window_handle);
 
     int width, height;
     glfwGetWindowSize(window_handle, &width, &height);

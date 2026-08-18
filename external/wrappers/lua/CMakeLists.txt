@@ -1,36 +1,36 @@
 add_library(lua
-    ${CMAKE_SOURCE_DIR}/external/lua/lapi.c
-    ${CMAKE_SOURCE_DIR}/external/lua/lauxlib.c
-    ${CMAKE_SOURCE_DIR}/external/lua/lbaselib.c
-    ${CMAKE_SOURCE_DIR}/external/lua/lcode.c
-    ${CMAKE_SOURCE_DIR}/external/lua/lcorolib.c
-    ${CMAKE_SOURCE_DIR}/external/lua/lctype.c
-    ${CMAKE_SOURCE_DIR}/external/lua/ldblib.c
-    ${CMAKE_SOURCE_DIR}/external/lua/ldebug.c
-    ${CMAKE_SOURCE_DIR}/external/lua/ldo.c
-    ${CMAKE_SOURCE_DIR}/external/lua/ldump.c
-    ${CMAKE_SOURCE_DIR}/external/lua/lfunc.c
-    ${CMAKE_SOURCE_DIR}/external/lua/lgc.c
-    ${CMAKE_SOURCE_DIR}/external/lua/linit.c
-    ${CMAKE_SOURCE_DIR}/external/lua/liolib.c
-    ${CMAKE_SOURCE_DIR}/external/lua/llex.c
-    ${CMAKE_SOURCE_DIR}/external/lua/lmathlib.c
-    ${CMAKE_SOURCE_DIR}/external/lua/lmem.c
-    ${CMAKE_SOURCE_DIR}/external/lua/loadlib.c
-    ${CMAKE_SOURCE_DIR}/external/lua/lobject.c
-    ${CMAKE_SOURCE_DIR}/external/lua/lopcodes.c
-    ${CMAKE_SOURCE_DIR}/external/lua/loslib.c
-    ${CMAKE_SOURCE_DIR}/external/lua/lparser.c
-    ${CMAKE_SOURCE_DIR}/external/lua/lstate.c
-    ${CMAKE_SOURCE_DIR}/external/lua/lstring.c
-    ${CMAKE_SOURCE_DIR}/external/lua/lstrlib.c
-    ${CMAKE_SOURCE_DIR}/external/lua/ltable.c
-    ${CMAKE_SOURCE_DIR}/external/lua/ltablib.c
-    ${CMAKE_SOURCE_DIR}/external/lua/ltm.c
-    ${CMAKE_SOURCE_DIR}/external/lua/lundump.c
-    ${CMAKE_SOURCE_DIR}/external/lua/lutf8lib.c
-    ${CMAKE_SOURCE_DIR}/external/lua/lvm.c
-    ${CMAKE_SOURCE_DIR}/external/lua/lzio.c
-)
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/lapi.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/lauxlib.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/lbaselib.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/lcode.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/lcorolib.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/lctype.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/ldblib.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/ldebug.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/ldo.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/ldump.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/lfunc.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/lgc.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/linit.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/liolib.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/llex.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/lmathlib.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/lmem.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/loadlib.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/lobject.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/lopcodes.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/loslib.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/lparser.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/lstate.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/lstring.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/lstrlib.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/ltable.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/ltablib.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/ltm.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/lundump.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/lutf8lib.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/lvm.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lua/lzio.c
+/..)
 
-target_include_directories(lua PUBLIC ${CMAKE_SOURCE_DIR}/external/lua)
+target_include_directories(lua PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../lua/..)

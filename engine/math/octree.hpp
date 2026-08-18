@@ -4,11 +4,11 @@
 #define GLM_FORCE_SWIZZLE
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL
-#include "glm\glm.hpp"
-#include "glm\gtx\matrix_transform_2d.hpp"
-#include "glm\gtx\transform.hpp"
-#include "glm\gtx\quaternion.hpp"
-#include "glm\gtx\orthonormalize.hpp"
+#include "glm/glm.hpp"
+#include "glm/gtx/matrix_transform_2d.hpp"
+#include "glm/gtx/transform.hpp"
+#include "glm/gtx/quaternion.hpp"
+#include "glm/gtx/orthonormalize.hpp"
 
 using ivec2 = glm::ivec2;
 using ivec3 = glm::ivec3;

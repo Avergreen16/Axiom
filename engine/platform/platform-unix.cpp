@@ -1,11 +1,6 @@
-#pragma once
+#include <iostream>
 
-#include <string>
-#include <vector>
-#include <cstdint>
-#include <deque>
-
-#include <GLFW/glfw3.h>
+#include "platform.hpp"
 
 #define GLM_FORCE_SWIZZLE
 #define GLM_FORCE_RADIANS
@@ -15,10 +10,6 @@
 #include "glm/gtx/transform.hpp"
 #include "glm/gtx/quaternion.hpp"
 #include "glm/gtx/orthonormalize.hpp"
-
-#include <variant>
-#include <unordered_set>
-#include <string>
 
 using ivec2 = glm::ivec2;
 using ivec3 = glm::ivec3;
@@ -36,17 +27,36 @@ using mat2 = glm::mat2;
 using mat3 = glm::mat3;
 using mat4 = glm::mat4;
 
+using uint = unsigned int;
+
 namespace axiom {
+    
+void copy_to_clipboard(std::string str) {
 
-void copy_to_clipboard(std::string str);
-std::string paste_from_clipboard();
+}
 
-void remove_header(GLFWwindow* window);
+std::string paste_from_clipboard() {
+    return "UNIX PLACEHOLDER";
+}
 
-bool is_fullscreen(GLFWwindow* window);
-bool is_maximized(GLFWwindow* window);
-bool is_minimized(GLFWwindow* window);
+ivec4 get_window_range(GLFWwindow* window) {
+    return ivec4(0, 0, 100, 100);
+}
 
-ivec4 get_window_range(GLFWwindow* window);
+void remove_header(GLFWwindow* window) {
+
+}
+
+bool is_fullscreen(GLFWwindow* window) {
+    return false;
+}
+
+bool is_maximized(GLFWwindow* window) {
+    return true;
+}
+
+bool is_minimized(GLFWwindow* window) {
+    return false;
+}
 
 }

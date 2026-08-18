@@ -7,8 +7,9 @@ add_library(AxiomPhysics2D
 
 target_include_directories(AxiomPhysics2D
     PUBLIC
-        ${CMAKE_SOURCE_DIR}/engine
-        ${CMAKE_SOURCE_DIR}
+        ${AXIOM_ROOT}
+        ${AXIOM_ROOT}/engine
+        ${AXIOM_ROOT}/external/glm
 )
 
 target_link_libraries(AxiomPhysics2D
@@ -18,17 +19,32 @@ target_link_libraries(AxiomPhysics2D
         AxiomECS
         AxiomUtilities
 
-        dwmapi
-        gdi32
-        user32
-        shell32
-        opengl32
-        ws2_32
-        wsock32
-        mingw32
-        mingwex 
         atomic
 )
+
+if(WIN32)
+    target_link_libraries(AxiomPhysics2D
+        PRIVATE
+            dwmapi
+            gdi32
+            user32
+            shell32
+            opengl32
+            ws2_32
+            wsock32
+            mingw32
+            mingwex 
+            atomic
+    )
+elseif(UNIX)
+    target_link_libraries(AxiomPhysics2D
+        PRIVATE
+            GL
+            X11
+            dl
+            pthread
+    )
+endif()
 
 target_compile_options(AxiomPhysics2D PRIVATE
     -g

@@ -1,31 +1,28 @@
 cmake_minimum_required(VERSION 3.25)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+#include(AxiomIcon)
 
-include(AxiomIcon)
+set(AXIOM_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 
-project(Axiom
-    VERSION 0.0.0
-    DESCRIPTION "Axiom Game Engine"
-    LANGUAGES C CXX
-)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/assimp)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/glad)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/glfw)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/glm)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/xsimd)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/wrappers/asio)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/wrappers/lua)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/wrappers/stb)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/json)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
-add_subdirectory(external/assimp)
-add_subdirectory(external/glad)
-add_subdirectory(external/glfw)
-add_subdirectory(external/glm)
-add_subdirectory(external/xsimd)
-add_subdirectory(external/wrappers/asio)
-add_subdirectory(external/wrappers/lua)
-add_subdirectory(external/wrappers/stb)
-add_subdirectory(external/json)
-
-add_subdirectory(test)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine/assets)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine/ecs)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine/input)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine/math)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine/physics-2d)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine/physics-3d)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine/platform)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine/render)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine/scene)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine/ui)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine/utilities)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine/window)

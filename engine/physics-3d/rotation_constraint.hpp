@@ -1,8 +1,8 @@
 #pragma once
 
-#include <physics-3d\collider.hpp>
-#include <physics-3d\collision.hpp>
-#include <physics-3d\constraint.hpp>
+#include <physics-3d/collider.hpp>
+#include <physics-3d/collision.hpp>
+#include <physics-3d/constraint.hpp>
 #include <include/ecs.hpp>
 
 namespace axiom {
