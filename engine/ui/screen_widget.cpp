@@ -216,7 +216,7 @@ void screen_widget::mesh() {
         // panel
         ret = {a, b, d, a, d, c};
         for(ui_vertex& v : ret) {
-            v.pos = vec3(position + vec2(0.0f, 0.0f) + v.pos.xy() * vec2(size.x, size.y), z);
+            v.pos = vec3(position + vec2(0.0f, 0.0f) + v.pos.xy() * vec2(size.x, size.y - header), z);
             v.tex_pos = vec2(1.0f, 63.0f);
             v.color = vec4(background_color, 1.0f);
             v.data = 1;
@@ -374,8 +374,7 @@ void screen_widget::init() {
         for(int i = 0; i < children.size(); ++i) {
             auto& p0 = ui_system->widgets[children[i]];
 
-            if(fullscreen || true) p0->size.y = size.y - header;
-            else p0->size.y = size.y;
+            p0->size.y = size.y - header;
             
             p0->size.x = size.x;
             
@@ -387,7 +386,7 @@ void screen_widget::init() {
     before.push_back(c);
 }
 
-ulong screen_widget::insert(std::string name, vec3 color, axiom::window* win) {
+ulong screen_widget::insert(std::string name, vec3 color, uint header, axiom::window* win) {
     axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
 
     screen_widget widget;
@@ -399,6 +398,7 @@ ulong screen_widget::insert(std::string name, vec3 color, axiom::window* win) {
     widget.position_mode = axiom::position_mode::STATIC;
 
     widget.win = win;
+    widget.header = header;
 
     return ui_system.insert_widget(widget, true);
 }
