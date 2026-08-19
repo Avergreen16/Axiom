@@ -75,7 +75,7 @@ ulong render_widget::insert(axiom::render_target* target, uint texture, std::fun
 
     render_widget widget;
     widget.position_mode = axiom::position_mode::BOTTOM_LEFT;
-    widget.layout_mode = axiom::layout_mode::VOID;
+    widget.layout_mode = axiom::layout_mode::NONE;
     widget.target = target;
     widget.texture = texture;
 

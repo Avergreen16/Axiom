@@ -191,7 +191,7 @@ uint64_t message_widget::insert(std::string sender, ulong timestamp, std::string
 
     widget.position = vec2(0.0f);
     
-    widget.layout_mode = axiom::layout_mode::VOID;
+    widget.layout_mode = axiom::layout_mode::NONE;
     widget.position_mode = ui_system.input_state.active_position;
     widget.buffer = ui_system.input_state.active_buffer;
 

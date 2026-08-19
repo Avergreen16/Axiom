@@ -21,7 +21,7 @@ ulong spacer_widget::insert(vec2 min_size, vec2 max_size, bool visual, vec4 colo
     if(widget.min_width == widget.max_width) widget.size.x = widget.min_width;
     if(widget.min_height == widget.max_height) widget.size.y = widget.min_height;
     
-    widget.layout_mode = axiom::layout_mode::VOID;
+    widget.layout_mode = axiom::layout_mode::NONE;
     widget.position_mode = ui_system.input_state.active_position;
     widget.buffer = ui_system.input_state.active_buffer;
 

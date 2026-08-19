@@ -1,4 +1,4 @@
-add_library(AxiomInput
+add_library(AxiomInput STATIC
     input.cpp
 )
 

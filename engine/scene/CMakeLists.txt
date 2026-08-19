@@ -1,4 +1,4 @@
-add_library(AxiomScene
+add_library(AxiomScene STATIC
     transform2d.cpp
     camera2d.cpp
     transform3d.cpp

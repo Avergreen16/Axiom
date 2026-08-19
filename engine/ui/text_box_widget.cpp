@@ -219,7 +219,7 @@ ulong text_box_widget::insert(float width, vec2 boundary, std::string start, std
     widget.min_height = widget.size.y;
     widget.max_height = widget.size.y;
 
-    widget.layout_mode = axiom::layout_mode::VOID;
+    widget.layout_mode = axiom::layout_mode::NONE;
     widget.position_mode = ui_system.input_state.active_position;
     widget.buffer = ui_system.input_state.active_buffer;
 

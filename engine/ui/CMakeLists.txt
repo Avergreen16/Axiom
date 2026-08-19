@@ -1,4 +1,4 @@
-add_library(AxiomUI
+add_library(AxiomUI STATIC
     ui.cpp
     ui_system.cpp
     widget_base.cpp

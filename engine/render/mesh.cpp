@@ -1,3 +1,5 @@
+#include <graphicsh.hpp>
+
 #include <render/mesh.hpp>
 
 namespace axiom {

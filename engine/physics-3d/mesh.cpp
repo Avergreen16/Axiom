@@ -1,5 +1,6 @@
 #include <physics-3d/mesh.hpp>
 #include <physics-3d/collider.hpp>
+#include <include/utilities.hpp>
 
 #include <iostream>
 
@@ -16,9 +17,23 @@ void create_mesh(std::vector<vertex_element3d> elements, std::vector<output_vert
     output_vertex vb;
     output_vertex vc;
 
+    vec3 center = vec3(0.0f);
+    for(auto& element : elements) center += element.center;
+    center /= elements.size();
+
     va.position = support(vec3(1.0f, 0.0f, 0.0f), elements, va.element);
-    vb.position = support(vec3(0.0f, 1.0f, 0.0f), elements, vb.element);
-    vc.position = support(vec3(0.0f, 0.0f, 1.0f), elements, vc.element);
+    vb.position = support(normalize(center - va.position), elements, vb.element);
+
+    vec3 dir = normalize(va.position - vb.position);
+    vec3 d = vb.position + dir * dot(dir, center - vb.position);
+    vec3 dd = dir;
+
+    dir = center - d;
+    if(length(dir) < 0.01) dir += normalize(vec3(-dd.y, dd.x, 0.0f)) * 0.02f;
+    
+    dir = normalize(dir);
+
+    vc.position = support(dir, elements, vc.element);
 
     std::vector<output_vertex> points = {va, vb, vc};
 

@@ -34,10 +34,10 @@ using ulong = uint64_t;
 namespace axiom {
     
 enum class layout_mode {
-    VOID, ROW, COLUMN, GRID
+    NONE, ROW, COLUMN, GRID
 };
 enum class position_mode {
-    STATIC, TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT, TOP_CENTER, BOTTOM_CENTER, CENTER_LEFT, CENTER_RIGHT, CENTER, VOID
+    STATIC, TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT, TOP_CENTER, BOTTOM_CENTER, CENTER_LEFT, CENTER_RIGHT, CENTER, NONE
 };
 
 struct widget_constraint {
@@ -76,7 +76,7 @@ struct widget {
 
     //
 
-    axiom::layout_mode layout_mode = axiom::layout_mode::VOID;
+    axiom::layout_mode layout_mode = axiom::layout_mode::NONE;
     axiom::position_mode position_mode = axiom::position_mode::STATIC;
 
     //

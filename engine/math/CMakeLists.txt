@@ -1,4 +1,4 @@
-add_library(AxiomMath
+add_library(AxiomMath STATIC
     base.cpp
     hash.cpp
     noise.cpp

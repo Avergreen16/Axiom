@@ -1,4 +1,4 @@
-add_library(AxiomECS
+add_library(AxiomECS STATIC
     ecs.cpp
 )
 

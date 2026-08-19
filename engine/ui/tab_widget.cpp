@@ -173,7 +173,7 @@ uint64_t tab_widget::insert(float tab_height, float tab_sep, std::vector<tab> ta
     tab_widget widget;
     
     widget.buffer = ui_system.input_state.active_buffer;
-    widget.layout_mode = axiom::layout_mode::VOID;
+    widget.layout_mode = axiom::layout_mode::NONE;
     widget.position_mode = ui_system.input_state.active_position;
     widget.tabs = tabs;
     widget.tab_height = tab_height;

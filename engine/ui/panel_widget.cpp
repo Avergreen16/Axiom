@@ -84,7 +84,7 @@ uint64_t panel_widget::insert() {
 
     panel_widget widget;
     widget.position_mode = axiom::position_mode::BOTTOM_LEFT;
-    widget.layout_mode = axiom::layout_mode::VOID;
+    widget.layout_mode = axiom::layout_mode::NONE;
 
     widget.min_width = 0.0f;
     widget.max_width = FLT_MAX;

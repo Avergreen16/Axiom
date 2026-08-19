@@ -123,7 +123,7 @@ uint64_t button_widget::insert(vec2 size, vec3 color, std::string str, std::func
 
     //
     
-    widget.layout_mode = axiom::layout_mode::VOID;
+    widget.layout_mode = axiom::layout_mode::NONE;
     widget.buffer = ui_system.input_state.active_buffer;
     widget.position_mode = ui_system.input_state.active_position;
     widget.callback = callback;
@@ -149,7 +149,7 @@ uint64_t button_widget::insert(vec2 size, vec3 color, vec4 icon, std::function<v
 
     //
     
-    widget.layout_mode = axiom::layout_mode::VOID;
+    widget.layout_mode = axiom::layout_mode::NONE;
     widget.buffer = ui_system.input_state.active_buffer;
     widget.position_mode = ui_system.input_state.active_position;
     widget.callback = callback;

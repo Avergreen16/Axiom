@@ -1,5 +1,5 @@
 
-add_library(AxiomPhysics2D
+add_library(AxiomPhysics2D STATIC
     collider.cpp
     mesh.cpp
     physics.cpp

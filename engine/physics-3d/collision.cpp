@@ -324,11 +324,11 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
     uint32_t iter_limit = 256;
 
     transform3d tta = ta;
-    tta.orientation = tta.orientation * ca.orientation;
     tta.position += tta.orientation * ca.position;
+    tta.orientation = tta.orientation * ca.orientation;
     transform3d ttb = tb;
-    ttb.orientation = ttb.orientation * cb.orientation;
     ttb.position += ttb.orientation * cb.position;
+    ttb.orientation = ttb.orientation * cb.orientation;
 
     vec3 a_rel_pos = transform_vertices(a_vertices, tta, ta.position);
     vec3 b_rel_pos = transform_vertices(b_vertices, ttb, ta.position);

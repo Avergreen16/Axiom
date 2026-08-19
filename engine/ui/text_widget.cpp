@@ -110,7 +110,7 @@ uint64_t text_widget::insert(std::string str, axiom::text_alignment alg, bool wr
 
     widget.position = vec2(0.0f);
     
-    widget.layout_mode = axiom::layout_mode::VOID;
+    widget.layout_mode = axiom::layout_mode::NONE;
     widget.position_mode = ui_system.input_state.active_position;
     widget.buffer = ui_system.input_state.active_buffer;
 

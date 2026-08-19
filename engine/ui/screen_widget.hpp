@@ -24,7 +24,7 @@ struct screen_widget : widget {
     void init();
     capture_data handle_capture();
 
-    static ulong insert(std::string name, vec3 color, uint header, axiom::window* win);
+    static ulong insert(std::string name, vec3 color, axiom::window* win);
 };
 
 }

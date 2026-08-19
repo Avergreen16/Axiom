@@ -14,7 +14,7 @@ ulong window_widget::insert(std::string label, ivec2 size, ivec2 position, vec3 
     widget.label = label;
     widget.header_color = color;
 
-    widget.layout_mode = axiom::layout_mode::VOID;
+    widget.layout_mode = axiom::layout_mode::NONE;
     widget.position_mode = axiom::position_mode::STATIC;
 
     widget.on_close = on_close;

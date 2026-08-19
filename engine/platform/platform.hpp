@@ -5,8 +5,6 @@
 #include <cstdint>
 #include <deque>
 
-#include <GLFW/glfw3.h>
-
 #define GLM_FORCE_SWIZZLE
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL
@@ -36,6 +34,8 @@ using mat2 = glm::mat2;
 using mat3 = glm::mat3;
 using mat4 = glm::mat4;
 
+struct GLFWwindow;
+
 namespace axiom {
 
 void copy_to_clipboard(std::string str);
@@ -48,5 +48,7 @@ bool is_maximized(GLFWwindow* window);
 bool is_minimized(GLFWwindow* window);
 
 ivec4 get_window_range(GLFWwindow* window);
+
+void print_wsize(GLFWwindow* window);
 
 }

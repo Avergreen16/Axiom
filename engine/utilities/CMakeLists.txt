@@ -1,4 +1,4 @@
-add_library(AxiomUtilities 
+add_library(AxiomUtilities STATIC
     utilities.cpp
 )
 

@@ -326,7 +326,7 @@ uint64_t drop_widget::insert(vec2 size, vec3 color, float w, float h, float h2, 
     widget.max_height = size.y;
     widget.color = color;
 
-    widget.layout_mode = axiom::layout_mode::VOID;
+    widget.layout_mode = axiom::layout_mode::NONE;
     widget.position_mode = ui_system.input_state.active_position;
     widget.buffer = ui_system.input_state.active_buffer;
 

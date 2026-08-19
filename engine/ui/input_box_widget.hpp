@@ -219,7 +219,7 @@ ulong input_box_widget<type>::insert(vec2 size, type value, std::function<void(i
     widget.min_height = size.y;
     widget.max_height = size.y;
 
-    widget.layout_mode = axiom::layout_mode::VOID;
+    widget.layout_mode = axiom::layout_mode::NONE;
     widget.position_mode = ui_system.input_state.active_position;
     widget.buffer = ui_system.input_state.active_buffer;
 

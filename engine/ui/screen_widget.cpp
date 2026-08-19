@@ -216,7 +216,7 @@ void screen_widget::mesh() {
         // panel
         ret = {a, b, d, a, d, c};
         for(ui_vertex& v : ret) {
-            v.pos = vec3(position + vec2(0.0f, 0.0f) + v.pos.xy() * vec2(size.x, size.y - header), z);
+            v.pos = vec3(position + vec2(0.0f, 0.0f) + v.pos.xy() * vec2(size.x, size.y), z);
             v.tex_pos = vec2(1.0f, 63.0f);
             v.color = vec4(background_color, 1.0f);
             v.data = 1;
@@ -361,9 +361,6 @@ void screen_widget::init() {
             if(!win->decorated && win->is_windowed()) range = ivec4(6, 6, win->screen_size - 12);
             else if(win->is_fullscreen()) range = ivec4(1, 1, win->screen_size - 2);
 
-            std::cout << range.x << " " << range.y << " " << range.z << " " << range.w << '\n';
-            std::cout << win->screen_size.x << " " << win->screen_size.y << "\n";
-
             position = range.xy();
             size = range.zw();
         }
@@ -374,7 +371,8 @@ void screen_widget::init() {
         for(int i = 0; i < children.size(); ++i) {
             auto& p0 = ui_system->widgets[children[i]];
 
-            p0->size.y = size.y - header;
+            if(fullscreen || true) p0->size.y = size.y - header;
+            else p0->size.y = size.y;
             
             p0->size.x = size.x;
             
@@ -386,7 +384,7 @@ void screen_widget::init() {
     before.push_back(c);
 }
 
-ulong screen_widget::insert(std::string name, vec3 color, uint header, axiom::window* win) {
+ulong screen_widget::insert(std::string name, vec3 color, axiom::window* win) {
     axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
 
     screen_widget widget;
@@ -394,11 +392,10 @@ ulong screen_widget::insert(std::string name, vec3 color, uint header, axiom::wi
     widget.label = name;
     widget.color = color;
     
-    widget.layout_mode = axiom::layout_mode::VOID;
+    widget.layout_mode = axiom::layout_mode::NONE;
     widget.position_mode = axiom::position_mode::STATIC;
 
     widget.win = win;
-    widget.header = header;
 
     return ui_system.insert_widget(widget, true);
 }

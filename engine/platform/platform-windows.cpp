@@ -1,3 +1,5 @@
+#include <graphicsh.hpp>
+
 #include <windows.h>
 #include <dwmapi.h>
 #include <windowsx.h>
@@ -5,6 +7,7 @@
 #include <iostream>
 
 #include "platform.hpp"
+#include "include/ui.hpp"
 
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include "GLFW/glfw3native.h"
@@ -162,12 +165,16 @@ ivec4 get_window_range(GLFWwindow* window) {
     return {windowRect.left, windowRect.top, windowWidth, windowHeight};
 }
 
+bool b = false;
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     bool fullscreen = IsFullscreen(hwnd);
     bool maximized = IsZoomed(hwnd) && !fullscreen;
     bool minimized = IsIconic(hwnd);
     bool windowed = !fullscreen && !maximized && !minimized;
+
+    if(dragging) b = true;
 
     if(minimized) {
         dragging = false;
@@ -177,8 +184,27 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     switch (msg)
     {   
         case WM_NCCALCSIZE:
-            if (wParam)
+            if(wParam) {
+                auto* p = reinterpret_cast<NCCALCSIZE_PARAMS*>(lParam);
+                //p->rgrc[0].left = p->rgrc[1].left;
+                //p->rgrc[0].top = p->rgrc[1].top;
+                //p->rgrc[0].right = p->rgrc[0].left + (p->rgrc[1].right - p->rgrc[1].left);
+                //p->rgrc[0].bottom = p->rgrc[0].top + (p->rgrc[1].bottom - p->rgrc[1].top);
+                
+                /*
+                SetWindowPos(
+                    hwnd,
+                    nullptr,
+                    p->rgrc[0].left, p->rgrc[0].left, p->rgrc[0].left, p->rgrc[0].left
+                    SWP_NOMOVE |
+                    SWP_NOSIZE |
+                    SWP_NOZORDER |
+                    SWP_FRAMECHANGED
+                );
+                */
+
                 return 0;
+            }
             break;
         case WM_NCHITTEST: {
             LRESULT result;
@@ -277,6 +303,11 @@ void remove_header(GLFWwindow* window) {
 
     LONG_PTR style = GetWindowLongPtr(hwnd, GWL_STYLE);
     style |= WS_THICKFRAME;
+    style |= WS_POPUP;
+    style |= WS_MINIMIZEBOX;
+    style |= WS_MAXIMIZEBOX;
+    style |= WS_SYSMENU;
+
     SetWindowLongPtr(hwnd, GWL_STYLE, style);
     
     oldWndProc = (WNDPROC)SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
@@ -312,6 +343,29 @@ bool is_minimized(GLFWwindow* window) {
     HWND hwnd = glfwGetWin32Window(window);
 
     return IsMinimized(hwnd);
+}
+
+void print_wsize(GLFWwindow* window) {
+    HWND hwnd = glfwGetWin32Window(window);
+
+    RECT wr, cr;
+    GetWindowRect(hwnd, &wr);
+    GetClientRect(hwnd, &cr);
+
+    printf(
+        "RENDER    window=(%ld, %ld) %ldx%ld  client=(%ld, %ld) %ldx%ld\n",
+        wr.left,
+        wr.top,
+
+        wr.right - wr.left,
+        wr.bottom - wr.top,
+
+        cr.left,
+        cr.top,
+
+        cr.right - cr.left,
+        cr.bottom - cr.top
+    );
 }
 
 }

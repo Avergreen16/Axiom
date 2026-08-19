@@ -1,5 +1,5 @@
 
-add_library(AxiomPhysics3D
+add_library(AxiomPhysics3D STATIC
     bounding_box.cpp
     collider.cpp
     collision_constraint.cpp

@@ -1,8 +1,14 @@
-add_library(AxiomPlatform
+add_library(AxiomPlatform STATIC
     platform.hpp
 )
 
 message(STATUS "WIN32 = ${WIN32}")
+
+target_include_directories(AxiomPlatform
+    PUBLIC
+        ${AXIOM_ROOT}
+        ${AXIOM_ROOT}/engine
+)
 
 if(WIN32)
     target_sources(AxiomPlatform PUBLIC
@@ -20,6 +26,9 @@ endif()
 
 target_link_libraries(AxiomPlatform
     PUBLIC
+        AxiomECS
+        AxiomUI
+
         glad
         glfw
         glm

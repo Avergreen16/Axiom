@@ -1,3 +1,5 @@
+#include <graphicsh.hpp>
+
 #include <render/wrapper.hpp>
 #include <render/target.hpp>
 

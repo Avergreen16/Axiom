@@ -1,4 +1,4 @@
-add_library(AxiomRender
+add_library(AxiomRender STATIC
     wrapper.cpp
     target.cpp
     mesh.cpp

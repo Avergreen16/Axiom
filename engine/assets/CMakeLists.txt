@@ -1,4 +1,4 @@
-add_library(AxiomAssets
+add_library(AxiomAssets STATIC
     assets.cpp
 )
 

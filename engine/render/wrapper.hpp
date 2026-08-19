@@ -1,8 +1,6 @@
 #pragma once
 #define _USE_MATH_DEFINES
 
-#include <glad.h>
-#include <GLFW/glfw3.h>
 #include <vector>
 #include <iostream>
 #include <array>

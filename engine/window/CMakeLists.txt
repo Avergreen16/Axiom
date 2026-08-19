@@ -1,4 +1,4 @@
-add_library(AxiomWindow
+add_library(AxiomWindow STATIC
     window.cpp
 )
 
