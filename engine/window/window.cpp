@@ -4,9 +4,7 @@
 
 #include <window/window.hpp>
 #include <platform/platform.hpp>
-
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include "GLFW/glfw3native.h"
+#include <include/utilities.hpp>
 
 namespace axiom {
 
@@ -68,6 +66,15 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, w->viewport_size.x, w->viewport_size.y);
 
     w->on_resize();
+}
+
+void iconify_callback(GLFWwindow* window, int flag) {
+    axiom::window* w = (axiom::window*)glfwGetWindowUserPointer(window);
+
+    if(flag) {
+        w->restore();
+        glfwMaximizeWindow(window);
+    }
 }
 
 void window::init_callbacks() {
@@ -259,31 +266,35 @@ void window::make_fullscreen() {
     const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 
     ivec4 range = get_window_range(window_handle);
-
-    prev_pos = range.xy();
-    prev_size = range.zw();
-
-    //
+    rs.push_back(range);
 
     glfwSetWindowMonitor(window_handle, nullptr, -1, -1, mode->width + 2, mode->height + 2, 60);
 }
 
 void window::make_windowed() {
     glfwRestoreWindow(window_handle);
-    glfwSetWindowMonitor(window_handle, nullptr, prev_pos.x, prev_pos.y, prev_size.x, prev_size.y, 60);
+    restore();
 }
 
 void window::make_minimized() {
+    ivec4 range = get_window_range(window_handle);
+    rs.push_back(range);
+
     glfwIconifyWindow(window_handle);
 }
 
 void window::make_maximized() {
     ivec4 range = get_window_range(window_handle);
-
-    prev_pos = range.xy();
-    prev_size = range.zw();
+    rs.push_back(range);
 
     glfwMaximizeWindow(window_handle);
+}
+
+void window::restore() {
+    if(rs.size()) {
+        glfwSetWindowMonitor(window_handle, nullptr, rs.back().x, rs.back().y, rs.back().z, rs.back().w, 60);
+        rs.pop_back();
+    }
 }
 
 void window::hide_cursor() {

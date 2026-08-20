@@ -13,6 +13,7 @@ target_link_libraries(AxiomWindow
     PUBLIC
         AxiomPlatform
         AxiomInput
+        AxiomUtilities
 
         glad
         glfw

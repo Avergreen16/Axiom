@@ -1,5 +1,6 @@
 #include <iostream>
 
+#include <graphicsh.hpp>
 #include "platform.hpp"
 
 #define GLM_FORCE_SWIZZLE
@@ -40,23 +41,29 @@ std::string paste_from_clipboard() {
 }
 
 ivec4 get_window_range(GLFWwindow* window) {
-    return ivec4(0, 0, 100, 100);
+    int x, y;
+    int width, height;
+
+    glfwGetWindowPos(window, &x, &y);
+    glfwGetWindowSize(window, &width, &height);
+
+    return ivec4(x, y, width, height);
 }
 
 void remove_header(GLFWwindow* window) {
-
+    glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_FALSE);
 }
 
 bool is_fullscreen(GLFWwindow* window) {
-    return false;
+    return glfwGetWindowMonitor(window) != nullptr;
 }
 
 bool is_maximized(GLFWwindow* window) {
-    return true;
+    return glfwGetWindowAttrib(window, GLFW_MAXIMIZED);
 }
 
 bool is_minimized(GLFWwindow* window) {
-    return false;
+    return glfwGetWindowAttrib(window, GLFW_ICONIFIED);
 }
 
 }

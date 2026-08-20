@@ -63,6 +63,21 @@ struct text_event {
     uint32_t codepoint;
 };
 
+struct window_state {
+    bool iconified;
+    ivec2 size;
+    ivec2 position;
+}
+
+struct iconfiy_event {
+    bool flag;
+};
+
+struct resize_event {
+    ivec2 prev_size;
+    ivec2 new_size;
+}
+
 class window {
     public:
     GLFWwindow* window_handle = nullptr;
@@ -76,8 +91,7 @@ class window {
 
     private: 
     
-    ivec2 prev_pos;
-    ivec2 prev_size;
+    std::vector<ivec4> rs;
     ivec2 prev_cursor_pos = ivec2(0);
 
     bool dragging = false;
@@ -87,6 +101,8 @@ class window {
     std::vector<axiom::scroll_event> scroll_events;
     std::vector<axiom::cursor_event> cursor_events;
     std::vector<axiom::text_event> text_events;
+    std::vector<axiom::iconify_event> iconify_events;
+    std::vector<axiom::resize_event> resize_events;
     
     void init_callbacks();
 
@@ -122,6 +138,7 @@ class window {
     void make_maximized();
     void make_windowed();
     void make_minimized();
+    void restore();
 
     void hide_cursor();
     void disable_cursor();
@@ -135,6 +152,7 @@ class window {
     friend void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
     friend void character_callback(GLFWwindow* window, unsigned int codepoint);
     friend void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+    friend void iconify_callback(GLFWwindow* window, int flag);
 };
 
 }
