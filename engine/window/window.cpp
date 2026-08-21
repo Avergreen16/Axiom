@@ -163,7 +163,7 @@ void window::clear_events() {
     scroll_events.clear();
     cursor_events.clear();
     text_events.clear();
-    for(auto& [k, b] : input_map) b = false;
+    //for(auto& [k, b] : input_map) b = false;
 }
 
 void window::poll_events() {
@@ -231,6 +231,229 @@ void window::poll_events() {
     scroll_events.clear();
     cursor_events.clear();
     text_events.clear();
+
+    static int operation;
+    static ivec2 global_cursor_pos;
+    static ivec2 prev_global_cursor_pos;
+    static ivec2 global_cursor_delta;
+
+    if(!decorated) {
+        prev_global_cursor_pos = global_cursor_pos;
+        global_cursor_pos = get_cursor_pos();
+        global_cursor_delta = global_cursor_pos - prev_global_cursor_pos;
+
+        ivec4 s = axiom::get_window_range(window_handle);
+        int border = 10;
+
+        if(is_windowed()) {
+            if(click_capture) {
+                if(operation == 0) {
+                    s.x += global_cursor_delta.x;
+                    s.z -= global_cursor_delta.x;
+                    
+                    s.y += global_cursor_delta.y;
+                    s.w -= global_cursor_delta.y;
+
+                    glfwSetWindowSize(window_handle, s.z, s.w);
+                    glfwSetWindowPos(window_handle, s.x, s.y);
+                    
+                    show_cursor();
+                    set_cursor(3);
+                } else if(operation == 1) { 
+                    s.z += global_cursor_delta.x;
+                    
+                    s.y += global_cursor_delta.y;
+                    s.w -= global_cursor_delta.y;
+
+                    glfwSetWindowSize(window_handle, s.z, s.w);
+                    glfwSetWindowPos(window_handle, s.x, s.y);
+                    
+                    show_cursor();
+                    set_cursor(4);
+                } else if(operation == 2) {
+                    s.x += global_cursor_delta.x;
+                    s.z -= global_cursor_delta.x;
+                    
+                    s.w += global_cursor_delta.y;
+
+                    glfwSetWindowSize(window_handle, s.z, s.w);
+                    glfwSetWindowPos(window_handle, s.x, s.y);
+                    
+                    show_cursor();
+                    set_cursor(4);
+                } else if(operation == 3) {
+                    s.z += global_cursor_delta.x;
+                    
+                    s.w += global_cursor_delta.y;
+
+                    glfwSetWindowSize(window_handle, s.z, s.w);
+                    glfwSetWindowPos(window_handle, s.x, s.y);
+                    
+                    show_cursor();
+                    set_cursor(3);
+                } else if(operation == 4) {
+                    s.x += global_cursor_delta.x;
+                    s.z -= global_cursor_delta.x;
+
+                    glfwSetWindowSize(window_handle, s.z, s.w);
+                    glfwSetWindowPos(window_handle, s.x, s.y);
+                    
+                    show_cursor();
+                    set_cursor(1);
+                } else if(operation == 5) {
+                    s.z += global_cursor_delta.x;
+
+                    glfwSetWindowSize(window_handle, s.z, s.w);
+                    glfwSetWindowPos(window_handle, s.x, s.y);
+                    
+                    show_cursor();
+                    set_cursor(1);
+                } else if(operation == 6) {
+                    s.y += global_cursor_delta.y;
+                    s.w -= global_cursor_delta.y;
+
+                    glfwSetWindowSize(window_handle, s.z, s.w);
+                    glfwSetWindowPos(window_handle, s.x, s.y);
+                    
+                    show_cursor();
+                    set_cursor(2);
+                } else if(operation == 7) {
+                    s.w += global_cursor_delta.y;
+
+                    glfwSetWindowSize(window_handle, s.z, s.w);
+                    glfwSetWindowPos(window_handle, s.x, s.y);
+                    
+                    show_cursor();
+                    set_cursor(2);
+                } else if(operation == 8) {
+                    s.x += global_cursor_delta.x;
+
+                    s.y += global_cursor_delta.y;
+
+                    glfwSetWindowSize(window_handle, s.z, s.w);
+                    glfwSetWindowPos(window_handle, s.x, s.y);
+                    
+                    show_cursor();
+                    set_cursor(0);
+                }
+            } else {
+                if(click_capture == true) {
+                    hide_cursor();
+                }
+
+                click_capture = false;
+            }
+            
+            if(global_cursor_pos.x < s.x + border && global_cursor_pos.y < s.y + border) {
+                show_cursor();
+                set_cursor(3);
+
+                hover_capture = true;
+
+                if(pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
+                    click_capture = true;
+                    operation = 0;
+                }
+            } else if(global_cursor_pos.x > s.x + s.z - border && global_cursor_pos.y < s.y + border) {
+                show_cursor();
+                set_cursor(4);
+                
+                hover_capture = true;
+
+                if(pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
+                    click_capture = true;
+                    operation = 1;
+                }
+            } else if(global_cursor_pos.x < s.x + border && global_cursor_pos.y > s.y + s.w - border) {
+                show_cursor();
+                set_cursor(4);
+                
+                hover_capture = true;
+
+                if(pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
+                    click_capture = true;
+                    operation = 2;
+                }
+            } else if(global_cursor_pos.x > s.x + s.z - border && global_cursor_pos.y > s.y + s.w - border) {
+                show_cursor();
+                set_cursor(3);
+                
+                hover_capture = true;
+
+                if(pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
+                    click_capture = true;
+                    operation = 3;
+                }
+            } else if(global_cursor_pos.x < s.x + border) {
+                show_cursor();
+                set_cursor(1);
+                
+                hover_capture = true;
+
+                if(pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
+                    click_capture = true;
+                    operation = 4;
+                }
+            } else if(global_cursor_pos.x > s.x + s.z - border) {
+                show_cursor();
+                set_cursor(1);
+                
+                hover_capture = true;
+
+                if(pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
+                    click_capture = true;
+                    operation = 5;
+                }
+            } else if(global_cursor_pos.y < s.y + border) {
+                show_cursor();
+                set_cursor(2);
+                
+                hover_capture = true;
+
+                if(pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
+                    click_capture = true;
+                    operation = 6;
+                }
+            } else if(global_cursor_pos.y > s.y + s.w - border) {
+                show_cursor();
+                set_cursor(2);
+                
+                hover_capture = true;
+
+                if(pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
+                    click_capture = true;
+                    operation = 7;
+                }
+            } else if(global_cursor_pos.y < s.y + border + 8 && is_windowed()) {
+                show_cursor();
+                set_cursor(0);
+                
+                hover_capture = true;
+                
+                if(pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
+                    click_capture = true;
+                    operation = 8;
+                }
+            } else {
+                if(hover_capture == true) {
+                    hide_cursor();
+                }
+                
+                hover_capture = false;
+            }
+            
+            if(!input_map[axiom::input_code::MOUSE_LEFT]) {
+                if(click_capture == true) {
+                    hide_cursor();
+                }
+                
+                click_capture = false;
+            }
+        }
+
+        screen_size = s.zw();
+        viewport_size = s.zw();
+    }
 }
 
 bool window::is_fullscreen() {

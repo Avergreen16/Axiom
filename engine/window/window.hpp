@@ -67,16 +67,16 @@ struct window_state {
     bool iconified;
     ivec2 size;
     ivec2 position;
-}
+};
 
-struct iconfiy_event {
+struct iconify_event {
     bool flag;
 };
 
 struct resize_event {
     ivec2 prev_size;
     ivec2 new_size;
-}
+};
 
 class window {
     public:
@@ -88,6 +88,9 @@ class window {
     ivec2 viewport_size;
     
     std::function<void()> on_resize = []() {};
+    
+    bool click_capture = false;
+    bool hover_capture = false;
 
     private: 
     

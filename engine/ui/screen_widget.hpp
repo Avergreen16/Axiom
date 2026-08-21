@@ -8,6 +8,9 @@ namespace axiom {
 
 struct screen_widget : widget {
     uint header = 24;
+    uint shadow_width = 10;
+    uint border_width = 1;
+
     std::string label;
     vec2 text_size;
     vec3 color;

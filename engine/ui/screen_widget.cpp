@@ -225,17 +225,19 @@ void screen_widget::mesh() {
     }
 
     if(!win->decorated && win->is_windowed()) {
-        float shadow_w = 0.8f;
-        int shadow_width = 6;
+        float shadow_w = 1.0f;
 
         std::vector<ui_vertex> shadow_vs;
+
+        vec2 lsize = size + vec2(border_width, border_width) * 2.0f;
+        vec2 lpos = position - vec2(border_width, border_width);
 
         // left
         ret = {a, b, d, a, d, c};
         ret[0].color.w = 0.0f;
         ret[3].color.w = 0.0f;
         ret[5].color.w = 0.0f;
-        range = {position + vec2(-shadow_width, 0.0), position + vec2(0.0, size.y)};
+        range = {lpos + vec2(-(int)shadow_width, 0.0), lpos + vec2(0.0, lsize.y)};
         for(ui_vertex &v : ret) {
             v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
             v.tex_pos = vec2(1.0f, 63.0f);
@@ -250,7 +252,7 @@ void screen_widget::mesh() {
         ret[2].color.w = 0.0f;
         ret[4].color.w = 0.0f;
         ret[5].color.w = 0.0f;
-        range = {position + vec2(-shadow_width, size.y), position + vec2(0.0f, shadow_width + size.y)};
+        range = {lpos + vec2(-(int)shadow_width, lsize.y), lpos + vec2(0.0f, shadow_width + lsize.y)};
         for(ui_vertex &v : ret) {
             v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
             v.tex_pos = vec2(1.0f, 63.0f);
@@ -265,7 +267,7 @@ void screen_widget::mesh() {
         ret[1].color.w = 0.0f;
         ret[3].color.w = 0.0f;
         ret[5].color.w = 0.0f;
-        range = {position + vec2(-shadow_width, -shadow_width), position + vec2(0.0f, 0.0f)};
+        range = {lpos + vec2(-(int)shadow_width, -(int)shadow_width), lpos + vec2(0.0f, 0.0f)};
         for(ui_vertex &v : ret) {
             v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
             v.tex_pos = vec2(1.0f, 63.0f);
@@ -279,7 +281,7 @@ void screen_widget::mesh() {
         ret[1].color.w = 0.0f;
         ret[2].color.w = 0.0f;
         ret[4].color.w = 0.0f;
-        range = {position + vec2(size.x, 0.0f), position + vec2(size.x + shadow_width, size.y)};
+        range = {lpos + vec2(lsize.x, 0.0f), lpos + vec2(lsize.x + shadow_width, lsize.y)};
         for(ui_vertex &v : ret) {
             v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
             v.tex_pos = vec2(1.0f, 63.0f);
@@ -294,7 +296,7 @@ void screen_widget::mesh() {
         ret[2].color.w = 0.0f;
         ret[4].color.w = 0.0f;
         ret[5].color.w = 0.0f;
-        range = {position + vec2(size.x, size.y), position + vec2(size.x + shadow_width, shadow_width + size.y)};
+        range = {lpos + vec2(lsize.x, lsize.y), lpos + vec2(lsize.x + shadow_width, shadow_width + lsize.y)};
         for(ui_vertex &v : ret) {
             v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
             v.tex_pos = vec2(1.0f, 63.0f);
@@ -309,7 +311,7 @@ void screen_widget::mesh() {
         ret[1].color.w = 0.0f;
         ret[3].color.w = 0.0f;
         ret[4].color.w = 0.0f;
-        range = {position + vec2(size.x, -shadow_width), position + vec2(size.x + shadow_width, 0.0f)};
+        range = {lpos + vec2(lsize.x, -(int)shadow_width), lpos + vec2(lsize.x + shadow_width, 0.0f)};
         for(ui_vertex &v : ret) {
             v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
             v.tex_pos = vec2(1.0f, 63.0f);
@@ -323,7 +325,7 @@ void screen_widget::mesh() {
         ret[2].color.w = 0.0f;
         ret[4].color.w = 0.0f;
         ret[5].color.w = 0.0f;
-        range = {position + vec2(0.0f, size.y), position + vec2(size.x, shadow_width + size.y)};
+        range = {lpos + vec2(0.0f, lsize.y), lpos + vec2(lsize.x, shadow_width + lsize.y)};
         for(ui_vertex &v : ret) {
             v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
             v.tex_pos = vec2(1.0f, 63.0f);
@@ -337,7 +339,7 @@ void screen_widget::mesh() {
         ret[0].color.w = 0.0f;
         ret[1].color.w = 0.0f;
         ret[3].color.w = 0.0f;
-        range = {position + vec2(0.0f, -shadow_width), position + vec2(size.x, 0.0f)};
+        range = {lpos + vec2(0.0f, -(int)shadow_width), lpos + vec2(lsize.x, 0.0f)};
         for(ui_vertex &v : ret) {
             v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
             v.tex_pos = vec2(1.0f, 63.0f);
@@ -347,6 +349,24 @@ void screen_widget::mesh() {
         shadow_vs.insert(shadow_vs.end(), ret.begin(), ret.end());
         
         vertices_before.insert(vertices_before.end(), shadow_vs.begin(), shadow_vs.end());
+
+        //
+        
+        ret = {a, b, d, a, d, c};
+        ret[0].color = vec4(color, 1.0f);//vec4(1.0f);
+        ret[1].color = vec4(color, 1.0f);//vec4(1.0f);
+        ret[2].color = vec4(color, 1.0f);//vec4(1.0f);
+        ret[3].color = vec4(color, 1.0f);//vec4(1.0f);
+        ret[4].color = vec4(color, 1.0f);//vec4(1.0f);
+        ret[5].color = vec4(color, 1.0f);//vec4(1.0f);
+
+        range = {lpos, lpos + lsize};
+        for(ui_vertex &v : ret) {
+            v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
+            v.tex_pos = vec2(1.0f, 63.0f);
+            v.data = 1;
+        }
+        vertices_before.insert(vertices_before.begin(), ret.begin(), ret.end());
     }
 }
 
@@ -358,11 +378,15 @@ void screen_widget::init() {
         position = vec2(0.0f);
         if(!ui_system->window->is_minimized()) {
             ivec4 range = ivec4(0, 0, win->screen_size);
-            if(!win->decorated && win->is_windowed()) range = ivec4(6, 6, win->screen_size - 12);
-            else if(win->is_fullscreen()) range = ivec4(1, 1, win->screen_size - 2);
+            if(!win->decorated && win->is_windowed()) range = ivec4(shadow_width + border_width, shadow_width + border_width, win->screen_size - int(shadow_width + border_width) * 2);
+            else if(win->is_fullscreen()) range = ivec4(0, 0, win->screen_size);
 
             position = range.xy();
             size = range.zw();
+
+            view_range = {position, position + size};
+
+            ui_system->global_view_range = view_range;
         }
     };
     before.push_back(c);
@@ -402,6 +426,8 @@ ulong screen_widget::insert(std::string name, vec3 color, axiom::window* win) {
 
 capture_data screen_widget::handle_capture() {
     axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
+
+    if(win->hover_capture) return {self, z, false};
 
     std::vector<vec4> ranges = {
         vec4(position, position + size)
