@@ -258,7 +258,8 @@ void window_widget::mesh() {
 
         //
 
-        vec4 range = ui_system.get_range(self);
+        vec4 view_range = ui_system.get_range(self);
+        vec4 range;
 
         vec4 header_range = vec4(position + vec2(0.0f, size.y), position + vec2(size.x, size.y + header));
 
@@ -277,7 +278,7 @@ void window_widget::mesh() {
             v.color = vec4(0.25f, 0.25f, 0.25f, 1.0f);
             v.data = 1;
 
-            v.range = range;
+            v.range = view_range;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -289,7 +290,7 @@ void window_widget::mesh() {
             v.color = vec4(header_color, 1.0f);
             v.data = 1;
             
-            v.range = range;
+            v.range = view_range;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -300,7 +301,7 @@ void window_widget::mesh() {
         for(ui_vertex& v : ret) {
             float s = floor(header * 0.5f - 11.0f * float(text_scale) * 0.5f);
             v.pos = vec3(v.pos.xy() + text[0]->position, z);
-            v.range = intersect_range(range, header_range);
+            v.range = intersect_range(view_range, header_range);
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -323,7 +324,7 @@ void window_widget::mesh() {
             v.tex_pos = vec2(1.0f, 63.0f);
             v.data = 1;
             v.color = vec4(col, 1.0f);
-            v.range = intersect_range(range, header_range);
+            v.range = intersect_range(view_range, header_range);
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -332,7 +333,7 @@ void window_widget::mesh() {
             v.pos = vec3((r.xy() + (r.zw() - nsize) * 0.5f) + v.pos.xy() * nsize, z);
             v.tex_pos = v.tex_pos * texture_range.zw() + texture_range.xy();
             v.data = 1;
-            v.range = intersect_range(range, header_range);
+            v.range = intersect_range(view_range, header_range);
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -353,6 +354,8 @@ void window_widget::mesh() {
             v.tex_pos = vec2(1.0f, 63.0f);
             v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
             v.data = 1;
+
+            v.range = view_range;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -368,6 +371,8 @@ void window_widget::mesh() {
             v.tex_pos = vec2(1.0f, 63.0f);
             v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
             v.data = 1;
+
+            v.range = view_range;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -383,6 +388,8 @@ void window_widget::mesh() {
             v.tex_pos = vec2(1.0f, 63.0f);
             v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
             v.data = 1;
+
+            v.range = view_range;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -397,6 +404,8 @@ void window_widget::mesh() {
             v.tex_pos = vec2(1.0f, 63.0f);
             v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
             v.data = 1;
+
+            v.range = view_range;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -412,6 +421,8 @@ void window_widget::mesh() {
             v.tex_pos = vec2(1.0f, 63.0f);
             v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
             v.data = 1;
+
+            v.range = view_range;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -427,6 +438,8 @@ void window_widget::mesh() {
             v.tex_pos = vec2(1.0f, 63.0f);
             v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
             v.data = 1;
+
+            v.range = view_range;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -441,6 +454,8 @@ void window_widget::mesh() {
             v.tex_pos = vec2(1.0f, 63.0f);
             v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
             v.data = 1;
+
+            v.range = view_range;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -455,6 +470,8 @@ void window_widget::mesh() {
             v.tex_pos = vec2(1.0f, 63.0f);
             v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
             v.data = 1;
+
+            v.range = view_range;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 

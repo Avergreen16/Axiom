@@ -239,7 +239,7 @@ void window::poll_events() {
 
     if(!decorated) {
         prev_global_cursor_pos = global_cursor_pos;
-        global_cursor_pos = get_cursor_pos();
+        global_cursor_pos = get_cursor_pos(window_handle);
         global_cursor_delta = global_cursor_pos - prev_global_cursor_pos;
 
         ivec4 s = axiom::get_window_range(window_handle);
@@ -254,11 +254,13 @@ void window::poll_events() {
                     s.y += global_cursor_delta.y;
                     s.w -= global_cursor_delta.y;
 
+                    std::cout << s.x << " " << s.y << "\n";
+
                     glfwSetWindowSize(window_handle, s.z, s.w);
                     glfwSetWindowPos(window_handle, s.x, s.y);
                     
                     show_cursor();
-                    set_cursor(3);
+                    set_cursor(window_handle, 3);
                 } else if(operation == 1) { 
                     s.z += global_cursor_delta.x;
                     
@@ -269,7 +271,7 @@ void window::poll_events() {
                     glfwSetWindowPos(window_handle, s.x, s.y);
                     
                     show_cursor();
-                    set_cursor(4);
+                    set_cursor(window_handle, 4);
                 } else if(operation == 2) {
                     s.x += global_cursor_delta.x;
                     s.z -= global_cursor_delta.x;
@@ -280,7 +282,7 @@ void window::poll_events() {
                     glfwSetWindowPos(window_handle, s.x, s.y);
                     
                     show_cursor();
-                    set_cursor(4);
+                    set_cursor(window_handle, 4);
                 } else if(operation == 3) {
                     s.z += global_cursor_delta.x;
                     
@@ -290,7 +292,7 @@ void window::poll_events() {
                     glfwSetWindowPos(window_handle, s.x, s.y);
                     
                     show_cursor();
-                    set_cursor(3);
+                    set_cursor(window_handle, 3);
                 } else if(operation == 4) {
                     s.x += global_cursor_delta.x;
                     s.z -= global_cursor_delta.x;
@@ -299,7 +301,7 @@ void window::poll_events() {
                     glfwSetWindowPos(window_handle, s.x, s.y);
                     
                     show_cursor();
-                    set_cursor(1);
+                    set_cursor(window_handle, 1);
                 } else if(operation == 5) {
                     s.z += global_cursor_delta.x;
 
@@ -307,7 +309,7 @@ void window::poll_events() {
                     glfwSetWindowPos(window_handle, s.x, s.y);
                     
                     show_cursor();
-                    set_cursor(1);
+                    set_cursor(window_handle, 1);
                 } else if(operation == 6) {
                     s.y += global_cursor_delta.y;
                     s.w -= global_cursor_delta.y;
@@ -316,7 +318,7 @@ void window::poll_events() {
                     glfwSetWindowPos(window_handle, s.x, s.y);
                     
                     show_cursor();
-                    set_cursor(2);
+                    set_cursor(window_handle, 2);
                 } else if(operation == 7) {
                     s.w += global_cursor_delta.y;
 
@@ -324,7 +326,7 @@ void window::poll_events() {
                     glfwSetWindowPos(window_handle, s.x, s.y);
                     
                     show_cursor();
-                    set_cursor(2);
+                    set_cursor(window_handle, 2);
                 } else if(operation == 8) {
                     s.x += global_cursor_delta.x;
 
@@ -334,7 +336,7 @@ void window::poll_events() {
                     glfwSetWindowPos(window_handle, s.x, s.y);
                     
                     show_cursor();
-                    set_cursor(0);
+                    set_cursor(window_handle, 0);
                 }
             } else {
                 if(click_capture == true) {
@@ -346,7 +348,7 @@ void window::poll_events() {
             
             if(global_cursor_pos.x < s.x + border && global_cursor_pos.y < s.y + border) {
                 show_cursor();
-                set_cursor(3);
+                set_cursor(window_handle, 3);
 
                 hover_capture = true;
 
@@ -356,7 +358,7 @@ void window::poll_events() {
                 }
             } else if(global_cursor_pos.x > s.x + s.z - border && global_cursor_pos.y < s.y + border) {
                 show_cursor();
-                set_cursor(4);
+                set_cursor(window_handle, 4);
                 
                 hover_capture = true;
 
@@ -366,7 +368,7 @@ void window::poll_events() {
                 }
             } else if(global_cursor_pos.x < s.x + border && global_cursor_pos.y > s.y + s.w - border) {
                 show_cursor();
-                set_cursor(4);
+                set_cursor(window_handle, 4);
                 
                 hover_capture = true;
 
@@ -376,7 +378,7 @@ void window::poll_events() {
                 }
             } else if(global_cursor_pos.x > s.x + s.z - border && global_cursor_pos.y > s.y + s.w - border) {
                 show_cursor();
-                set_cursor(3);
+                set_cursor(window_handle, 3);
                 
                 hover_capture = true;
 
@@ -386,7 +388,7 @@ void window::poll_events() {
                 }
             } else if(global_cursor_pos.x < s.x + border) {
                 show_cursor();
-                set_cursor(1);
+                set_cursor(window_handle, 1);
                 
                 hover_capture = true;
 
@@ -396,7 +398,7 @@ void window::poll_events() {
                 }
             } else if(global_cursor_pos.x > s.x + s.z - border) {
                 show_cursor();
-                set_cursor(1);
+                set_cursor(window_handle, 1);
                 
                 hover_capture = true;
 
@@ -406,7 +408,7 @@ void window::poll_events() {
                 }
             } else if(global_cursor_pos.y < s.y + border) {
                 show_cursor();
-                set_cursor(2);
+                set_cursor(window_handle, 2);
                 
                 hover_capture = true;
 
@@ -416,7 +418,7 @@ void window::poll_events() {
                 }
             } else if(global_cursor_pos.y > s.y + s.w - border) {
                 show_cursor();
-                set_cursor(2);
+                set_cursor(window_handle, 2);
                 
                 hover_capture = true;
 
@@ -426,7 +428,7 @@ void window::poll_events() {
                 }
             } else if(global_cursor_pos.y < s.y + border + 8 && is_windowed()) {
                 show_cursor();
-                set_cursor(0);
+                set_cursor(window_handle, 0);
                 
                 hover_capture = true;
                 
@@ -526,6 +528,8 @@ void window::hide_cursor() {
 
     cursor_hidden = true;
     cursor_disabled = false;
+
+    set_cursor(window_handle, -1);
 }
 
 void window::disable_cursor() {

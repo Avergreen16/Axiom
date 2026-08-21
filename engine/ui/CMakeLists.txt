@@ -27,6 +27,7 @@ add_library(AxiomUI STATIC
     message_widget.cpp
     render_widget.cpp
     match_widget.cpp
+    checkbox_widget.cpp
 )
 
 target_include_directories(AxiomUI
@@ -43,6 +44,7 @@ target_link_libraries(AxiomUI
         AxiomAssets
         AxiomWindow
         AxiomRender
+        AxiomMath
 
         glfw
 

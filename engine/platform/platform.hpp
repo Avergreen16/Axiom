@@ -38,8 +38,8 @@ struct GLFWwindow;
 
 namespace axiom {
 
-void copy_to_clipboard(std::string str);
-std::string paste_from_clipboard();
+void copy_to_clipboard(GLFWwindow* window, std::string str);
+std::string paste_from_clipboard(GLFWwindow* window);
 
 void remove_header(GLFWwindow* window);
 
@@ -50,5 +50,10 @@ bool is_minimized(GLFWwindow* window);
 ivec4 get_window_range(GLFWwindow* window);
 
 void print_wsize(GLFWwindow* window);
+
+
+void set_cursor(GLFWwindow* window, int id);
+
+ivec2 get_cursor_pos(GLFWwindow* window);
 
 }

@@ -362,7 +362,7 @@ void ui_system::call() {
 
 vec4 ui_system::get_range(ulong v, bool include_self) {
     ulong current = v;
-    vec4 range = vec4(-FLT_MAX, -FLT_MAX, FLT_MAX, FLT_MAX);
+    vec4 range = global_view_range;
     if(include_self) range = widgets[current]->view_range;
 
     while(true) {

@@ -41,7 +41,7 @@ using uint = unsigned int;
 
 namespace axiom {
     
-void copy_to_clipboard(std::string str) {
+void copy_to_clipboard(GLFWwindow* window, std::string str) {
     size_t len = str.size() + 1;
 
     HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, len);
@@ -54,7 +54,7 @@ void copy_to_clipboard(std::string str) {
     CloseClipboard();
 }
 
-std::string paste_from_clipboard() {
+std::string paste_from_clipboard(GLFWwindow* window) {
     if (!OpenClipboard(nullptr)) return "";
 
     HANDLE hData = GetClipboardData(CF_TEXT);
@@ -128,7 +128,7 @@ void print_wsize(GLFWwindow* window) {
     );
 }
 
-void set_cursor(int id) {
+void set_cursor(GLFWwindow* window, int id) {
     if(id == 0) SetCursor(LoadCursor(nullptr, IDC_ARROW)); // normal arrow
     else if(id == 1) SetCursor(LoadCursor(nullptr, IDC_SIZEWE)); // horizontal resize
     else if(id == 2) SetCursor(LoadCursor(nullptr, IDC_SIZENS)); // vertical resize
@@ -136,7 +136,7 @@ void set_cursor(int id) {
     else if(id == 4) SetCursor(LoadCursor(nullptr, IDC_SIZENESW)); // diagonal
 }
 
-ivec2 get_cursor_pos() {
+ivec2 get_cursor_pos(GLFWwindow* window) {
     POINT pos;
     GetCursorPos(&pos);
 

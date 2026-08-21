@@ -5,6 +5,7 @@
 #include <ui/text.hpp>
 #include <ui/cursor.hpp>
 #include <render/target.hpp>
+#include <include/math.hpp>
 
 namespace axiom {
 
@@ -41,6 +42,8 @@ struct ui_system : system {
     std::map<ulong, std::unique_ptr<widget>> widgets;
 
     widget_input_state input_state;
+
+    vec4 global_view_range = vec4(-axiom::max_float, -axiom::max_float, axiom::max_float, axiom::max_float);
 
     //
     

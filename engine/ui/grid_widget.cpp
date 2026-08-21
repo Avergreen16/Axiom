@@ -280,7 +280,7 @@ void grid_widget::init() {
                         break;
                     }
                     case axiom::position_mode::BOTTOM_CENTER: {
-                        c0->position.x = position.x + (range.z - c0->size.x) * 0.5f;
+                        c0->position.x = range.x + (range.z - c0->size.x) * 0.5f;
                         c0->position.y = range.y;
                         break;
                     }
@@ -295,7 +295,7 @@ void grid_widget::init() {
                         break;
                     }
                     case axiom::position_mode::CENTER: {
-                        c0->position.x = position.x + (range.z - c0->size.x) * 0.5f;
+                        c0->position.x = range.x + (range.z - c0->size.x) * 0.5f;
                         c0->position.y = range.y + (range.w - c0->size.y) * 0.5f;
                         break;
                     }
@@ -310,7 +310,7 @@ void grid_widget::init() {
                         break;
                     }
                     case axiom::position_mode::TOP_CENTER: {
-                        c0->position.x = position.x + (range.z - c0->size.x) * 0.5f;
+                        c0->position.x = range.x + (range.z - c0->size.x) * 0.5f;
                         c0->position.y = range.y + (range.w - c0->size.y);
                         break;
                     }

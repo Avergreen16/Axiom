@@ -25,3 +25,4 @@
 #include <ui/message_widget.hpp>
 #include <ui/render_widget.hpp>
 #include <ui/match_widget.hpp>
+#include <ui/checkbox_widget.hpp>

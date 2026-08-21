@@ -225,7 +225,7 @@ void screen_widget::mesh() {
     }
 
     if(!win->decorated && win->is_windowed()) {
-        float shadow_w = 1.0f;
+        float shadow_w = 0.6f;
 
         std::vector<ui_vertex> shadow_vs;
 
@@ -353,12 +353,12 @@ void screen_widget::mesh() {
         //
         
         ret = {a, b, d, a, d, c};
-        ret[0].color = vec4(color, 1.0f);//vec4(1.0f);
-        ret[1].color = vec4(color, 1.0f);//vec4(1.0f);
-        ret[2].color = vec4(color, 1.0f);//vec4(1.0f);
-        ret[3].color = vec4(color, 1.0f);//vec4(1.0f);
-        ret[4].color = vec4(color, 1.0f);//vec4(1.0f);
-        ret[5].color = vec4(color, 1.0f);//vec4(1.0f);
+        ret[0].color = vec4(1.0f);//vec4(color, 1.0f);
+        ret[1].color = vec4(1.0f);
+        ret[2].color = vec4(1.0f);
+        ret[3].color = vec4(1.0f);
+        ret[4].color = vec4(1.0f);
+        ret[5].color = vec4(1.0f);
 
         range = {lpos, lpos + lsize};
         for(ui_vertex &v : ret) {
@@ -384,7 +384,7 @@ void screen_widget::init() {
             position = range.xy();
             size = range.zw();
 
-            view_range = {position, position + size};
+            view_range = {position.x, position.y, position.x + size.x, position.y + size.y - header};
 
             ui_system->global_view_range = view_range;
         }

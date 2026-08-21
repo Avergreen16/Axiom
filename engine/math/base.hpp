@@ -28,17 +28,17 @@ using mat4 = glm::mat4;
 using uint = unsigned int;
 using ulong = uint64_t;
 
-const std::vector<std::string> integers = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "\xC2\x80", "\xC2\x81", "\xC2\x82", "\xC2\x83", "\xC2\x84", "\xC2\x85"};
-const std::string integers_letters = "0123456789ABCDEF";
-
-const double hexond_ratio = 86400.0 / 65536.0;
-
 namespace axiom {
 
-const float pi = 3.14159265358979323846f;
-const float max_float = FLT_MAX;
-const float sqrt2 = sqrt(2.0f);
-const float sqrt3 = sqrt(3.0f);
+extern const float pi;
+extern const float max_float;
+extern const float sqrt2;
+extern const float sqrt3;
+
+extern const std::vector<std::string> integers;
+extern const std::string integers_letters;
+
+extern const double hexond_ratio;
     
 std::string to_base(int32_t num, int base, bool use_i2 = false);
 std::string to_base(int64_t num, int base, bool use_i2 = false);

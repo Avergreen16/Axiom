@@ -32,12 +32,12 @@ using uint = unsigned int;
 
 namespace axiom {
     
-void copy_to_clipboard(std::string str) {
-
+void copy_to_clipboard(GLFWwindow* window, std::string str) {
+    glfwSetClipboardString(window, str.data());
 }
 
-std::string paste_from_clipboard() {
-    return "UNIX PLACEHOLDER";
+std::string paste_from_clipboard(GLFWwindow* window) {
+    return glfwGetClipboardString(window);
 }
 
 ivec4 get_window_range(GLFWwindow* window) {
@@ -64,6 +64,31 @@ bool is_maximized(GLFWwindow* window) {
 
 bool is_minimized(GLFWwindow* window) {
     return glfwGetWindowAttrib(window, GLFW_ICONIFIED);
+}
+
+void set_cursor(GLFWwindow* window, int id) {
+    static GLFWcursor* arrow_cursor = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
+    static GLFWcursor* resize_ew_cursor = glfwCreateStandardCursor(GLFW_RESIZE_EW_CURSOR);
+    static GLFWcursor* resize_ns_cursor = glfwCreateStandardCursor(GLFW_RESIZE_NS_CURSOR);
+    static GLFWcursor* resize_nwse_cursor = glfwCreateStandardCursor(GLFW_RESIZE_NWSE_CURSOR);
+    static GLFWcursor* resize_nesw_cursor = glfwCreateStandardCursor(GLFW_RESIZE_NESW_CURSOR);
+
+    if(id == 0) glfwSetCursor(window, arrow_cursor); // normal arrow
+    else if(id == 1) glfwSetCursor(window, resize_ew_cursor); // horizontal resize
+    else if(id == 2) glfwSetCursor(window, resize_ns_cursor); // vertical resize
+    else if(id == 3) glfwSetCursor(window, resize_nwse_cursor); // diagonal
+    else if(id == 4) glfwSetCursor(window, resize_nesw_cursor); // diagonal
+
+    if(id == -1) glfwSetCursor(window, nullptr);
+}
+
+ivec2 get_cursor_pos(GLFWwindow* window) {
+    ivec4 window_range = get_window_range(window);
+
+    double mouse_x, mouse_y;
+    glfwGetCursorPos(window, &mouse_x, &mouse_y);
+
+    return {mouse_x + window_range.x, mouse_y + window_range.y};
 }
 
 }
