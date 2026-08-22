@@ -1,7 +1,5 @@
 #version 460 core
 
-layout(location = 3) uniform vec3 light;
-
 layout(location = 0) out vec4 frag_color;
 layout(location = 1) out vec4 frag_normal;
 layout(location = 2) out vec4 frag_shading;

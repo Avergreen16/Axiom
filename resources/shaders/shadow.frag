@@ -109,8 +109,8 @@ void main() {
                 float slope = sqrt(1.0 - cos_theta * cos_theta) / cos_theta;
                 bias += slope * texel_size;
 
-                if(sdepth - bias > pdepth) frag_color = vec4(0.0, 0.0, 0.0, 0.625);
-                else frag_color = vec4(0.0, 0.0, 0.0, (1.0 - clamp(dot(light_dir, normal), 0.0, 1.0)) * 0.625); 
+                if(sdepth - bias > pdepth) frag_color = vec4(0.0, 0.0, 0.0, 1.0);
+                else frag_color = vec4(0.0, 0.0, 0.0, (1.0 - clamp(dot(light_dir, normal), 0.0, 1.0)) * 1.0); 
                 
                 max_depth = sdepth - bias;
             }

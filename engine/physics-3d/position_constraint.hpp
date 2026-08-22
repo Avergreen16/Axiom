@@ -40,7 +40,7 @@ struct position_constraint : constraint {
     std::vector<float> lambda;
     
     float spring = 0.35f;
-    float softness = 0.005f;
+    float softness = 0.02f;
     float max_impulse = FLT_MAX;
     bool is_grab = false;
     

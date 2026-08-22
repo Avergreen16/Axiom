@@ -22,6 +22,14 @@ struct texture_vertex3d {
     vec3 normal;
 };
 
+struct texture_range_vertex3d {
+    vec3 position;
+    vec2 texture;
+    vec4 texture_range;
+    vec4 color;
+    vec3 normal;
+};
+
 struct color_mesh2d {
     std::vector<color_vertex2d> border;
     std::vector<color_vertex2d> area;
@@ -40,8 +48,18 @@ struct color_mesh3d {
 
 struct texture_mesh3d {
     std::vector<texture_vertex3d> vs;
-
     std::shared_ptr<axiom::vertices> vertices;
+
+    axiom::texture* texture;
+
+    void load();
+};
+
+struct texture_range_mesh3d {
+    std::vector<texture_range_vertex3d> vs;
+    std::shared_ptr<axiom::vertices> vertices;
+
+    axiom::texture* texture;
 
     void load();
 };

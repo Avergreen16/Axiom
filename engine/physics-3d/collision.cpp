@@ -79,9 +79,9 @@ int simplex::contains(glm::vec3 p, bool output) {
     bool v1 = false;
     bool v2 = false;
 
-    float dotp0 = axiom::max_float;
-    float dotp1 = axiom::max_float;
-    float dotp2 = axiom::max_float;
+    float dotp0 = -axiom::max_float;
+    float dotp1 = -axiom::max_float;
+    float dotp2 = -axiom::max_float;
 
     get_normal(vertices[1].m, vertices[2].m, vertices[3].m, vertices[0].m, normal, centroid);
     dotp = glm::dot(p - centroid, normal);
@@ -102,18 +102,18 @@ int simplex::contains(glm::vec3 p, bool output) {
     get_normal(vertices[0].m, vertices[1].m, vertices[3].m, vertices[2].m, normal, centroid);
     dotp = glm::dot(p - centroid, normal);
     
-    if(dotp >= 0.0f) {
+    if(dotp > 0.0f) {
         v2 = true;
         dotp2 = dotp;
     }
 
-    if(dotp0 != axiom::max_float && dotp0 < dotp1 && dotp0 < dotp2) {
+    if(dotp0 != -axiom::max_float && dotp0 >= dotp1 && dotp0 >= dotp2) {
         return 0;
     }
-    if(dotp1 != axiom::max_float && dotp1 < dotp0 && dotp1 < dotp2) {
+    if(dotp1 != -axiom::max_float && dotp1 > dotp0 && dotp1 >= dotp2) {
         return 1;
     }
-    if(dotp2 != axiom::max_float && dotp2 < dotp0 && dotp2 < dotp1) {
+    if(dotp2 != -axiom::max_float && dotp2 > dotp0 && dotp2 > dotp1) {
         return 2;
     }
 
@@ -320,7 +320,7 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
     std::vector<vertex_element3d> a_vertices = ca.elements;
     std::vector<vertex_element3d> b_vertices = cb.elements;
 
-    float limit = 0.0001f;
+    float limit = 1.0f / 128;
     uint32_t iter_limit = 256;
 
     transform3d tta = ta;
@@ -429,11 +429,15 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
         int size = simplex.vertices.size();
         if(size < 4) {
             if(iterations > iter_limit) {
-                std::cout << "ITER LIMIT\n";
+                std::cout << "ITER LIMIT ";
+                std::cout << direction << " ";
+                std::cout << "\n";
+
+                c_event.iter = true;
                 return {};
             }
 
-            if(glm::isnan(direction.x)) {
+            if(glm::isnan(direction.x) | glm::isinf(direction.x)) {
                 std::cout << "NAN DIRECTION" << size << "\n";
                 direction = vec3(1, 0, 0);
             }

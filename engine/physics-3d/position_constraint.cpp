@@ -75,7 +75,8 @@ void position_constraint::solve(float delta_time) {
             
             float L = bg - dot(v, velocity);
             L /= inertia_a[i];
-            //if(do_dampening) L -= softness * lambda[i];
+            
+            L -= softness * lambda[i];
             float new_lambda = lambda[i] + L;
             //new_lambda = clamp(new_lambda, -max_impulse, max_impulse);
             
@@ -97,12 +98,13 @@ void position_constraint::solve(float delta_time) {
             velocity -= cb->get_velocity(rb);
 
             float bg = -baumgarte[i] * spring / delta_time;
+            std::cout << baumgarte[i] << " ";
             
             float L = bg - dot(v, velocity);
 
             L /= inertia_a[i] + inertia_b[i];
 
-            //if(do_dampening) L -= softness * lambda[i];
+            L -= softness * lambda[i];
             float new_lambda = lambda[i] + L;
             //new_lambda = clamp(new_lambda, -max_impulse, max_impulse);
 
@@ -112,7 +114,7 @@ void position_constraint::solve(float delta_time) {
             vec3 impulse = v * L;
             
             ca->apply_impulse(impulse, ra);
-            ca->apply_impulse(-impulse, rb);
+            cb->apply_impulse(-impulse, rb);
 
             ++i;
         }

@@ -32,6 +32,7 @@ struct collision_event {
     transform3d transform_b;
 
     bool finished = false;
+    bool iter = false;
     vec3 point_a;
     vec3 point_b;
     vec3 point_m;
