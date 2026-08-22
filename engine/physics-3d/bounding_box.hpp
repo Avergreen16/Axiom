@@ -36,7 +36,7 @@ struct bvh3d {
     std::vector<bvh_node3d> nodes;
 };
 
-bvh3d create_bvh(collider3d& collider, ivec3 v = ivec3(0.0));
+void create_bvh(collider3d& collider, ivec3 v = ivec3(0.0));
 std::vector<uint> traverse_bvh(transform3d& ta, bvh3d& ba, transform3d& tb, bounding_box3d& bb);
 std::vector<ulong> traverse_bvh(transform3d& ta, bvh3d& ba, transform3d& tb, bvh3d& bb);
 

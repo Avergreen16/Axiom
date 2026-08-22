@@ -327,7 +327,7 @@ vec3 initialize_collider(collider3d& collider, std::vector<float> mass) {
     vec3 center_pos = {0, 0, 0};
     
     uint i = 0;
-    for(collision_shape3d& shape : collider.collision_shapes) {
+    for(collision_shape3d& shape : collider.shapes) {
         initialize_shape(shape, mass[i]);
 
         mat3 shape_tensor = shape.inertia_tensor;
@@ -353,7 +353,7 @@ vec3 initialize_collider(collider3d& collider, std::vector<float> mass) {
 
     total_tensor = inv_translate_inertia_tensor(center_pos, total_tensor, total_mass);
     if(collider.allow_rotation) {
-        for(collision_shape3d& shape : collider.collision_shapes) {
+        for(collision_shape3d& shape : collider.shapes) {
             shape.position -= center_pos;
         }
         
@@ -365,6 +365,24 @@ vec3 initialize_collider(collider3d& collider, std::vector<float> mass) {
     collider.mass = total_mass;
     
     return center_pos;
+}
+
+void create_mesh_collider(collider3d& collider, std::vector<vec3> triangles) {
+    for(int i = 0; i < triangles.size(); i += 3) {
+        vec3 va = triangles[i];
+        vec3 vb = triangles[i + 1];
+        vec3 vc = triangles[i + 2];
+
+        collision_shape3d shape;
+        shape.elements = {vertex_element3d(va), vertex_element3d(vb), vertex_element3d(vc)};
+        shape.faces = {axiom::shape_face({0, 1, 2}, glm::normalize(glm::cross(va - vc, vb - vc)))};
+
+        collider.shapes.push_back(shape);
+    }
+
+    create_bounding_box(collider);
+
+    create_bvh(collider);
 }
 
 }

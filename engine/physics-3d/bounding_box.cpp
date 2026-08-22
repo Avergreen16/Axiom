@@ -3,6 +3,8 @@
 #include <physics-3d/bounding_box.hpp>
 #include <physics-3d/collider.hpp>
 
+#include <iostream>
+
 namespace axiom {
     
 bounding_box3d create_bounding_box(std::vector<vertex_element3d>& elements) {
@@ -43,7 +45,7 @@ void create_bounding_box(collider3d& collider) {
     total_bb.minimum = vec3(FLT_MAX);
     total_bb.maximum = vec3(-FLT_MAX);
 
-    for(auto& shape : collider.collision_shapes) {
+    for(auto& shape : collider.shapes) {
         shape.bounding_box = create_bounding_box(shape.elements, shape.position, shape.orientation);
 
         total_bb.maximum = glm::max(total_bb.maximum, shape.bounding_box.maximum);
@@ -70,16 +72,16 @@ bounding_box3d transform_bounding_box(bounding_box3d b, vec3 pos, mat3 ori) {
     return b;
 };
 
-bvh3d create_bvh(collider3d& collider, ivec3 v) {
+void create_bvh(collider3d& collider, ivec3 v) {
     create_bounding_box(collider);
 
     bvh3d bvh;
 
     bvh_node3d root;
     
-    for(int i = 0; i < collider.collision_shapes.size(); ++i) root.children.push_back(i);
+    for(int i = 0; i < collider.shapes.size(); ++i) root.children.push_back(i);
 
-    uint N = collider.collision_shapes.size();
+    uint N = collider.shapes.size();
 
     bvh.nodes.push_back(root);
 
@@ -94,7 +96,7 @@ bvh3d create_bvh(collider3d& collider, ivec3 v) {
         bounding_box3d centers;
 
         for(int i : node.children) {
-            collision_shape3d& shape = collider.collision_shapes[i];
+            collision_shape3d& shape = collider.shapes[i];
             vec3 center = (shape.bounding_box.minimum + shape.bounding_box.maximum) * 0.5f;
 
             node.bounding_box.minimum = min(node.bounding_box.minimum, shape.bounding_box.minimum);
@@ -116,7 +118,7 @@ bvh3d create_bvh(collider3d& collider, ivec3 v) {
             else if(size.z > size.x && size.z > size.y) ii = 2;
             
             for(int i : node.children) {
-                collision_shape3d& shape = collider.collision_shapes[i];
+                collision_shape3d& shape = collider.shapes[i];
 
                 float c = (shape.bounding_box.minimum[ii] + shape.bounding_box.maximum[ii]) * 0.5f;
                 if(c < center[ii]) child_a.children.push_back(i);
@@ -157,8 +159,6 @@ bvh3d create_bvh(collider3d& collider, ivec3 v) {
     while(true) {
         if(open_nodes.size() == 0) break;
 
-        //std::cout << open_nodes.size() << " ";
-
         for(uint n : open_nodes) {
             if(split(bvh.nodes[n])) {
                 new_open_nodes.push_back(ca);
@@ -169,6 +169,8 @@ bvh3d create_bvh(collider3d& collider, ivec3 v) {
         open_nodes = std::move(new_open_nodes);
         new_open_nodes.clear();
     }
+
+    collider.bvh = bvh;
 }
 
 std::vector<uint> traverse_bvh(transform3d& ta, bvh3d& ba, transform3d& tb, bounding_box3d& bb) {

@@ -61,7 +61,7 @@ struct collision_shape3d {
 };
 
 struct collider3d {
-    std::vector<collision_shape3d> collision_shapes;
+    std::vector<collision_shape3d> shapes;
     float mass = 0;
     glm::mat3 inertia_tensor = {
         {0, 0, 0},
@@ -125,5 +125,6 @@ mat3 to_inertia_tensor(mat3 M);
 
 void initialize_shape(collision_shape3d& shape, float mass);
 vec3 initialize_collider(collider3d& collider, std::vector<float> mass);
+void create_mesh_collider(collider3d& collider, std::vector<vec3> triangles);
 
 }

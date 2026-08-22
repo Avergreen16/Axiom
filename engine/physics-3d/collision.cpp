@@ -863,8 +863,8 @@ std::vector<return_point> collide(transform3d& ta, collider3d& ca, transform3d& 
                 uint32_t a = pair & 0xFFFFFFFF;
                 uint32_t b = pair >> 32;
 
-                collision_shape3d& sa = ca.collision_shapes[a];
-                collision_shape3d& sb = cb.collision_shapes[b];
+                collision_shape3d& sa = ca.shapes[a];
+                collision_shape3d& sb = cb.shapes[b];
 
                 collision_event c_event;
 
@@ -884,11 +884,11 @@ std::vector<return_point> collide(transform3d& ta, collider3d& ca, transform3d& 
             std::vector<return_tag> tags;
             std::vector<std::vector<return_point>> points;
             
-            for(collision_shape3d& sb : cb.collision_shapes) {
+            for(collision_shape3d& sb : cb.shapes) {
                 std::vector<uint32_t> shapes = traverse_bvh(ta, ca.bvh, tb, sb.bounding_box);
 
                 for(uint32_t shape : shapes) {
-                    collision_shape3d& sa = ca.collision_shapes[shape];
+                    collision_shape3d& sa = ca.shapes[shape];
 
                     collision_event c_event;
 
@@ -953,11 +953,11 @@ std::vector<return_point> collide(transform3d& ta, collider3d& ca, transform3d& 
         std::vector<return_tag> tags;
         std::vector<std::vector<return_point>> points;
         
-        for(collision_shape3d& sa : ca.collision_shapes) {
+        for(collision_shape3d& sa : ca.shapes) {
             std::vector<uint32_t> shapes = traverse_bvh(tb, cb.bvh, ta, sa.bounding_box);
 
             for(uint32_t shape : shapes) {
-                collision_shape3d& sb = cb.collision_shapes[shape];
+                collision_shape3d& sb = cb.shapes[shape];
 
                 collision_event c_event;
 
@@ -1018,8 +1018,8 @@ std::vector<return_point> collide(transform3d& ta, collider3d& ca, transform3d& 
             }
         }
     } else {
-        for(collision_shape3d& sa : ca.collision_shapes) {
-            for(collision_shape3d& sb : cb.collision_shapes) {
+        for(collision_shape3d& sa : ca.shapes) {
+            for(collision_shape3d& sb : cb.shapes) {
                 collision_event c_event;
 
                 std::vector<return_point> r = collide(ta, sa, tb, sb, tag, c_event);
@@ -1164,7 +1164,7 @@ std::vector<uint> gjk_bvh(collider3d& ca, transform3d& ta, collider3d& cb, colli
     std::vector<uint32_t> colliders = traverse_bvh(ta, ca.bvh, tb, ccb.bounding_box);
 
     for(uint32_t c : colliders) {
-        collision_shape3d& cca = ca.collision_shapes[c];
+        collision_shape3d& cca = ca.shapes[c];
 
         return_tag tag;
         bool b = gjk(cca, ta, ccb, tb);

@@ -589,8 +589,8 @@ bool physics_system3d::raycast(vec3 start, vec3 direction, float step, float dis
     collision_shape3d shape;
 
     collider3d collider;
-    collider.collision_shapes.resize(1);
-    collider.collision_shapes[0] = shape;
+    collider.shapes.resize(1);
+    collider.shapes[0] = shape;
 
     *hit = NULL_ENTITY;
 
@@ -619,7 +619,7 @@ bool physics_system3d::raycast(vec3 start, vec3 direction, float step, float dis
             vertex_element3d(vec3(0.0f), vec3(inflate, inflate, 0.0f)),
             vertex_element3d(direction * length, vec3(inflate, inflate, 0.0f)),
         };
-        collider.collision_shapes[0].elements = vs2;
+        collider.shapes[0].elements = vs2;
         
         create_bounding_box(collider);
 
@@ -631,7 +631,7 @@ bool physics_system3d::raycast(vec3 start, vec3 direction, float step, float dis
             
                 if(collide(et, ec.bounding_box, t, collider.bounding_box)) {
                     if(ec.bvh.nodes.size()) {
-                        std::vector<uint> shapes = gjk_bvh(ec, et, collider, collider.collision_shapes[0], t);
+                        std::vector<uint> shapes = gjk_bvh(ec, et, collider, collider.shapes[0], t);
 
                         if(shapes.size()) {
                             *hit = entity;
@@ -642,8 +642,8 @@ bool physics_system3d::raycast(vec3 start, vec3 direction, float step, float dis
                         }
                     } else {
                         uint c = 0;
-                        for(collision_shape3d& ce : ec.collision_shapes) {
-                            for(collision_shape3d& convex : collider.collision_shapes) {
+                        for(collision_shape3d& ce : ec.shapes) {
+                            for(collision_shape3d& convex : collider.shapes) {
                                 if(collide(et, ce.bounding_box, t, convex.bounding_box)) {
                                     bool b = gjk(ce, et, convex, t);
 
@@ -696,7 +696,7 @@ bool physics_system3d::raycast(vec3 start, vec3 direction, float step, float dis
         vertex_element3d(vec3(0.0f), vec3(inflate, inflate, 0.0f)),
         vertex_element3d(direction * length, vec3(inflate, inflate, 0.0f)),
     };
-    collider.collision_shapes[0].elements = vs2;
+    collider.shapes[0].elements = vs2;
 
     //
 
@@ -727,7 +727,7 @@ bool physics_system3d::raycast(vec3 start, vec3 direction, float step, float dis
 }
 
 vec3 physics_system3d::get_gravity(vec3 position) {
-    return vec3(0.0f, 0.0f, -1.0f);
+    return gravity(position);
 }
 
 void physics_system3d::integrate() {
@@ -751,7 +751,7 @@ void physics_system3d::integrate() {
             }
             
             if(c_collider.allow_gravity) {
-                vec3 gravity_acceleration = get_gravity(c_transform.position) * gravity;
+                vec3 gravity_acceleration = get_gravity(c_transform.position);
 
                 c_collider.velocity += gravity_acceleration * sub_dt;
             }

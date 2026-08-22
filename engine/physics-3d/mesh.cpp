@@ -44,7 +44,7 @@ void create_mesh(std::vector<vertex_element3d> elements, std::vector<output_vert
 
         std::vector<uint> to_erase;
 
-        float threshold = 0.01f;
+        float threshold = 0.0025f;
 
         int index = 0;
 
@@ -56,7 +56,9 @@ void create_mesh(std::vector<vertex_element3d> elements, std::vector<output_vert
 
             //
 
-            if(dot(s.position, normal) > dot(points[face.i0].position, normal) + threshold) {
+            float t = glm::max(glm::max(glm::length(elements[s.element].radii), glm::length(elements[points[face.i0].element].radii)) * threshold, threshold);
+
+            if(dot(s.position, normal) > dot(points[face.i0].position, normal) + t) {
                 std::vector<uint> to_erase2 = {};
 
                 int index2 = index;
