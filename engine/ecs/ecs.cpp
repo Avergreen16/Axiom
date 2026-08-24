@@ -37,6 +37,14 @@ ecs::ecs() {
 
 axiom::collector& get_collector(std::string name) {
     return axiom::global_core.ecs->collectors[name];
+}
+
+uint insert_entity() {
+    return axiom::global_core.ecs->insert_entity();
+}
+
+double delta_time() {
+    return axiom::global_core.ecs->delta_time;
 };
 
 axiom::core global_core;

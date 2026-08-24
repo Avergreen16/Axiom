@@ -53,6 +53,11 @@ void render_widget::init() {
 void render_widget::handle_inputs() {
     axiom::ui_system* ui_system = &axiom::global_core.ecs->get_system<axiom::ui_system>();
 
+    target->framebuffer.bind();
+    glViewport(0, 0, target->size.x, target->size.y);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     callback(this, target);
 
     if(target->size != ivec2(size) || target->position != ivec2(position)) target->set_size(ivec2(size), ivec2(position));

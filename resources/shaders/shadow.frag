@@ -48,7 +48,9 @@ void main() {
 
     float depth = texelFetch(viewport_depth_tex, ptexel, 0).r;
     vec3 normal = texelFetch(viewport_normal_tex, ptexel, 0).rgb * 2.0 - 1.0;
-    vec3 shading = texelFetch(viewport_shading_tex, ptexel, 0).rgb * 2.0 - 1.0;
+
+    vec4 shading = texelFetch(viewport_shading_tex, ptexel, 0);
+    shading.xyz = shading.xyz * 2.0 - 1.0;
 
     vec4 pos = vec4(vec2(gl_FragCoord.xy) / vec2(textureSize(viewport_depth_tex, 0)) * 2.0 - 1.0, depth, 1.0);
 
@@ -57,18 +59,17 @@ void main() {
     
     pos = inv_viewport_view * pos;
 
-    depth = pos.z;
-
 
     uint include = 0xFFFFFFFF;
     float sd = 0.0;
     vec3 light_dir;
     float max_depth = 3e34;
 
-    light_dir = normalize(transpose(mat3(shadow_view[0] * shadow_proj[0])) * vec3(0.0, 0.0, 1.0));
+    light_dir = normalize(mat3(transpose(shadow_view[0])) * vec3(0.0, 0.0, 1.0));
     vec3 ppos = light_dir * -1e10;
 
-    for(int i = 3; i >= 0; --i) {
+    //for(int i = 4; i >= 0; --i) {
+    for(int i = 0; i < 5; ++i) {
         float texel_size = 1.0 / 16.0 * pow(8.0, i);
         vec4 spos = pos;
 
@@ -95,12 +96,13 @@ void main() {
 
             sdepth = dot(vec3(spos), light_dir);
             pdepth = dot(vec3(pos), light_dir);
+            float rdepth = dot(ppos, light_dir);
 
             vec4 pp = vec4(ppos, 1.0);
             pp = sview * pp;
             pp = sproj * pp;
 
-            if(pp.x < 1.0 && pp.x > -1.0 && pp.y < 1.0 && pp.y > -1.0 && pp.z >= 0.0 && pp.z < 1.0 || dot(ppos, light_dir) < -1e9) {
+            if(pp.x < 1.0 && pp.x > -1.0 && pp.y < 1.0 && pp.y > -1.0 && pp.z >= 0.0 && pp.z < 1.0 || sdepth > rdepth) {
                 sd = sdepth;
 
                 float bias = texel_size * 0.25;
@@ -110,16 +112,19 @@ void main() {
                 bias += slope * texel_size;
 
                 if(sdepth - bias > pdepth) frag_color = vec4(0.0, 0.0, 0.0, 1.0);
-                else frag_color = vec4(0.0, 0.0, 0.0, (1.0 - clamp(dot(light_dir, normal), 0.0, 1.0)) * 1.0); 
+                else frag_color = vec4(0.0);
                 
                 max_depth = sdepth - bias;
-            }
 
-            if(sdepth > dot(ppos, light_dir)) {
                 ppos = spos.xyz;
+
+                break;
             }
         }
     }
+    
+    if(!(normal.x == -1.0 && normal.y == -1.0 && normal.z == -1.0)) frag_color = vec4(0.0, 0.0, 0.0, max(frag_color.w, (1.0 - clamp(dot(light_dir, normal), 0.0, 1.0)) * 1.0)); 
+    frag_color.w *= shading.w;
 
     //
     

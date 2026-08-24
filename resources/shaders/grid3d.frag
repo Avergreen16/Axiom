@@ -1,5 +1,7 @@
 #version 460 core
 
+layout(binding = 0) uniform sampler2D viewport_depth_tex;
+
 layout(location = 0) out vec4 frag_color;
 
 layout(location = 0) uniform mat4 model;
@@ -59,6 +61,8 @@ vec3 cycle_color(float angle, float saturation, float value) {
 }
 
 float flt_max = 1.0 / 0.0;
+float depth = 0.0;
+vec4 lcolor = vec4(0.0);
 
 void render_line(vec3 line_origin, vec3 line_direction, vec3 ray_origin, vec3 ray_direction, mat3 view_mat, vec3 color, float min_len, float max_len) {
     vec3 W = line_origin - ray_origin;
@@ -83,12 +87,13 @@ void render_line(vec3 line_origin, vec3 line_direction, vec3 ray_origin, vec3 ra
     float dl = length(vec2(dx, dy));
 
     if(length(ps - pt) / dl < 1.0 && t > 0.0 && s > min_len && s < max_len) {
-        frag_color = vec4(color, 1.0);
-
         vec4 d = proj * (view * vec4((ray_direction * t), 1.0));
         d /= d.w;
 
-        gl_FragDepth = d.z;
+        if(d.z > depth) {
+            lcolor = vec4(color, 1.0);
+            gl_FragDepth = d.z;
+        }
     }
 }
 
@@ -257,7 +262,7 @@ void main() {
         vec4 d = proj * (view * vec4((ray * dist), 1.0));
         d /= d.w;
 
-        gl_FragDepth = d.z;
+        if(d.z > depth) gl_FragDepth = d.z;
 
         vec2 plane_pos = p.xy;
 
@@ -269,9 +274,11 @@ void main() {
 
         if(color.w == 0.0) color.w = 0.0;
     //}
+
+    depth = texture(viewport_depth_tex, cs.xy * 0.5 + 0.5).r;
     
-    frag_color = vec4(base_color, 0.0) * (1.0 - color.w) + color * color.w;
-    frag_color = min(frag_color, 1.0);
+    vec4 fcolor = color * color.w;
+    fcolor = min(fcolor, 1.0);
 
     render_line(origin, vec3(1.0, 0.0, 0.0), vec3(0.0), ray, mat3(inv_view), pos_x_color, 0.0, min(extents.x, flt_max));
     render_line(origin, vec3(0.0, 1.0, 0.0), vec3(0.0), ray, mat3(inv_view), pos_y_color, 0.0, min(extents.y, flt_max));
@@ -279,6 +286,14 @@ void main() {
     render_line(origin, vec3(1.0, 0.0, 0.0), vec3(0.0), ray, mat3(inv_view), neg_x_color, -min(extents.x, flt_max), 0.0);
     render_line(origin, vec3(0.0, 1.0, 0.0), vec3(0.0), ray, mat3(inv_view), neg_y_color, -min(extents.y, flt_max), 0.0);
     render_line(origin, vec3(0.0, 0.0, 1.0), vec3(0.0), ray, mat3(inv_view), neg_z_color, -min(extents.z, flt_max), 0.0);
+
+    if(lcolor.w != 0.0) fcolor = lcolor;
+
+    if(depth == 0.0) frag_color = vec4(base_color, 1.0);
+    else frag_color = vec4(0.0);
+
+    frag_color = vec4(frag_color.xyz * (1.0 - fcolor.w), frag_color.w) + vec4(fcolor.xyz * fcolor.w, fcolor.w);
+
     //frag_normal = vec4(0.0);
 
     /*float x_a = floor(x) / 10;

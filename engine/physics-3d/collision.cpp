@@ -148,7 +148,7 @@ polytope_return polytope::find_closest_face() {
 
         polytope_face* fface = &f;
         
-        float d = -dot(-a, normal);
+        float d = dot(a, normal);
         if(d < dist) {
             ret_face = fface;
             dist = d;
@@ -320,7 +320,7 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
     std::vector<vertex_element3d> a_vertices = ca.elements;
     std::vector<vertex_element3d> b_vertices = cb.elements;
 
-    float limit = 1.0f / 128;
+    float limit = 0.00001f;
     uint32_t iter_limit = 256;
 
     transform3d tta = ta;
@@ -577,10 +577,14 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
                     float dist = dot(point_m, r.normal);
                     
                     if(iterations > iter_limit) {
-                        std::cout << "limit EPA";
+                        std::cout << "limit EPA: ";
+                        
+                        c_event.iter = true;
 
                         epa_step.erase_triangles.clear();
                         c_event.epa.push_back(epa_step);
+
+                        std::cout << c_event.epa.size() << " " << iterations << " " << std::endl;
 
                         return {};
                     }
@@ -588,8 +592,13 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
                     // end epa
 
                     float limit_2 = 0.01f;
+                    float d0 = dot(point_m - r.vertices[0].m, r.normal);
+                    float d1 = dot(point_m - r.vertices[1].m, r.normal);
+                    float d2 = dot(point_m - r.vertices[2].m, r.normal);
 
-                    if(abs(dist - dot(r.vertices[0].m, r.normal)) < limit_2) {
+                    bool dd = d0 < limit_2 || d1 < limit_2 || d2 < limit_2;
+
+                    if(dd) {
                         ++pass;
                         
                         epa_step.erase_triangles.clear();

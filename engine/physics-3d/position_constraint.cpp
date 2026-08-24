@@ -78,7 +78,7 @@ void position_constraint::solve(float delta_time) {
             
             L -= softness * lambda[i];
             float new_lambda = lambda[i] + L;
-            //new_lambda = clamp(new_lambda, -max_impulse, max_impulse);
+            new_lambda = glm::clamp(new_lambda, -max_impulse, max_impulse);
             
             L = new_lambda - lambda[i];
             lambda[i] = new_lambda;
@@ -106,7 +106,7 @@ void position_constraint::solve(float delta_time) {
 
             L -= softness * lambda[i];
             float new_lambda = lambda[i] + L;
-            //new_lambda = clamp(new_lambda, -max_impulse, max_impulse);
+            new_lambda = glm::clamp(new_lambda, -max_impulse, max_impulse);
 
             L = new_lambda - lambda[i];
             lambda[i] = new_lambda;

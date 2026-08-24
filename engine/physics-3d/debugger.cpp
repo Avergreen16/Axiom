@@ -3,12 +3,12 @@
 namespace axiom {
 
 void physics_debugger::insert_frame(ulong id, debugger_frame frame) {
-    frame_list.push_back(id);
+    frame_list.push_front(id);
     frames.emplace(id, frame);
 
     while(frame_list.size() > frame_buffer) {
-        frames.erase(frame_list.front());
-        frame_list.erase(frame_list.begin());
+        frames.erase(frame_list.back());
+        frame_list.erase(frame_list.end() - 1);
     }
 }
 

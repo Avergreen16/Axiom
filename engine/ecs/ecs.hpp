@@ -427,6 +427,25 @@ type& get_system() {
     return axiom::global_core.ecs->get_system<type>();
 };
 
+uint insert_entity();
+
+template<typename type>
+void insert_component(uint entity, const type& component) {
+    return axiom::global_core.ecs->insert_component(entity, component);
+};
+
+template<typename type>
+void insert_component(uint entity, type&& component) {
+    return axiom::global_core.ecs->insert_component_move(entity, component);
+};
+
+template<typename type>
+bool has_component(uint entity) {
+    return axiom::global_core.ecs->has_component<type>(entity);
+};
+
+double delta_time();
+
 axiom::collector& get_collector(std::string name);
 
 }

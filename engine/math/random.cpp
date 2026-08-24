@@ -27,6 +27,7 @@ vec3 random32::unit_vector() {
     bool c = true;
     while(c) {
         r = {operator()(), operator()(), operator()()};
+        r = r * 2.0f - 1.0f;
         
         float len = length(r);
         if(!(len > 1 || len == 0)) c = false; 

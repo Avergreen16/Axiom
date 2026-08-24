@@ -41,7 +41,7 @@ struct position_constraint : constraint {
     
     float spring = 0.35f;
     float softness = 0.02f;
-    float max_impulse = FLT_MAX;
+    float max_impulse = axiom::max_float;
     bool is_grab = false;
     
     void before();

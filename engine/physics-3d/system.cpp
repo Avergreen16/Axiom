@@ -27,7 +27,7 @@ void physics_system3d::call() {
 
 void physics_system3d::physics_loop() {
     broad_phase();
-
+    
     narrow_phase();
 
     prune_manifolds();
@@ -45,8 +45,6 @@ void physics_system3d::physics_loop() {
     }
 
     ++frame_count;
-
-    //std::cout << count << " " << debugger.frames.size() << "\n";
 }
 
 struct spacial_data {
@@ -80,7 +78,7 @@ void physics_system3d::broad_phase() {
 
     //
 
-    const std::size_t max_i = 4;
+    const std::size_t max_i = 10;
     const float ratio = 4.0f;
     const float start_size = 2.0f;
 
@@ -99,10 +97,12 @@ void physics_system3d::broad_phase() {
 
         float bucket_size = start_size;
         for(int i = 0; i < max_i; ++i) {
-            if(max_size <= bucket_size || i == max_i - 1) {
+            if(max_size <= bucket_size) {
                 spacial_scale = &spacial[i];
                 break;
             }
+
+            if(i == max_i - 1) std::cout << "PHYSICS ERROR: object too large for broad phase" << std::endl;
             bucket_size *= ratio;
         }
 
