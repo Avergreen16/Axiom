@@ -11,6 +11,7 @@ void main() {
     frag_color = color;
     frag_normal = vec4(normal * 0.5 + 0.5, 1.0);
     frag_shading = vec4(normal * 0.5 + 0.5, 0.99);
+    if(color.x > 1.0) frag_shading.w = 0.0;
     
     if(frag_color.w == 0.0) discard;
 }

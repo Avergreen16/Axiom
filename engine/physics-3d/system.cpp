@@ -25,6 +25,14 @@ void physics_system3d::call() {
     }
 }
 
+uint param_collider = 0xFFFFFFFF;
+bool filter(axiom::collision_event& event) {
+    if(param_collider == 0xFFFFFFFf) return true;
+    else if(event.collider_a == param_collider || event.collider_b == param_collider) return true;
+
+    return false;
+}
+
 void physics_system3d::physics_loop() {
     broad_phase();
     
@@ -355,18 +363,17 @@ void physics_system3d::prune_manifolds() {
                 float dot_normal = dot(v.normal, diff);
                 float tangent = length(diff - v.normal * dot_normal);
 
-                if((dot_normal > contact_sep) || tangent > contact_sep) {
+                if(dot_normal > contact_sep || tangent > contact_sep * 2.5f) { // && v.frames > 1
                     manifold.points.erase(manifold.points.begin() + i);
 
                     --i;
-                } else if(dot_normal < max_pen) {
-                    max_id = i;
-                    max_pen = dot_normal;
                 }
                 
                 if(manifold.points.size() == 0) {
                     delete_manifolds.push_back(d);
                 }
+
+                ++v.frames;
             }
                 
             std::vector<collision_data3d>& cdata = manifold.points;

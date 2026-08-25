@@ -7,6 +7,9 @@
 
 namespace axiom {
 
+extern uint param_collider;
+bool filter(axiom::collision_event& event);
+
 struct physics_system3d : system {
     int step = 0;
     

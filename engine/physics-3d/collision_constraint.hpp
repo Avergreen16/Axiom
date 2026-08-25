@@ -55,8 +55,8 @@ struct collision_constraint : constraint {
 
     bool apply_friction = false;
 
-    float spring = 0.2f;
-    float softness = 0.015f;
+    float spring = 0.35f;
+    float softness = 0.003f;
     float mu = 0.8f;
 
     static collision_constraint create(collision_data3d* data);

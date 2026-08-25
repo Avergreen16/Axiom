@@ -29,8 +29,6 @@ struct collision_data3d {
     vec3 tangent = vec3(0.0f, 0.0f, 0.0f);
     vec3 bitangent = vec3(0.0f, 0.0f, 0.0f);
 
-    uint frames = 0;
-
     float lambdaN = 0.0f;
     float lambdaT = 0.0f;
     float lambdaB = 0.0f;
@@ -40,6 +38,8 @@ struct collision_data3d {
     float deltaN = 0.0f;
 
     vec2 lambda_tolerance = vec2(0.0f);
+
+    uint frames = 0;
 };
 
 struct manifold {

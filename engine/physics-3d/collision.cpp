@@ -194,7 +194,7 @@ std::vector<uint> polytope::expand(simplex_vertex vertex) {
     vertices.push_back(vertex);
     center += vertex.m;
 
-    float min_d = FLT_MAX;
+    float min_d = axiom::max_float;
     std::vector<uint64_t> edges;
     std::vector<uint> faces_seen;
     for(int i = 0; i < faces.size(); ++i) {
@@ -354,7 +354,7 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
     bool loop = true;
 
     auto get_normal = [&](collision_shape3d& c, mat3 ori, vec3 dir) -> shape_face* {
-        float dd = -FLT_MAX;
+        float dd = -axiom::max_float;
         vec3 vec = dir;
         int32_t id = -1;
 
@@ -373,9 +373,50 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
             ++i;
         }
 
+        
         if(id >= 0) return &c.faces[id];
-        else return nullptr;
+
+        return nullptr;
     };
+
+    /*
+    auto get_normal_edge = [&](collision_shape3d& ca, collision_shape3d& cb, mat3 ori_a, mat3 ori_b, vec3 dir, shape_face* af, shape_face* bf) {
+        float d_e = -axiom::max_float;
+        int id_e = -1;
+
+        shape_face& t = c.faces[id];
+        for(int i = 0; i < t.vertices.size(); ++i) {
+            vec3 v0 = c.elements[t.vertices[i]].center;
+            vec3 v1 = c.elements[t.vertices[(i + 1) % t.vertices.size()]].center;
+
+            vec3 normal = ori * normalize(v1 - v0);
+
+            float d = 1.0f - abs(dot(normal, dir));
+            
+            if(d > d_e) {
+                vec = normal;
+                d_e = d;
+
+                id_e = i;
+            }
+        }
+
+        if(id_e != -1 && d_e - 0.1f > dd) {
+            shape_face* face = new shape_face;
+
+            uint i0 = t.vertices[id_e];
+            uint i1 = t.vertices[(id_e + 1) % t.vertices.size()];
+            
+            vec3 v0 = c.elements[i0].center;
+            vec3 v1 = c.elements[i1].center;
+            face->normal = ori * normalize(v1 - v0);
+
+            face->vertices = {i0, i1};
+
+            return face;
+        }
+    }
+    */
     
     float d = 0.0f;
 
@@ -618,6 +659,8 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
                         vec3 collision_normal;
                         bool line = false;
                         float sep = length(contact_point_a - contact_point_b);
+
+                        vec3 pnormal = glm::normalize(contact_point_b - contact_point_a);
                         
                         if(r.vertices[2].a != r.vertices[0].a && r.vertices[2].a != r.vertices[1].a && r.vertices[0].a != r.vertices[1].a) { // triangle to vertex, triangle is a
                             collision_normal = normalize(cross(r.vertices[0].a - r.vertices[2].a, r.vertices[1].a - r.vertices[2].a));
@@ -630,7 +673,7 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
                         } else if(r.vertices[2].b != r.vertices[0].b && r.vertices[2].b != r.vertices[1].b && r.vertices[0].b != r.vertices[1].b) { // triangle to vertex, triangle is b
                             collision_normal = normalize(cross(r.vertices[0].b - r.vertices[2].b, r.vertices[1].b - r.vertices[2].b));
 
-                            tag.type =  axiom::collision_type::EDGE;
+                            tag.type =  axiom::collision_type::VERTEX;
                             tag.vid_a[0] = ivec3(r.vertices[0].a * 64.0f);
                             tag.vid_b[0] = ivec3(r.vertices[0].b * 64.0f);
                             tag.vid_b[1] = ivec3(r.vertices[1].b * 64.0f);
@@ -661,7 +704,7 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
 
                             line = true;
 
-                            tag.type =  axiom::collision_type::VERTEX;
+                            tag.type = axiom::collision_type::EDGE;
                             tag.vid_a[0] = ivec3(a0 * 64.0f);
                             tag.vid_a[1] = ivec3(a1 * 64.0f);
                             tag.vid_b[0] = ivec3(b0 * 64.0f);
@@ -681,12 +724,6 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
                         shape_face* bf = get_normal(cb, tb.orientation, collision_normal);
 
                         float threshold = cos(30.0f * axiom::pi / 180.0f);
-                        float dot_a = 0.0f;// 
-                        float dot_b = 0.0f;//
-                        if(af) dot_a = dot(af->normal, -collision_normal);
-                        if(bf) dot_b = dot(bf->normal, collision_normal);
-                        
-                        //collision_normal = glm::normalize(contact_point_b - contact_point_a);
                         
                         if(ca.faces.size() == 0 || cb.faces.size() == 0 || af == nullptr || bf == nullptr) {
                             collision_normal = glm::normalize(contact_point_b - contact_point_a);
@@ -694,9 +731,25 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
                         } else {
                             shape_face& a_face = *af;
                             shape_face& b_face = *bf;
+                            
+                            vec3 a_normal;
+                            vec3 b_normal;
 
-                            vec3 a_normal = ta.orientation * ca.orientation * a_face.normal;
-                            vec3 b_normal = tb.orientation * cb.orientation * b_face.normal;
+                            if(a_face.vertices.size() == 2) {
+                                if(b_face.vertices.size() == 2) {
+                                    a_normal = normalize(cross(a_face.normal, b_face.normal));
+                                    b_normal = -a_normal;
+                                } else {
+                                    b_normal = tb.orientation * cb.orientation * b_face.normal;
+                                    a_normal = -b_normal;
+                                }
+                            } else if(b_face.vertices.size() == 2) {
+                                a_normal = ta.orientation * ca.orientation * a_face.normal;
+                                b_normal = -a_normal;
+                            } else {
+                                a_normal = ta.orientation * ca.orientation * a_face.normal;
+                                b_normal = tb.orientation * cb.orientation * b_face.normal;
+                            }
 
                             std::vector<vec2> a_verts;
                             std::vector<vec2> b_verts;
@@ -717,7 +770,7 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
                             
                             rot_mat = transpose(rot_mat);
 
-                            if((a_verts.size() <= 2 && b_verts.size() <= 2) || (a_verts.size() <= 1 || b_verts.size() <= 1)) return_points.push_back(return_point(contact_point_a, contact_point_b, collision_normal));
+                            if((a_verts.size() <= 1 || b_verts.size() <= 1)) return_points.push_back(return_point(contact_point_a, contact_point_b, collision_normal));
                             else {
                                 std::vector<vec2> vertices_c;
 
@@ -821,6 +874,8 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
                         }
 
                         for(return_point& rp : return_points) {
+                            //collision_normal = pnormal;
+
                             c_event.manifold_a.push_back(rp.a);
                             c_event.manifold_b.push_back(rp.b);
                             c_event.collision_normal.push_back(collision_normal);
@@ -837,6 +892,9 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
                             ps.visualizer = pv;
                         }
                         */
+                        if(af != nullptr && af->vertices.size() == 2) delete af;
+                        if(bf != nullptr && bf->vertices.size() == 2) delete bf;
+                        
                         return return_points;
                     } else {
                         std::vector<uint> removed = p.expand({point_m, point_a, point_b});
@@ -1087,7 +1145,7 @@ bool gjk(collision_shape3d& ca, transform3d& ta, collision_shape3d& cb, transfor
     bool loop = true;
 
     auto get_normal = [&](collision_shape3d& c, mat3 ori, vec3 dir) -> shape_face* {
-        float dd = -FLT_MAX;
+        float dd = -axiom::max_float;
         vec3 vec = dir;
         int32_t id = -1;
 
