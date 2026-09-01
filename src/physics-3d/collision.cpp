@@ -714,10 +714,12 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
                         std::vector<return_point> return_points;
                         if(dot(collision_normal, main_dir) < 0.0f) collision_normal = -collision_normal;
                         
+                        // FLAG causes launching
+                        /**/
                         if(ca.faces.size() == 1) {
-                            if(dot(collision_normal, ca.faces[0].normal) > 0.1f) collision_normal = -collision_normal;
+                            if(dot(collision_normal, ca.faces[0].normal) > 0.0f) collision_normal = -collision_normal;
                         } else if(cb.faces.size() == 1) {
-                            if(dot(collision_normal, -cb.faces[0].normal) > 0.1f) collision_normal = -collision_normal;
+                            if(dot(collision_normal, -cb.faces[0].normal) > 0.0f) collision_normal = -collision_normal;
                         }
                         
                         shape_face* af = get_normal(ca, ta.orientation, -collision_normal);
@@ -770,7 +772,7 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
                             
                             rot_mat = transpose(rot_mat);
 
-                            if((a_verts.size() <= 1 || b_verts.size() <= 1)) return_points.push_back(return_point(contact_point_a, contact_point_b, collision_normal));
+                            if((a_verts.size() <= 2 || b_verts.size() <= 2)) return_points.push_back(return_point(contact_point_a, contact_point_b, collision_normal));
                             else {
                                 std::vector<vec2> vertices_c;
 

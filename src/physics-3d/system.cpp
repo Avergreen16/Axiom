@@ -339,10 +339,7 @@ void physics_system3d::prune_manifolds() {
 
         std::vector<uint> delete_manifolds;
 
-        debug_vertices[0].clear();
-
         uint d = 0;
-        uint vv = 0;
         for(axiom::manifold& manifold : new_manifolds) {
             uint max_id;
             float max_pen = FLT_MAX;
@@ -350,8 +347,7 @@ void physics_system3d::prune_manifolds() {
             for(int i = 0; i < manifold.points.size(); ++i) {
                 auto& v = manifold.points[i]; 
         
-                v.normal = manifold.normal;
-                ++vv;
+                //v.normal = manifold.normal;
 
                 contact_point p = get_points(v, manifold.a, manifold.b);
 
@@ -363,17 +359,17 @@ void physics_system3d::prune_manifolds() {
                 float dot_normal = dot(v.normal, diff);
                 float tangent = length(diff - v.normal * dot_normal);
 
-                if(dot_normal > contact_sep || tangent > contact_sep * 2.5f) { // && v.frames > 1
+                if((dot_normal > contact_sep || tangent > contact_sep) && v.frames > 0) {
                     manifold.points.erase(manifold.points.begin() + i);
 
                     --i;
+                } else {
+                    ++v.frames;
                 }
-                
+
                 if(manifold.points.size() == 0) {
                     delete_manifolds.push_back(d);
                 }
-
-                ++v.frames;
             }
                 
             std::vector<collision_data3d>& cdata = manifold.points;
@@ -578,7 +574,7 @@ void physics_system3d::merge_manifolds(manifold& a, manifold& b) {
                 break;
             }
         }
-
+        
         if(insert) ret.points.push_back(c);
     }
 

@@ -16,6 +16,10 @@ layout(location = 3) uniform mat4 shadow_model[5];
 layout(location = 8) uniform mat4 shadow_view[5];
 layout(location = 13) uniform mat4 shadow_proj[5];
 
+layout(location = 19) uniform float texture_size;
+layout(location = 20) uniform float pixel_size;
+layout(location = 21) uniform float texture_growth;
+
 layout(location = 0) out vec4 frag_color;
 
 vec3 hsv_color(float hue, float saturation, float value) {
@@ -70,7 +74,7 @@ void main() {
 
     //for(int i = 4; i >= 0; --i) {
     for(int i = 0; i < 5; ++i) {
-        float texel_size = 1.0 / 16.0 * pow(8.0, i);
+        float texel_size = pixel_size * pow(texture_growth, i);
         vec4 spos = pos;
 
         mat4 smodel = shadow_model[i];// * inv_viewport_model);

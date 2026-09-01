@@ -22,6 +22,12 @@ struct epa_step {
     std::vector<uint> erase_triangles;
 };
 
+struct clipping_step {
+    std::vector<vec2> vertices;
+    vec3 center;
+    mat3 orientation;
+};
+
 struct collision_event {
     ulong frame;
     uint collider_a;

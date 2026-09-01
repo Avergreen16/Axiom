@@ -10,7 +10,7 @@ struct render_target {
     ivec2 position;
     
     // resources
-    axiom::framebuffer framebuffer;
+    framebuffer framebuffer;
     std::function<void(render_target&)> draw;
 
     void set_size(ivec2 new_size, ivec2 new_position);
@@ -28,7 +28,7 @@ struct render_target {
 
     //
     
-    static render_target create(std::function<void(render_target&)> draw_func, ivec2 size, ivec2 position, std::vector<axiom::texture_format> fb_format, std::vector<axiom::texture_attachment> fb_attachment, std::vector<int> fb_binding = {});
+    static render_target create(std::function<void(render_target&)> draw_func, ivec2 size, ivec2 position, std::vector<texture_format> fb_format, std::vector<texture_attachment> fb_attachment, std::vector<int> fb_binding = {});
 };
 
 }

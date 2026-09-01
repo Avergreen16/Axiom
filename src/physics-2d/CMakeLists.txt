@@ -10,37 +10,31 @@ target_include_directories(AxiomPhysics2D PUBLIC
     ${AXIOM_ROOT}/src/physics-2d
 )
 
-target_link_libraries(AxiomPhysics2D
-    PUBLIC
-        AxiomMath
-        AxiomScene
-        AxiomECS
-        AxiomUtilities
+target_link_libraries(AxiomPhysics2D PUBLIC
+    AxiomCore
 
-        atomic
+    atomic
 )
 
 if(WIN32)
-    target_link_libraries(AxiomPhysics2D
-        PRIVATE
-            dwmapi
-            gdi32
-            user32
-            shell32
-            opengl32
-            ws2_32
-            wsock32
-            mingw32
-            mingwex 
-            atomic
+    target_link_libraries(AxiomPhysics2D PRIVATE
+        dwmapi
+        gdi32
+        user32
+        shell32
+        opengl32
+        ws2_32
+        wsock32
+        mingw32
+        mingwex 
+        atomic
     )
 elseif(UNIX)
-    target_link_libraries(AxiomPhysics2D
-        PRIVATE
-            GL
-            X11
-            dl
-            pthread
+    target_link_libraries(AxiomPhysics2D PRIVATE
+        GL
+        X11
+        dl
+        pthread
     )
 endif()
 

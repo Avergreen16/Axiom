@@ -1,11 +1,11 @@
 #include <graphicsh.hpp>
 
-#include "wrapper.hpp"
+#include <core/assets/assets.hpp>
+#include <render/wrapper.hpp>
 
 #include "stb_image.h"
 #include "stb_image_write.h"
 
-#include "assets/assets.hpp"
 
 namespace axiom {
 
@@ -798,7 +798,7 @@ framebuffer::framebuffer(glm::ivec2 size_, std::vector<fb_tex_params> tp, uint f
         glFramebufferTexture(GL_FRAMEBUFFER, get_texture_attachment(p.attachment), t.id, 0);
 
         bool insert = true;
-        if(p.attachment == axiom::texture_attachment::DEPTH || p.attachment == axiom::texture_attachment::STENCIL || p.attachment == axiom::texture_attachment::DEPTH_STENCIL) insert = false;
+        if(p.attachment == texture_attachment::DEPTH || p.attachment == texture_attachment::STENCIL || p.attachment == texture_attachment::DEPTH_STENCIL) insert = false;
 
         if(p.binding != -1 && insert) {
             int buffers_size = draw_buffers.size();
@@ -937,69 +937,69 @@ texture_asset texture::retrieve() {
 
 texture_desc get_texture_desc(texture_format f) {
     switch(f) {
-        case axiom::texture_format::R8: {
+        case texture_format::R8: {
             return {GL_R8, GL_RED, GL_UNSIGNED_BYTE};
         }
-        case axiom::texture_format::RG8: {
+        case texture_format::RG8: {
             return {GL_RG8, GL_RG, GL_UNSIGNED_BYTE};
         }
-        case axiom::texture_format::RGB8: {
+        case texture_format::RGB8: {
             return {GL_RGB8, GL_RGB, GL_UNSIGNED_BYTE};
         }
-        case axiom::texture_format::RGBA8: {
+        case texture_format::RGBA8: {
             return {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE};
         }
 
-        case axiom::texture_format::R16: {
+        case texture_format::R16: {
             return {GL_R16, GL_RED, GL_UNSIGNED_SHORT};
         }
-        case axiom::texture_format::RG16: {
+        case texture_format::RG16: {
             return {GL_RG16, GL_RG, GL_UNSIGNED_SHORT};
         }
-        case axiom::texture_format::RGB16: {
+        case texture_format::RGB16: {
             return {GL_RGB16, GL_RGB, GL_UNSIGNED_SHORT};
         }
-        case axiom::texture_format::RGBA16: {
+        case texture_format::RGBA16: {
             return {GL_RGBA16, GL_RGBA, GL_UNSIGNED_SHORT};
         }
 
-        case axiom::texture_format::RF: {
+        case texture_format::RF: {
             return {GL_R32F, GL_RED, GL_FLOAT};
         }
-        case axiom::texture_format::RGF: {
+        case texture_format::RGF: {
             return {GL_RG32F, GL_RG, GL_FLOAT};
         }
-        case axiom::texture_format::RGBF: {
+        case texture_format::RGBF: {
             return {GL_RGB32F, GL_RGB, GL_FLOAT};
         }
-        case axiom::texture_format::RGBAF: {
+        case texture_format::RGBAF: {
             return {GL_RGBA32F, GL_RGBA, GL_FLOAT};
         }
 
-        case axiom::texture_format::DEPTH16: {
+        case texture_format::DEPTH16: {
             return {GL_DEPTH_COMPONENT16, GL_RED, GL_UNSIGNED_SHORT};
         }
-        case axiom::texture_format::DEPTH32: {
+        case texture_format::DEPTH32: {
             return {GL_DEPTH_COMPONENT32, GL_RED, GL_UNSIGNED_INT};
         }
-        case axiom::texture_format::DEPTHF: {
+        case texture_format::DEPTHF: {
             return {GL_DEPTH_COMPONENT32F, GL_RED, GL_FLOAT};
         }
     }
 }
 
-GLenum get_texture_attachment(axiom::texture_attachment attachment) {
-    if(attachment >= axiom::texture_attachment::COLOR0 && attachment <= axiom::texture_attachment::COLOR31) {
-        uint i = (uint)attachment - (uint)axiom::texture_attachment::COLOR0;
+GLenum get_texture_attachment(texture_attachment attachment) {
+    if(attachment >= texture_attachment::COLOR0 && attachment <= texture_attachment::COLOR31) {
+        uint i = (uint)attachment - (uint)texture_attachment::COLOR0;
 
         return GL_COLOR_ATTACHMENT0 + i;
     } else {
         switch(attachment) {
-            case axiom::texture_attachment::DEPTH:
+            case texture_attachment::DEPTH:
                 return GL_DEPTH_ATTACHMENT;
-            case axiom::texture_attachment::STENCIL:
+            case texture_attachment::STENCIL:
                 return GL_STENCIL_ATTACHMENT;
-            case axiom::texture_attachment::DEPTH_STENCIL:
+            case texture_attachment::DEPTH_STENCIL:
                 return GL_DEPTH_STENCIL_ATTACHMENT;
         }
     }

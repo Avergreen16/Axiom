@@ -1,5 +1,4 @@
 #include <graphicsh.hpp>
-
 #include <render/wrapper.hpp>
 #include <render/target.hpp>
 
@@ -35,17 +34,17 @@ void render_target::call() {
     draw(*this);
 }
 
-render_target render_target::create(std::function<void(render_target&)> draw_func, ivec2 size, ivec2 position, std::vector<axiom::texture_format> fb_format, std::vector<axiom::texture_attachment> fb_attachment, std::vector<int> fb_binding) {
+render_target render_target::create(std::function<void(render_target&)> draw_func, ivec2 size, ivec2 position, std::vector<texture_format> fb_format, std::vector<texture_attachment> fb_attachment, std::vector<int> fb_binding) {
     render_target target;
     target.draw = draw_func;
     target.size = size;
     target.position = position;
 
-    std::vector<axiom::fb_tex_params> params;
+    std::vector<fb_tex_params> params;
     uint counter = 0;
 
-    for(axiom::texture_format format : fb_format) {
-        axiom::fb_tex_params param;
+    for(texture_format format : fb_format) {
+        fb_tex_params param;
         param.format = fb_format[counter];
         param.attachment = fb_attachment[counter];
 

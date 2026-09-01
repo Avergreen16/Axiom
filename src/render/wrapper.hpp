@@ -34,7 +34,9 @@
 #include "glm/gtx/quaternion.hpp"
 #include "glm/gtx/orthonormalize.hpp"
 
-#include <assets/assets.hpp>
+#include <include/core.hpp>
+
+#include <glad.h>
 
 using ivec2 = glm::ivec2;
 using ivec3 = glm::ivec3;
@@ -240,7 +242,7 @@ enum class texture_attachment {
 };
 
 texture_desc get_texture_desc(texture_format f);
-GLenum get_texture_attachment(axiom::texture_attachment attachment);
+uint get_texture_attachment(texture_attachment attachment);
 
 struct texture {
     uint id;
@@ -285,8 +287,8 @@ struct texture {
 };
 
 struct fb_tex_params {
-    axiom::texture_format format;
-    axiom::texture_attachment attachment;
+    texture_format format;
+    texture_attachment attachment;
 
     int binding = -1;
     int layers = 1;

@@ -4,6 +4,8 @@
 #include <physics-3d/collider.hpp>
 #include <physics-3d/debugger.hpp>
 
+#include <map>
+
 namespace axiom {
 
 struct hash_s {
@@ -12,6 +14,12 @@ struct hash_s {
         ulong pb = (ulong)a[1];
 
         return pa ^ pb;
+    }
+};
+
+struct less_s {
+    bool operator()(const std::array<uint, 2>& a, const std::array<uint, 2>& b) const {
+        return a[0] < b[0] || a[0] == b[0] && a[1] < b[1];
     }
 };
 
@@ -63,7 +71,7 @@ struct return_tag {
     ivec3 vid_b[3];
 };
 
-using collision_table = std::unordered_map<std::array<uint, 2>, std::vector<manifold>, hash_s>;
+using collision_table = std::map<std::array<uint, 2>, std::vector<manifold>, less_s>;
 
 //
 
