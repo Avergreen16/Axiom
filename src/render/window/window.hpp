@@ -2,6 +2,7 @@
 #pragma once
 
 #include <render/window/input.hpp>
+#include <render/target.hpp>
 
 #define GLM_FORCE_SWIZZLE
 #define GLM_FORCE_RADIANS
@@ -85,13 +86,14 @@ class window {
     bool decorated = true;
     
     float resize_border;
-    ivec2 screen_size;
-    ivec2 viewport_size;
+    ivec2 size;
     
     std::function<void()> on_resize = []() {};
     
     bool click_capture = false;
     bool hover_capture = false;
+
+    axiom::render_target* target = nullptr;
 
     private: 
     
@@ -133,6 +135,8 @@ class window {
 
     void poll_events();
 
+    bool cursor_in_window();
+
     bool is_fullscreen();
     bool is_maximized();
     bool is_windowed();
@@ -149,6 +153,8 @@ class window {
     void show_cursor();
 
     void clear_events();
+
+    void attach(axiom::render_target* target_);
 
     friend void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
     friend void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos);

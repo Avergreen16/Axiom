@@ -14,24 +14,26 @@ void set_blend() {
 }
 
 void vertices::init() {
-    glGenBuffers(1, &vertex_buffer);
-    glGenVertexArrays(1, &vertex_array);
-    glBindVertexArray(vertex_array);
+    if(!initialized) {
+        glGenBuffers(1, &vertex_buffer);
+        glGenVertexArrays(1, &vertex_array);
+        glBindVertexArray(vertex_array);
 
-    glGenBuffers(1, &index_buffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
+        glGenBuffers(1, &index_buffer);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
 
-    initialized = true;
+        initialized = true;
+    }
 }   
 
-void vertices::vertex_buffer_data(void* ptr, uint32_t num_vertices_, uint32_t vertex_size, uint32_t usage) {
+void vertices::vertex_buffer_data(void* ptr, uint num_vertices_, uint vertex_size, uint usage) {
     bind();
     num_vertices = num_vertices_;
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
     glBufferData(GL_ARRAY_BUFFER, num_vertices * vertex_size, ptr, usage);
 }
 
-void vertices::index_buffer_data(void* ptr, uint32_t num_indices_, uint index_type_, uint32_t index_size, uint32_t usage) {
+void vertices::index_buffer_data(void* ptr, uint num_indices_, uint index_type_, uint index_size, uint usage) {
     bind();
     num_indices = num_indices_;
     index_type = index_type_;
@@ -39,7 +41,7 @@ void vertices::index_buffer_data(void* ptr, uint32_t num_indices_, uint index_ty
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, num_indices * index_size, ptr, usage);
 }
 
-void vertices::add_vertex_attribute(uint32_t index, uint32_t size, uint type, uint normalized, uint32_t stride, uint32_t offset) {
+void vertices::add_vertex_attribute(uint index, uint size, uint type, uint normalized, uint stride, uint offset) {
     glBindVertexArray(vertex_array);
     if(type == GL_INT || type == GL_UNSIGNED_INT) glVertexAttribIPointer(index, size, type, stride, (void*)offset);
     else glVertexAttribPointer(index, size, type, normalized, stride, (void*)offset);
@@ -51,14 +53,34 @@ void vertices::bind() {
     glBindVertexArray(vertex_array);
 }
 
-void vertices::draw_vertices(uint mode) {
+void vertices::draw_vertices_points() {
     bind();
-    glDrawArrays(mode, 0, num_vertices);
+    glDrawArrays(GL_POINTS, 0, num_vertices);
 }
 
-void vertices::draw_indices(uint mode) {
+void vertices::draw_vertices_lines() {
     bind();
-    glDrawElements(mode, num_indices, index_type, (void*)0);
+    glDrawArrays(GL_LINES, 0, num_vertices);
+}
+
+void vertices::draw_vertices_triangles() {
+    bind();
+    glDrawArrays(GL_TRIANGLES, 0, num_vertices);
+}
+
+void vertices::draw_indices_points() {
+    bind();
+    glDrawElements(GL_POINTS, num_indices, index_type, (void*)0);
+}
+
+void vertices::draw_indices_lines() {
+    bind();
+    glDrawElements(GL_LINES, num_indices, index_type, (void*)0);
+}
+
+void vertices::draw_indices_triangles() {
+    bind();
+    glDrawElements(GL_TRIANGLES, num_indices, index_type, (void*)0);
 }
 
 vertices::vertices(vertices&& a) {
@@ -122,17 +144,17 @@ void storage_buffer::init() {
     }
 }
 
-void storage_buffer::buffer_data(void* data, uint32_t size_bytes, uint usage) {
+void storage_buffer::buffer_data(void* data, uint size_bytes, uint usage) {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, id);
     glBufferData(GL_SHADER_STORAGE_BUFFER, size_bytes, data, usage);
 }
 
-void storage_buffer::buffer_subdata(void* data, uint32_t size_bytes, uint32_t offset) {
+void storage_buffer::buffer_subdata(void* data, uint size_bytes, uint offset) {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, id);
     glBufferSubData(GL_SHADER_STORAGE_BUFFER, offset, size_bytes, data);
 }
 
-void storage_buffer::bind(uint32_t binding) {
+void storage_buffer::bind(uint binding) {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, id);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, id);
 }
@@ -152,17 +174,17 @@ void uniform_buffer::init() {
     }
 }
 
-void uniform_buffer::buffer_data(void* data, uint32_t size_bytes, uint usage) {
+void uniform_buffer::buffer_data(void* data, uint size_bytes, uint usage) {
     glBindBuffer(GL_UNIFORM_BUFFER, id);
     glBufferData(GL_UNIFORM_BUFFER, size_bytes, data, usage);
 }
 
-void uniform_buffer::buffer_subdata(void* data, uint32_t size_bytes, uint32_t offset) {
+void uniform_buffer::buffer_subdata(void* data, uint size_bytes, uint offset) {
     glBindBuffer(GL_UNIFORM_BUFFER, id);
     glBufferSubData(GL_UNIFORM_BUFFER, offset, size_bytes, data);
 }
 
-void uniform_buffer::bind(uint32_t binding) {
+void uniform_buffer::bind(uint binding) {
     glBindBuffer(GL_UNIFORM_BUFFER, id);
     glBindBufferBase(GL_UNIFORM_BUFFER, binding, id);
 }
@@ -798,7 +820,11 @@ framebuffer::framebuffer(glm::ivec2 size_, std::vector<fb_tex_params> tp, uint f
         glFramebufferTexture(GL_FRAMEBUFFER, get_texture_attachment(p.attachment), t.id, 0);
 
         bool insert = true;
-        if(p.attachment == texture_attachment::DEPTH || p.attachment == texture_attachment::STENCIL || p.attachment == texture_attachment::DEPTH_STENCIL) insert = false;
+        if(p.attachment == texture_attachment::DEPTH || p.attachment == texture_attachment::STENCIL || p.attachment == texture_attachment::DEPTH_STENCIL) {
+            insert = false;
+
+            if(p.attachment == texture_attachment::DEPTH || p.attachment == texture_attachment::DEPTH_STENCIL) depth_texture = i;
+        }
 
         if(p.binding != -1 && insert) {
             int buffers_size = draw_buffers.size();
@@ -823,6 +849,7 @@ framebuffer::framebuffer(framebuffer&& a) noexcept {
     textures = std::move(a.textures);
     tex_params = std::move(a.tex_params);
     size = a.size;
+    depth_texture = a.depth_texture;
 
     draw_buffers = a.draw_buffers;
 }
@@ -835,6 +862,7 @@ framebuffer& framebuffer::operator=(framebuffer&& a) noexcept {
     size = a.size;
 
     draw_buffers = a.draw_buffers;
+    depth_texture = a.depth_texture;
 
     return *this;
 }
@@ -880,11 +908,13 @@ framebuffer::~framebuffer() {
     }
 }
 
-void framebuffer::clear() {
-    for(int i = 0; i < textures.size(); ++i) {
-        texture& t = textures[i];
-        fb_tex_params& p = tex_params[i];
-    }
+void framebuffer::clear(vec4 color, float depth) {
+    bind();
+
+    glClearColor(color.x, color.y, color.z, color.q);
+    glClearDepth(depth);
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void framebuffer::bind_texture(std::shared_ptr<texture> texture, uint attachment, int32_t binding) {

@@ -17,7 +17,7 @@ struct render_system : axiom::system {
     std::unordered_map<std::string, axiom::texture> textures;
     std::unordered_map<std::string, axiom::shader> shaders;
 
-    std::vector<std::unique_ptr<axiom::render_target>> targets;
+    std::vector<axiom::render_target> targets;
 
     // shadow parameters
     float light_altitude = 50.0f;
@@ -34,5 +34,9 @@ struct render_system : axiom::system {
 };
 
 void render_init(axiom::window* window);
+
+axiom::shader& get_shader(std::string id);
+axiom::texture& get_texture(std::string id);
+axiom::vertices& get_vertices();
 
 }

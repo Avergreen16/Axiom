@@ -245,22 +245,6 @@ struct ecs_core {
 
         get_system<type>().init();
     }
-    
-    template<typename type>
-    std::bitset<MAX_COMPONENTS> update_signature() {
-        register_component<type>();
-
-        std::size_t code = typeid(type).hash_code();
-        return axiom::signature(1) << component_manager_.code_to_id[code];
-    }
-    
-    template<typename type>
-    void update_signature(std::bitset<MAX_COMPONENTS>& a) {
-        register_component<type>();
-
-        std::size_t code = typeid(type).hash_code();
-        a |= axiom::signature(1) << component_manager_.code_to_id[code];
-    }
 
     template<typename type>
     bool has_component(uint entity_) {
@@ -358,5 +342,21 @@ struct ecs_core {
 };
 
 extern ecs_core ecs;
+
+template<typename type>
+std::bitset<MAX_COMPONENTS> update_signature() {
+    ecs.register_component<type>();
+
+    std::size_t code = typeid(type).hash_code();
+    return axiom::signature(1) << ecs.component_manager_.code_to_id[code];
+}
+
+template<typename type>
+void update_signature(std::bitset<MAX_COMPONENTS>& a) {
+    ecs.register_component<type>();
+
+    std::size_t code = typeid(type).hash_code();
+    a |= axiom::signature(1) << ecs.component_manager_.code_to_id[code];
+}
 
 }

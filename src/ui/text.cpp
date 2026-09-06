@@ -1,7 +1,5 @@
 #include <ui/text.hpp>
-#include <utilities/utilities.hpp>
-#include <math/base.hpp>
-#include <ui/ui_system.hpp>
+#include <ui/system.hpp>
 
 namespace axiom {
     
@@ -1432,7 +1430,7 @@ vec2 compute_cursor_pos(uint32_t index, axiom::text& text) {
 ivec2 text::select(vec2 cursor, uint wrap_mode) {
     //if(!capture) return ivec2(-1);
 
-    axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
+    axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     ivec2 prev_select = select_range;
 
@@ -1457,7 +1455,7 @@ ivec2 text::select(vec2 cursor, uint wrap_mode) {
 void text::select(vec4 cursor_range, bool anchor) {
     //if(!capture) return;
 
-    axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
+    axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     ivec2 prev_select = select_range;
 
@@ -1544,7 +1542,7 @@ std::string text::retrieve() {
 void text::call() {
     //
 
-    axiom::ui_system& ui_system = axiom::global_core.ecs->get_system<axiom::ui_system>();
+    axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     if(collide(ui_system.window->cursor_pos) && includes(ui_system.window->cursor_pos, range)) {
         ulong current = parent;

@@ -19,7 +19,7 @@ vec3 hex_color(uint i) {
 }
 
 vec3 base_color = hex_color(0x1E1F2E);
-vec3 line_color = (base_color + vec3(1.0)) * 0.5f;
+vec3 line_color = hex_color(0xFFFFFF);
 //vec3 sector_color = hex_color(0xFF893D);
 
 vec3 pos_x_color = hex_color(0xFF4040);
@@ -60,6 +60,10 @@ vec3 cycle_color(float angle, float saturation, float value) {
     return vec3(1.0, 0.0, 1.0 - fracx);
 }
 
+vec4 blend(vec4 dst, vec4 src) {
+    return dst * (1.0 - src.w) + src * src.w;
+}
+
 float flt_max = 1.0 / 0.0;
 float depth = 0.0;
 vec4 lcolor = vec4(0.0);
@@ -79,6 +83,8 @@ void render_line(vec3 line_origin, vec3 line_direction, vec3 ray_origin, vec3 ra
     vec3 ps = line_origin + line_direction * s;
     vec3 pt = ray_origin + ray_direction * t;
 
+    float dist = length(ps - pt);
+
     float between_dist_x = dot(view_mat[0], ps - pt);
     float between_dist_y = dot(view_mat[1], ps - pt);
 
@@ -86,23 +92,37 @@ void render_line(vec3 line_origin, vec3 line_direction, vec3 ray_origin, vec3 ra
     float dy = dFdy(between_dist_y);
     float dl = length(vec2(dx, dy));
 
-    if(length(ps - pt) / dl < 1.0 && t > 0.0 && s > min_len && s < max_len) {
+    if(length(ps - pt) / dl < 1.5 && t > 0.0 && s > min_len && s < max_len) {
         vec4 d = proj * (view * vec4((ray_direction * t), 1.0));
         d /= d.w;
 
         if(d.z > depth) {
-            lcolor = vec4(color, 1.0);
+            lcolor = max(lcolor, vec4(color, clamp(1.5 - dist / dl, 0.0, 1.0)));
             gl_FragDepth = d.z;
         }
     }
 }
 
+
+float filtered_grid(vec2 p, vec2 dpdx, vec2 dpdy ) {
+    const vec2 N = max(vec2(10.0), 1.0 / (max(abs(dpdx), abs(dpdy)) * 1.5));
+    vec2 w = max(abs(dpdx), abs(dpdy));
+    vec2 a = p + 0.5 * w;                        
+    vec2 b = p - 0.5 * w;           
+    vec2 i = (floor(a) + min(fract(a) * N, 1.0) - floor(b) - min(fract(b) * N, 1.0)) / (N * w);
+    return (1.0 - i.x) * (1.0 - i.y);
+}
+
 vec4 get_color(vec2 p, float dist, vec3 camera_pos, vec3 view_dir, mat3 norm, float h) {
     uint num_scales = 4;
-    uint scale_p = 4;
+    uint scale_p = 2;
     uint scale = uint(pow(2, scale_p));
     float width = 1.0;
+
+    float ss = log(abs(camera_pos.z)) / log(scale);
     int starting_scale = max(0, int(floor(log(abs(camera_pos.z)) / log(scale))));
+
+    float b = ss - starting_scale;
 
     float bounds = min(max(extents.x, extents.y), pow(2, 71));
     
@@ -118,6 +138,7 @@ vec4 get_color(vec2 p, float dist, vec3 camera_pos, vec3 view_dir, mat3 norm, fl
 
     //
 
+    /*
     for(int i = -2; i <= 2; ++i) {
         int ii = i + starting_scale;
         if(ii >= min_s && ii <= max_s) {
@@ -139,22 +160,6 @@ vec4 get_color(vec2 p, float dist, vec3 camera_pos, vec3 view_dir, mat3 norm, fl
             float dhdx = dFdx(h);
             float dhdy = dFdy(h);
 
-            /*
-            p += fract(offset_minor1 / radius) * radius * 256.0;
-            if(pp > 24) {
-                float r = pow(2, pp - 24);
-                p += fract(offset_minor0 * 256.0 / r) * r * pow(2, 24);
-            }
-            if(pp > 48) {
-                float r = pow(2, pp - 48);
-                p += fract(offset_major * 256.0 / r) * r * pow(2, 48);
-            }
-            */
-
-            // 
-            
-            //p += (fract(offset_minor / r) * r + fract(offset_major * (4294967296.0 / r)) * r) * 256.0;
-
             float lw = 1.0 / 32.0;
 
             vec4 x_color = vec4(0.0);
@@ -175,12 +180,6 @@ vec4 get_color(vec2 p, float dist, vec3 camera_pos, vec3 view_dir, mat3 norm, fl
                 float y_width = abs(fract(pos.y + 0.5) - 0.5) * 2.0;
                 if(x_width / ddx <= 1.0) x_color = vec4(1.0, 1.0, 1.0, lw / ddx + 0.3);
                 if(y_width / ddy <= 1.0) y_color = vec4(1.0, 1.0, 1.0, lw / ddy + 0.3);
-
-                float start_v = 0.5;
-                float end_v = 1.0;
-
-                if(ddx / radius > start_v) x_color = mix(x_color, vec4(1.0, 1.0, 1.0, lw * fade1), (ddx / radius - start_v) / (end_v - start_v));
-                if(ddy / radius > start_v) y_color = mix(y_color, vec4(1.0, 1.0, 1.0, lw * fade1), (ddy / radius - start_v) / (end_v - start_v));
             }
 
             vec2 dd = vec2(ddx, ddy);
@@ -196,6 +195,53 @@ vec4 get_color(vec2 p, float dist, vec3 camera_pos, vec3 view_dir, mat3 norm, fl
             color = vec4(max(color, min(vec4(line_color, 1.0), max(x_color, y_color))));
         }
     }
+    */
+
+    /*
+    for(int i = -1; i <= 1; ++i) {
+        int ii = i + starting_scale;
+        if(ii >= min_s && ii <= max_s) {
+            uint pp = ii * scale_p;
+
+            float radius = pow(2, pp);
+
+            //
+
+            vec2 pos = p / radius;
+            
+            vec2 dx = dFdx(pos);
+            vec2 dy = dFdy(pos);
+            vec2 ax = vec2(dx.x, dy.x);
+            vec2 ay = vec2(dx.y, dy.y);
+            float ddx = length(ax);
+            float ddy = length(ay);
+
+            float dist = length(vec3(pos * radius, 0.0) - camera_pos) / radius;
+            float f = clamp(exp(-max(dist * 0.01, 0.0)), 0.0, 1.0);
+            float f2 = 1.0 - clamp(exp(-max(dist * pow(2, scale_p) * 0.01, 0.0)), 0.0, 1.0);
+            f = min(f, f2);
+            
+            float distance_to_line = min(abs(pos.x - round(pos.x)) / ddx, abs(pos.y - round(pos.y)) / ddy);
+            
+            color = vec4(line_color, max(color.w, smoothstep(1.0, 0.0, distance_to_line / 2.0) * f));
+        }
+    }
+    */
+
+    if(dot(vec3(p, 0.0) - camera_pos, view_dir) < 0) return vec4(0.0);
+
+    vec2 pos = p / pow(2, (starting_scale - 1) * scale_p);
+
+
+            
+    vec2 dx = dFdx(pos);
+    vec2 dy = dFdy(pos);
+    vec2 ax = vec2(dx.x, dy.x);
+    vec2 ay = vec2(dx.y, dy.y);
+    float ddx = length(ax);
+    float ddy = length(ay);
+
+    return vec4(line_color, 1.0 - filtered_grid(pos, dx, dy));
 
     if(dist < 0.0) return vec4(0.0);
 
@@ -287,7 +333,7 @@ void main() {
     render_line(origin, vec3(0.0, 1.0, 0.0), vec3(0.0), ray, mat3(inv_view), neg_y_color, -min(extents.y, flt_max), 0.0);
     render_line(origin, vec3(0.0, 0.0, 1.0), vec3(0.0), ray, mat3(inv_view), neg_z_color, -min(extents.z, flt_max), 0.0);
 
-    if(lcolor.w != 0.0) fcolor = lcolor;
+    if(lcolor.w != 0.0) fcolor = blend(fcolor, lcolor);
 
     if(depth == 0.0) frag_color = vec4(base_color, 1.0);
     else frag_color = vec4(0.0);

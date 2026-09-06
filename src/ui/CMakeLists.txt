@@ -1,47 +1,43 @@
 add_library(AxiomUI STATIC
     ui.cpp
-    ui_system.cpp
+    system.cpp
     widget_base.cpp
     cursor.cpp
     text.cpp
 
-    screen_widget.cpp
-    panel_widget.cpp
-    window_widget.cpp
-    split_widget.cpp
-    row_widget.cpp
-    column_widget.cpp
-    grid_widget.cpp
-    debug_widget.cpp
-    button_widget.cpp
-    slider_widget.cpp
-    tab_widget.cpp
-    text_widget.cpp
-    spacer_widget.cpp
-    drop_widget.cpp
-    menu_widget.cpp
-    relative_widget.cpp
-    input_box_widget.cpp
-    text_box_widget.cpp
-    scroll_widget.cpp
-    message_widget.cpp
-    render_widget.cpp
-    match_widget.cpp
-    checkbox_widget.cpp
+    widgets/screen_widget.cpp
+    widgets/panel_widget.cpp
+    widgets/window_widget.cpp
+    widgets/split_widget.cpp
+    widgets/row_widget.cpp
+    widgets/column_widget.cpp
+    widgets/grid_widget.cpp
+    widgets/debug_widget.cpp
+    widgets/button_widget.cpp
+    widgets/slider_widget.cpp
+    widgets/tab_widget.cpp
+    widgets/text_widget.cpp
+    widgets/spacer_widget.cpp
+    widgets/drop_widget.cpp
+    widgets/menu_widget.cpp
+    widgets/relative_widget.cpp
+    widgets/input_box_widget.cpp
+    widgets/text_box_widget.cpp
+    widgets/scroll_widget.cpp
+    widgets/message_widget.cpp
+    widgets/render_widget.cpp
+    widgets/match_widget.cpp
+    widgets/checkbox_widget.cpp
 )
 
 target_include_directories(AxiomUI PUBLIC
     ${AXIOM_ROOT}/src
-    ${AXIOM_ROOT}/src/physics-2d
+    ${AXIOM_ROOT}
 )
 
 target_link_libraries(AxiomUI PUBLIC
-    AxiomECS
-    AxiomUtilities
-    AxiomAssets
-    AxiomWindow
+    AxiomCore
     AxiomRender
-    AxiomMath
 
     glfw
 

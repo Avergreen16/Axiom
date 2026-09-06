@@ -30,7 +30,7 @@ using ulong = uint64_t;
 
 #include <string>
 
-#include <assets/assets.hpp>
+#include <include/core.hpp>
 #include <ui/ui.hpp>
 
 namespace axiom {

@@ -32,8 +32,8 @@ using ulong = uint64_t;
 #include <map>
 #include <memory>
 
-#include <ecs/ecs.hpp>
-#include <assets/assets.hpp>
+#include <include/core.hpp>
+#include <include/render.hpp>
 
 namespace axiom {
 

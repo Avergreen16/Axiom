@@ -18,5 +18,7 @@ void main() {
     frag_color = vec4(tex_col.xyz * color.xyz, tex_col.w * color.w);
     frag_normal = vec4(normal * 0.5 + 0.5, 1.0);
     frag_shading = vec4(normal * 0.5 + 0.5, contrast);
-    if(frag_color.w == 0.0) discard;
+    //if(frag_color.w == 0.0) discard;
+
+    //
 }

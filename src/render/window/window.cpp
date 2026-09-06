@@ -59,12 +59,10 @@ void character_callback(GLFWwindow* window, unsigned int codepoint) {
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     axiom::window* w = (axiom::window*)glfwGetWindowUserPointer(window);
 
-    w->screen_size.x = width;
-    w->screen_size.y = height;
-    w->viewport_size.x = width;
-    w->viewport_size.y = height;
+    w->size.x = width;
+    w->size.y = height;
 
-    glViewport(0, 0, w->viewport_size.x, w->viewport_size.y);
+    glViewport(0, 0, w->size.x, w->size.y);
 
     w->on_resize();
 }
@@ -114,8 +112,7 @@ window::window(ivec2 position, ivec2 size, float border, std::string name, bool 
 
     int width, height;
     glfwGetWindowSize(window_handle, &width, &height);
-    screen_size = {width, height};
-    viewport_size = {screen_size.x + 1 * (screen_size.x & 1), screen_size.y + 1 * (screen_size.y & 1)};
+    this->size = {width, height};
 
     init_callbacks();
 
@@ -144,7 +141,7 @@ window::window(ivec2 position, ivec2 size, float border, std::string name, bool 
 
     // init glad and set viewport
     
-    glViewport(0, 0, viewport_size.x, viewport_size.y);
+    glViewport(0, 0, size.x, size.y);
 
     /////
     
@@ -217,7 +214,7 @@ void window::poll_events() {
     }
 
     for(axiom::cursor_event event : cursor_events) {
-        glm::vec2 new_cursor_pos = {event.xpos, screen_size.y - event.ypos - 1};
+        glm::vec2 new_cursor_pos = {event.xpos, size.y - event.ypos - 1};
         cursor_delta += new_cursor_pos - cursor_pos;
         cursor_pos = new_cursor_pos;
     }
@@ -454,8 +451,14 @@ void window::poll_events() {
             }
         }
 
-        screen_size = s.zw();
-        viewport_size = s.zw();
+        size = s.zw();
+        size = s.zw();
+    }
+
+    if(target != nullptr) {
+        if(target->size != size) {
+            target->set_size(size);
+        }
     }
 }
 
@@ -546,6 +549,20 @@ void window::show_cursor() {
     
     cursor_hidden = false;
     cursor_disabled = false;
+}
+
+
+void window::attach(axiom::render_target* target_) {
+    target = target_;
+}
+
+bool window::cursor_in_window() {
+    double x, y;
+    int width, height;
+    glfwGetCursorPos(window_handle, &x, &y);
+    glfwGetWindowSize(window_handle, &width, &height);
+
+    return x >= 0 && x < width && y >= 0 && y < height;
 }
 
 }

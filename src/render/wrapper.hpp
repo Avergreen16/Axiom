@@ -50,6 +50,10 @@ using uvec2 = glm::uvec2;
 using uvec3 = glm::uvec3;
 using uvec4 = glm::uvec4;
 
+using dvec2 = glm::vec<2, double>;
+using dvec3 = glm::vec<3, double>;
+using dvec4 = glm::vec<4, double>;
+
 using mat2 = glm::mat2;
 using mat3 = glm::mat3;
 using mat4 = glm::mat4;
@@ -93,9 +97,13 @@ struct vertices {
 
     void bind();
 
-    void draw_vertices(uint mode);
+    void draw_vertices_points();
+    void draw_vertices_lines();
+    void draw_vertices_triangles();
 
-    void draw_indices(uint mode);
+    void draw_indices_points();
+    void draw_indices_lines();
+    void draw_indices_triangles();
 };
 
 struct storage_buffer {
@@ -174,6 +182,7 @@ struct shader {
 
     ~shader();
 };
+
 
 struct texture_desc {
     uint formatbits;
@@ -302,6 +311,8 @@ struct framebuffer {
     bool initialized = false;
     glm::ivec2 size;
     uint filter = GL_NEAREST;
+
+    uint depth_texture;
     
     framebuffer() = default;
     framebuffer(framebuffer&& a) noexcept;
@@ -315,9 +326,11 @@ struct framebuffer {
 
     void resize(glm::ivec2 new_size);
 
-    void clear();
+    void clear(vec4 color = vec4(0.0f, 0.0f, 0.0f, 1.0f), float depth = 0.0f);
 
     ~framebuffer();
 };
 
 }
+
+#include <render/uniform.hpp>
