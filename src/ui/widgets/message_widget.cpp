@@ -6,14 +6,13 @@ namespace axiom {
 
 void message_widget::handle_inputs() {
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
-    vec4 range = ui_system.get_range(self);
 
-    text[0]->range = range;
+    //text[0]->range = range;
     
     bool prev_hover = hover;
 
     vec4 include_range = vec4(position, position + size + vec2(0.0f, buffer.w));
-    if(inserted) include_range.w += ui_system.font_assets[0]->line_height + buffer.y;
+    if(inserted) include_range.w += ui_system.fonts[0].line_height + buffer.y;
 
     if(includes(ui_system.window->cursor_pos, include_range) && ui_system.hover_capture == self) {
         hover = true;
@@ -63,8 +62,6 @@ void message_widget::mesh() {
 
         vertices_before.clear();
         
-        vec4 view_range = ui_system.get_range(self);
-        
         ui_vertex a = {vec3(0.0f, 0.0f, 0.0f), vec2(0.0f, 0.0f), vec4(1.0f)};
         ui_vertex b = {vec3(1.0f, 0.0f, 0.0f), vec2(1.0f, 0.0f), vec4(1.0f)};
         ui_vertex c = {vec3(0.0f, 1.0f, 0.0f), vec2(0.0f, 1.0f), vec4(1.0f)};
@@ -80,7 +77,7 @@ void message_widget::mesh() {
             v.color = vec4(color, 1.0f);
             v.data = 0x1;
 
-            v.range = view_range;
+            v.clip_space = clip;
         }
         vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
 
@@ -97,7 +94,7 @@ void message_widget::mesh() {
                     v.color = vec4(color, 1.0f);
                     v.data = 0x1;
 
-                    v.range = view_range;
+                    v.clip_space = clip;
                 }
                 vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
             } else if(tail_settings == 2) {
@@ -110,7 +107,7 @@ void message_widget::mesh() {
                     v.color = vec4(color, 1.0f);
                     v.data = 0x1;
 
-                    v.range = view_range;
+                    v.clip_space = clip;
                 }
                 vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
             }
@@ -130,7 +127,7 @@ void message_widget::mesh() {
             v.pos.y += text[0]->position.y;
             v.pos.z = z;
 
-            v.range = view_range;
+            v.clip_space = clip;
         }
 
         vertices_before.insert(vertices_before.end(), text_vertices.begin(), text_vertices.end());
@@ -165,7 +162,7 @@ uint64_t message_widget::insert(std::string sender, ulong timestamp, std::string
     text->string = message;
     text->wrap = true;
     text->alignment = alg;
-    text->font = ui_system.font_assets[0];
+    text->font = &ui_system.fonts[0];
 
     widget.text = {text};
 
@@ -237,11 +234,10 @@ void message_widget::init() {
 axiom::capture_data message_widget::handle_capture() {
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
-    vec4 view_range = ui_system.get_range(self);
     if(!includes(ui_system.window->cursor_pos, view_range)) return {z, false};
 
     vec4 hover_range = vec4(position, position + size + vec2(0.0f, buffer.w));
-    if(inserted) hover_range.w += ui_system.font_assets[0]->line_height + buffer.y;
+    if(inserted) hover_range.w += ui_system.fonts[0].line_height + buffer.y;
 
     if(includes(ui_system.window->cursor_pos, hover_range)) return {self, z, true};
 

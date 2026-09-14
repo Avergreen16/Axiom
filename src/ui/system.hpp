@@ -5,6 +5,7 @@
 #include <ui/cursor.hpp>
 #include <include/core.hpp>
 #include <include/render.hpp>
+#include <ui/font/ttf.hpp>
 
 namespace axiom {
 
@@ -31,7 +32,7 @@ struct ui_system : system {
     uint32_t iter;
     
     axiom::window* window;
-    std::vector<axiom::font_asset*> font_assets;
+    std::vector<axiom::ttf_font> fonts;
 
     axiom::cursor cursor;
 
@@ -71,6 +72,7 @@ struct ui_system : system {
     //
 
     std::vector<std::shared_ptr<axiom::text>> text;
+    std::vector<clip_space> clip_spaces;
 
     //
 
@@ -91,7 +93,8 @@ struct ui_system : system {
     void buffer(vec4 buffer);
     void make_dirty(ulong root);
 
-    vec4 get_range(ulong v, bool include_self = false);
+    void handle_clip();
+
     void call();
     std::vector<ulong> get_children(ulong root);
     void erase(std::vector<ulong> ws);

@@ -63,6 +63,15 @@ text_asset text_asset::load(std::string path) {
     return asset;
 }
 
+binary_asset binary_asset::load(std::string path) {
+    binary_asset asset;
+    
+    asset.data = axiom::get_bytes_from_file(path);
+    asset.filepath = path;
+
+    return asset;
+}
+
 
 glyph_data& font_asset::at(uint key) {
     if(glyph_map.find(key) != glyph_map.end()) return glyph_map[key];

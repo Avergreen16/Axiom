@@ -28,3 +28,5 @@
 #include <ui/widgets/render_widget.hpp>
 #include <ui/widgets/match_widget.hpp>
 #include <ui/widgets/checkbox_widget.hpp>
+
+#include <ui/font/ttf.hpp>

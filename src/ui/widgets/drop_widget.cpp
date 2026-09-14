@@ -106,7 +106,7 @@ void drop_widget::toggle_drop() {
                 std::shared_ptr<axiom::text> t(new axiom::text);
                 t->string = option.label;
                 t->wrap = false;
-                t->font = ui_system.font_assets[0];
+                t->font = &ui_system.fonts[0];
 
                 ui_system.text.push_back(t);
                 text.push_back(t);
@@ -243,7 +243,8 @@ void drop_widget::mesh() {
                     v.tex_pos = vec2(1.0f, 63.0f);
                     v.color = col;
                     v.data = 0x1;
-                    v.range = panel_range;
+
+                    v.clip_space = clip;
                 }
                 vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
             }
@@ -265,7 +266,7 @@ void drop_widget::mesh() {
 
                 for(auto& vertex : vs) {
                     vertex.pos += vec3(origin, z + 0.001f);
-                    vertex.range = panel_range;
+                    vertex.clip_space = clip;
                 }
                 vertices_before.insert(vertices_before.end(), vs.begin(), vs.end());
 
@@ -293,7 +294,8 @@ void drop_widget::mesh() {
                     v.tex_pos = vec2(1.0f, 63.0f);
                     v.color = vec4(1.0f, 1.0f, 1.0f, 0.5f);
                     v.data = 0x1;
-                    v.range = panel_range;
+                    
+                    v.clip_space = clip;
                 }
                 vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
             }
@@ -313,7 +315,7 @@ uint64_t drop_widget::insert(vec2 size, vec3 color, float w, float h, float h2, 
     std::shared_ptr<axiom::text> text(new axiom::text);
     text->string = options[selected];
     text->wrap = false;
-    text->font = ui_system.font_assets[0];
+    text->font = &ui_system.fonts[0];
 
     widget.text = {text};
 

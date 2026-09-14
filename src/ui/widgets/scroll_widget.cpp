@@ -175,7 +175,7 @@ void scroll_widget::init() {
             uint32_t index = 0;
             
             //
-        
+            
             while(true) {
                 if(index >= ui_system->widgets[children[0]]->children.size()) {
                     if(anchor_mode != 1) anchor_mode = 2;
@@ -295,6 +295,10 @@ void scroll_widget::handle_inputs() {
         if(!ui_system.window->input_map[axiom::input_code::MOUSE_LEFT]) capture_scroll = false;
     }
 
+    if(scroll_pos != 0.0f) {
+        anchor_mode = 0;
+    }
+
     //view_range = vec4(position, position + size);
 }
 
@@ -338,6 +342,8 @@ void scroll_widget::mesh() {
                 v.tex_pos = vec2(1.0f, 63.0f);
                 v.color = vec4(0.0625f, 0.0625f, 0.0625f, 1.0f);
                 v.data = 1;
+
+                v.clip_space = clip;
             }
             total_ret.insert(total_ret.end(), ret.begin(), ret.end());
         }
@@ -368,6 +374,8 @@ void scroll_widget::mesh() {
                 v.tex_pos = vec2(1.0f, 63.0f);
                 v.color = vec4(1.0f, 1.0f, 1.0f, 0.25f);
                 v.data = 1;
+                
+                v.clip_space = clip;
             }
             total_ret.insert(total_ret.end(), ret.begin(), ret.end());
         }

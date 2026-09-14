@@ -66,9 +66,11 @@ struct widget {
     
     vec4 child_region = vec4(0.0f);
     vec2 child_offset = vec2(0.0f);
-    vec4 range;
     std::vector<ui_vertex> vertices_before;
     std::vector<ui_vertex> vertices_after;
+
+    uint clip = 0xFFFFFFFF;
+    clip_space space;
 
     std::function<float(std::unique_ptr<widget>&)> get_height = [](std::unique_ptr<widget>& w) {
         return w->size.y;

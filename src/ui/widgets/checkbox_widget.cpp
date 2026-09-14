@@ -24,8 +24,6 @@ void checkbox_widget::mesh() {
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     if(dirty) {
-        vec4 view_range = ui_system.get_range(self);
-
         dirty = false;
 
         ui_vertex a = {vec3(0.0f, 0.0f, 0.0f), vec2(0.0f, 0.0f), vec4(1.0f)};
@@ -65,7 +63,7 @@ void checkbox_widget::mesh() {
                 v.color = color;
                 v.data = 0x1;
 
-                v.range = view_range;
+                v.clip_space = clip;
             }
             vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
         }
@@ -83,7 +81,7 @@ void checkbox_widget::mesh() {
                 v.color = vec4(1.0f);
                 v.data = 0x1;
                 
-                v.range = view_range;
+                v.clip_space = clip;
             }
 
             vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
@@ -99,7 +97,7 @@ void checkbox_widget::mesh() {
             for(ui_vertex& v : vs) {
                 v.pos += vec3(round(text_pos), z);
                 
-                v.range = view_range;
+                v.clip_space = clip;
             }
             vertices_before.insert(vertices_before.end(), vs.begin(), vs.end());
         }

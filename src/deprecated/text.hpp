@@ -32,7 +32,6 @@ using ulong = uint64_t;
 
 #include <include/core.hpp>
 #include <ui/ui.hpp>
-#include <ui/font/ttf.hpp>
 
 namespace axiom {
 
@@ -64,20 +63,19 @@ extern std::vector<uint> text_start;
 extern std::vector<uint> text_line_indices;
 extern std::vector<text_line_data> line_data;
 
-std::vector<ui_vertex> create_char(ttf_font& font, ttf_glyph& glyph, uint size);
-std::vector<ui_vertex> mesh_text(ttf_font& f, uint size, std::string text, text_data& data, uint width = 0xFFFFFFFF, axiom::text_alignment alignment = axiom::text_alignment::LEFT, bool show_debug = false, std::vector<text_line_data>* lines = nullptr);
-std::vector<ui_vertex> mesh_text_select(ttf_font& f, uint size, ivec2 selection, std::string text, text_data& data, uint width = 0xFFFFFFFF, axiom::text_alignment alignment = axiom::text_alignment::LEFT, bool show_debug = false, std::vector<text_line_data>* lines = nullptr);
+std::vector<ui_vertex> create_char(glyph_data& glyph);
+std::vector<ui_vertex> mesh_text(font_asset& f, std::string text, text_data& data, uint text_size, uint width = 0xFFFFFFFF, axiom::text_alignment alignment = axiom::text_alignment::LEFT, bool show_debug = false, std::vector<text_line_data>* lines = nullptr);
+std::vector<ui_vertex> mesh_text_select(font_asset& f, ivec2 selection, std::string text, text_data& data, uint text_size, uint width = 0xFFFFFFFF, axiom::text_alignment alignment = axiom::text_alignment::LEFT, bool show_debug = false, std::vector<text_line_data>* lines = nullptr);
 
-//std::vector<float> compute_text_bounds(ttf_font& f, std::string text, uint text_size, uint width, bool wrap, ALIGNMENT alignment);
+//std::vector<float> compute_text_bounds(font_asset& f, std::string text, uint text_size, uint width, bool wrap, ALIGNMENT alignment);
 
 class text {
     public:
     
     double time = 0.0;
-    ///vec4 range = vec4(-FLT_MAX, -FLT_MAX, FLT_MAX, FLT_MAX);
+    vec4 range = vec4(-FLT_MAX, -FLT_MAX, FLT_MAX, FLT_MAX);
 
-    ttf_font* font;
-    uint text_size = 14;
+    font_asset* font;
     
     std::string string;
     axiom::text_alignment alignment = axiom::text_alignment::LEFT;
@@ -136,12 +134,12 @@ class text {
     private:
 };
 
-std::pair<int, bool> compute_cursor_index(axiom::ttf_font& font, axiom::text& text, vec2 cursor_pos, bool cl0 = true, bool cl1 = true, bool cl2 = true);
-vec2 compute_cursor_pos(axiom::ttf_font& font, axiom::text& text, uint32_t index);
+std::pair<int, bool> compute_cursor_index(vec2 cursor_pos, axiom::text& text, bool cl0 = true, bool cl1 = true, bool cl2 = true);
+vec2 compute_cursor_pos(uint32_t index, axiom::text& text);
 
 /*
 struct text {
-    ttf_font* font;
+    font_asset* font;
 
     std::string string;
     ALIGNMENT alignment = ALIGNMENT_LEFT;
@@ -175,7 +173,7 @@ struct text {
 
     std::vector<ui_vertex> get_vertices();
     void refresh();
-    void mesh(ttf_font& font);
+    void mesh(font_asset& font);
     //void select(vec4 cursor_range);
     std::string retrieve();
 

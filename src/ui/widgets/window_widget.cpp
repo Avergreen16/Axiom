@@ -22,8 +22,8 @@ ulong window_widget::insert(std::string label, ivec2 size, ivec2 position, vec3 
     std::shared_ptr<axiom::text> label_text(new axiom::text);
     
     label_text->string = label;
-    label_text->font = ui_system.font_assets[0];
-    label_text->position = position + ivec2(0.0f, size.y) + int((float(widget.header) - label_text->font->line_height) * 0.5f);
+    label_text->font = &ui_system.fonts[0];
+    label_text->position = position + ivec2(0.0f, size.y) + int((float(widget.header) - label_text->font->line_height * (float(label_text->text_size) / label_text->font->base_unit)) * 0.5f);
 
     widget.text.push_back(label_text);
 
@@ -80,7 +80,7 @@ void window_widget::handle_inputs() {
     buffer_range = ivec4(-resize_border, -resize_border, resize_border, 0.0f);
     range_bottom += buffer_range;
 
-    vec2 min_size = vec2(192, 192);
+    vec2 min_size = vec2(16, 16);
 
     auto resize_left = [&]() {
         position.x += ui_system.window->cursor_delta.x;
@@ -249,6 +249,9 @@ void window_widget::mesh() {
     if(dirty) {
         axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
+        ui_system.clip_spaces[clip].range = vec4(position, position + vec2(size.x, size.y + header));
+        ui_system.clip_spaces[clip].radius = 10.0f;
+
 
         float text_scale = 1;
         bool scrollbar = false;
@@ -256,7 +259,6 @@ void window_widget::mesh() {
 
         //
 
-        vec4 view_range = ui_system.get_range(self);
         vec4 range;
 
         vec4 header_range = vec4(position + vec2(0.0f, size.y), position + vec2(size.x, size.y + header));
@@ -276,7 +278,7 @@ void window_widget::mesh() {
             v.color = vec4(0.25f, 0.25f, 0.25f, 1.0f);
             v.data = 1;
 
-            v.range = view_range;
+            v.clip_space = clip;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -288,7 +290,7 @@ void window_widget::mesh() {
             v.color = vec4(header_color, 1.0f);
             v.data = 1;
             
-            v.range = view_range;
+            v.clip_space = clip;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -299,7 +301,8 @@ void window_widget::mesh() {
         for(ui_vertex& v : ret) {
             float s = floor(header * 0.5f - 11.0f * float(text_scale) * 0.5f);
             v.pos = vec3(v.pos.xy() + text[0]->position, z);
-            v.range = intersect_range(view_range, header_range);
+            //v.range = intersect_range(view_range, header_range);
+            v.clip_space = clip;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -322,7 +325,9 @@ void window_widget::mesh() {
             v.tex_pos = vec2(1.0f, 63.0f);
             v.data = 1;
             v.color = vec4(col, 1.0f);
-            v.range = intersect_range(view_range, header_range);
+
+            v.clip_space = clip;
+            //v.range = intersect_range(view_range, header_range);
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -331,7 +336,9 @@ void window_widget::mesh() {
             v.pos = vec3((r.xy() + (r.zw() - nsize) * 0.5f) + v.pos.xy() * nsize, z);
             v.tex_pos = v.tex_pos * texture_range.zw() + texture_range.xy();
             v.data = 1;
-            v.range = intersect_range(view_range, header_range);
+            
+            v.clip_space = clip;
+            //v.range = intersect_range(view_range, header_range);
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -353,7 +360,7 @@ void window_widget::mesh() {
             v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
             v.data = 1;
 
-            v.range = view_range;
+            //v.clip_space = clip;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -370,7 +377,7 @@ void window_widget::mesh() {
             v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
             v.data = 1;
 
-            v.range = view_range;
+            //v.clip_space = clip;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -387,7 +394,7 @@ void window_widget::mesh() {
             v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
             v.data = 1;
 
-            v.range = view_range;
+            //v.clip_space = clip;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -403,7 +410,7 @@ void window_widget::mesh() {
             v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
             v.data = 1;
 
-            v.range = view_range;
+            //v.clip_space = clip;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -420,7 +427,7 @@ void window_widget::mesh() {
             v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
             v.data = 1;
 
-            v.range = view_range;
+            //v.clip_space = clip;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -437,7 +444,7 @@ void window_widget::mesh() {
             v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
             v.data = 1;
 
-            v.range = view_range;
+            //v.clip_space = clip;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -453,7 +460,7 @@ void window_widget::mesh() {
             v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
             v.data = 1;
 
-            v.range = view_range;
+            //v.clip_space = clip;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -469,7 +476,7 @@ void window_widget::mesh() {
             v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
             v.data = 1;
 
-            v.range = view_range;
+            //v.clip_space = clip;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -499,7 +506,9 @@ void window_widget::init() {
     before.push_back(c);
     
     c.func = [this]() {
-        text[0]->position = position + vec2(0.0f, size.y) + (float(header) - text[0]->font->line_height) * 0.5f;
+        float a = (float(header) - text[0]->size.y) * 0.5f;
+
+        text[0]->position = position + vec2(0.0f, size.y) + a;
         text[0]->position = round(text[0]->position);
     };
     after.push_back(c);

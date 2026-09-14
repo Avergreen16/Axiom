@@ -104,8 +104,8 @@ void render_line(vec3 line_origin, vec3 line_direction, vec3 ray_origin, vec3 ra
 }
 
 
-float filtered_grid(vec2 p, vec2 dpdx, vec2 dpdy ) {
-    const vec2 N = max(vec2(10.0), 1.0 / (max(abs(dpdx), abs(dpdy)) * 1.5));
+float filtered_grid(vec2 p, vec2 dpdx, vec2 dpdy, float blend) {
+    const vec2 N = max(vec2(6.0 * blend + (6.0 * 4.0) * (1.0 - blend)), 1.0 / (max(abs(dpdx), abs(dpdy)) * 1.5));
     vec2 w = max(abs(dpdx), abs(dpdy));
     vec2 a = p + 0.5 * w;                        
     vec2 b = p - 0.5 * w;           
@@ -120,7 +120,7 @@ vec4 get_color(vec2 p, float dist, vec3 camera_pos, vec3 view_dir, mat3 norm, fl
     float width = 1.0;
 
     float ss = log(abs(camera_pos.z)) / log(scale);
-    int starting_scale = max(0, int(floor(log(abs(camera_pos.z)) / log(scale))));
+    float starting_scale = max(0.0, log(abs(camera_pos.z)) / log(scale));
 
     float b = ss - starting_scale;
 
@@ -228,24 +228,52 @@ vec4 get_color(vec2 p, float dist, vec3 camera_pos, vec3 view_dir, mat3 norm, fl
     }
     */
 
-    if(dot(vec3(p, 0.0) - camera_pos, view_dir) < 0) return vec4(0.0);
+    uint level_a = uint(floor(starting_scale));
+    uint level_b = level_a + 1;
 
-    vec2 pos = p / pow(2, (starting_scale - 1) * scale_p);
+    uint level = level_a;
+    
+    float w = 0.0;
 
+    float blend = clamp(starting_scale - level_a, 0.0, 1.0);
+    float blend_a = smoothstep(1.0, 0.0, blend * 2.0 - 1.5);
+    float blend_b = smoothstep(0.0, 1.0, blend * 2.0 - 0.5);
 
-            
-    vec2 dx = dFdx(pos);
-    vec2 dy = dFdy(pos);
-    vec2 ax = vec2(dx.x, dy.x);
-    vec2 ay = vec2(dx.y, dy.y);
-    float ddx = length(ax);
-    float ddy = length(ay);
+    {
+        if(dot(vec3(p, 0.0) - camera_pos, view_dir) < 0) return vec4(0.0);
 
-    return vec4(line_color, 1.0 - filtered_grid(pos, dx, dy));
+        vec2 pos = p / pow(2.0, (level_a - 1) * scale_p);
+                
+        vec2 dx = dFdx(pos);
+        vec2 dy = dFdy(pos);
+        vec2 ax = vec2(dx.x, dy.x);
+        vec2 ay = vec2(dx.y, dy.y);
+        float ddx = length(ax);
+        float ddy = length(ay);
 
-    if(dist < 0.0) return vec4(0.0);
+        if(dist < 0.0) return vec4(0.0);
 
-    return color;
+        w = (1.0 - filtered_grid(pos, dx, dy, 1.0)) * blend_a;
+    }
+    
+    {
+        if(dot(vec3(p, 0.0) - camera_pos, view_dir) < 0) return vec4(0.0);
+
+        vec2 pos = p / pow(2.0, (level_b - 1) * scale_p);
+                
+        vec2 dx = dFdx(pos);
+        vec2 dy = dFdy(pos);
+        vec2 ax = vec2(dx.x, dy.x);
+        vec2 ay = vec2(dx.y, dy.y);
+        float ddx = length(ax);
+        float ddy = length(ay);
+
+        if(dist < 0.0) return vec4(0.0);
+
+        w = max(w, (1.0 - filtered_grid(pos, dx, dy, blend_b)) * blend_b);
+    }
+
+    return vec4(line_color, w * 0.65);
 }
 
 uint hash(uint x) {

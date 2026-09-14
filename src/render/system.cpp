@@ -46,6 +46,10 @@ render_system::render_system(axiom::window* win_) {
     vert = axiom::text_asset::load(resource_root + "/shaders/texture_range3d.vert");
     frag = axiom::text_asset::load(resource_root + "/shaders/texture_range3d.frag");
     shaders.emplace("texture_range3d", std::move(axiom::shader(vert, frag)));
+    
+    vert = axiom::text_asset::load(resource_root + "/shaders/glyph.vert");
+    frag = axiom::text_asset::load(resource_root + "/shaders/glyph.frag");
+    shaders.emplace("glyph", std::move(axiom::shader(vert, frag)));
 
     //
 

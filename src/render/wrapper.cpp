@@ -583,6 +583,8 @@ texture::texture(texture_asset& asset, texture_format format, int mip_levels) {
 
 void texture::load(texture_asset& asset, texture_format format, int mip_levels) {
     type = GL_TEXTURE_2D;
+    if(id != 0xFFFFFFFF) glDeleteTextures(1, &id);
+
     glGenTextures(1, &id);
     glBindTexture(GL_TEXTURE_2D, id);
     this->format = format;
@@ -600,8 +602,8 @@ void texture::load(texture_asset& asset, texture_format format, int mip_levels) 
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size.x, size.y, desc.format, desc.bits, data);
 
     if(mip_levels > 0) {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, mip_levels);
         glGenerateMipmap(GL_TEXTURE_2D);
     } else {

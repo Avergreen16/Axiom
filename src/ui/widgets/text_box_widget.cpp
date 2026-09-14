@@ -161,9 +161,7 @@ void text_box_widget::mesh() {
         vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
 
         //
-
-        vec4 view_range = ui_system.get_range(self, true);
-
+        
         //
         std::vector<axiom::ui_vertex> text_vs = text[0]->mesh();
         std::vector<axiom::ui_vertex> text_select = text[0]->mesh_select();
@@ -171,7 +169,8 @@ void text_box_widget::mesh() {
 
         for(axiom::ui_vertex& v : text_vs) {
             v.pos = vec3(v.pos.xy() + text[0]->position, z);
-            v.range = view_range;
+
+            v.clip_space = clip;
         }
 
         vertices_before.insert(vertices_before.end(), text_vs.begin(), text_vs.end());
@@ -203,7 +202,7 @@ ulong text_box_widget::insert(float width, vec2 boundary, std::string start, std
     text->string = start;
     text->wrap = true;
     text->alignment = axiom::text_alignment::LEFT;
-    text->font = ui_system.font_assets[0];
+    text->font = &ui_system.fonts[0];
     text->selectable = true;
     text->editable = true;
 

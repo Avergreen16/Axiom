@@ -58,8 +58,6 @@ void tab_widget::mesh() {
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     if(dirty) {
-        vec4 view_range = ui_system.get_range(self);
-
         vertices_before.clear();
         
         dirty = false;
@@ -112,7 +110,7 @@ void tab_widget::mesh() {
                     v.color = color;
                     v.data = 0x1;
 
-                    v.range = view_range;
+                    v.clip_space = clip;
                 }
                 vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
             }
@@ -121,7 +119,7 @@ void tab_widget::mesh() {
             for(ui_vertex& v : vs) {
                 v.pos += vec3(round(text_pos), 0.0f);
 
-                v.range = view_range;
+                v.clip_space = clip;
             }
             vertices_before.insert(vertices_before.end(), vs.begin(), vs.end());
 
@@ -139,7 +137,7 @@ void tab_widget::mesh() {
             v.color = col;
             v.data = 0x1;
 
-            v.range = view_range;
+            v.clip_space = clip;
         }
         vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
     }
@@ -181,7 +179,7 @@ uint64_t tab_widget::insert(float tab_height, float tab_sep, std::vector<tab> ta
 
     for(tab& t : widget.tabs) {
         std::shared_ptr<axiom::text> text(new axiom::text);
-        text->font = ui_system.font_assets[0];
+        text->font = &ui_system.fonts[0];
         text->string = t.label;
         text->wrap = false;
 

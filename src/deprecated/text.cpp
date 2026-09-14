@@ -10,7 +10,7 @@ const float bold_factor = 1.0f;
 std::vector<uint> text_line_indices;
 std::vector<text_line_data> line_data;
     
-std::vector<ui_vertex> create_char(ttf_font& font, ttf_glyph& glyph, uint text_size, vec2 position) {
+std::vector<ui_vertex> create_char(glyph_data& glyph) {
     std::vector<ui_vertex> ret;
 
     ui_vertex a = {vec3(0.0f, 0.0f, 0.0f), vec2(0.0f, 0.0f), vec4(1.0f)};
@@ -26,47 +26,15 @@ std::vector<ui_vertex> create_char(ttf_font& font, ttf_glyph& glyph, uint text_s
     ret.push_back(c);
 
     for(ui_vertex& v : ret) {
-        vec2 pos = vec2(glyph.h_bearing, glyph.bounding_box.y - font.descender) * (float(text_size) / (float)font.base_unit) + position;
-
-        //
-
-        float frac = glm::fract(pos.x);
-
-        uint j = 0;
-        float f = FLT_MAX;
-        for(int i = 0; i < glyph.frac.size(); ++i) {
-            float ff = glyph.frac[i];
-            float a = abs(frac - ff);
-            //a = glm::min(abs(a), abs(1.0f + a));
-
-            if(a < f) {
-                f = a;
-                j = i;
-            }
-        }
-        
-        ivec2 size = glyph.atlas[j].zw() - glyph.atlas[j].xy();
-
-        //
-
-        pos = floor(pos);
-        v.pos = vec3(v.pos.xy() * vec2(size) + vec2(pos), 0.0f);
-
-        v.tex_pos = vec2(glyph.atlas[j].xy()) + v.tex_pos * vec2(glyph.atlas[j].zw() - glyph.atlas[j].xy());
+        v.pos = vec3(v.pos.xy() * vec2(glyph.size) + vec2(glyph.offset), 0.0f);
+        v.tex_pos = vec2(glyph.pos_tex) + v.tex_pos * vec2(glyph.size);
     }
 
     return ret;
 }
 
-std::vector<ui_vertex> mesh_text(ttf_font& f, uint text_size, std::string str, text_data& data, uint width, axiom::text_alignment alignment, bool show_debug, std::vector<text_line_data>* lines) {
-    struct character {
-        vec2 position;
-        uint codepoint;
-    };
-    
+std::vector<ui_vertex> mesh_text(font_asset& f, std::string str, text_data& data, uint text_size, uint width, axiom::text_alignment alignment, bool show_debug, std::vector<text_line_data>* lines) {
     data = text_data();
-
-    float scale = (float(text_size) / f.base_unit);
 
     vec2 wrap_limits = vec2(-FLT_MAX, FLT_MAX);
     float max_width = 0;
@@ -105,26 +73,10 @@ std::vector<ui_vertex> mesh_text(ttf_font& f, uint text_size, std::string str, t
 
     uint num_lines = 0;
 
-    std::vector<character> word_ret;
+    std::vector<ui_vertex> word_ret;
     vec2 word_pos = vec2(0.0f);
     
-    std::vector<character> line_ret;
-
-    auto mesh_line = [&]() {
-        std::vector<ui_vertex> lret;
-
-        for(character& ch : line_ret) {
-            ttf_glyph& gd = f.glyphs.at(f.glyph_map.at(ch.codepoint));
-
-            if(gd.contours.size()) {
-                std::vector<ui_vertex> chret = create_char(f, gd, text_size, ch.position);
-
-                lret.insert(lret.end(), chret.begin(), chret.end());
-            }
-        }
-
-        ret.insert(ret.end(), lret.begin(), lret.end());
-    };
+    std::vector<ui_vertex> line_ret;
 
     auto insert_line = [&]() {
         text_line_data s = line_start;
@@ -146,22 +98,18 @@ std::vector<ui_vertex> mesh_text(ttf_font& f, uint text_size, std::string str, t
         else if(alignment == axiom::text_alignment::RIGHT) offset = float(-line_width);
 
         min_offset = glm::min(min_offset, float(offset));
-        for(character& ch : line_ret) {
-            ch.position.x += offset;
+        for(ui_vertex& v : line_ret) {
+            v.pos.x += offset;
         }
-
-        mesh_line();
-        line_ret.clear();
-        /*
+        
         ret.insert(ret.end(), line_ret.begin(), line_ret.end());
         
         line_ret.clear();
-        */
         
         max_x = glm::max(max_x, pos.x);
 
         pos.x = 0;
-        pos.y -= round(f.line_height * scale);
+        pos.y -= f.line_height;
         ++num_lines;
 
         s.offset = offset;
@@ -191,11 +139,12 @@ std::vector<ui_vertex> mesh_text(ttf_font& f, uint text_size, std::string str, t
         }
 
         // insert word
-        for(character& ch : word_ret) {
-            ch.position += pos;
+        for(ui_vertex& v : word_ret) {
+            v.pos += vec3(pos, 0.0f);
         }
         
         line_ret.insert(line_ret.end(), word_ret.begin(), word_ret.end());
+
         word_ret.clear();
         
         pos.x += word_pos.x;
@@ -207,21 +156,45 @@ std::vector<ui_vertex> mesh_text(ttf_font& f, uint text_size, std::string str, t
         ++line_len;
         word_len = 0;
     };
-    
+
+    auto insert_selection = [&](ivec2 pos, ivec2 size) {
+        if(word_len == 0) {
+            word_start.bold = bold;
+            word_start.italic = italic;
+            word_start.color = color.xyz();
+            word_start.start_index = i;
+        }
+        ++word_len;
+
+        ui_vertex a = {vec3(0.0f, 0.0f, 0.0f), vec2(0.0f, 0.0f), vec4(1.0f)};
+        ui_vertex b = {vec3(1.0f, 0.0f, 0.0f), vec2(1.0f, 0.0f), vec4(1.0f)};
+        ui_vertex c = {vec3(0.0f, 1.0f, 0.0f), vec2(0.0f, 1.0f), vec4(1.0f)};
+        ui_vertex d = {vec3(1.0f, 1.0f, 0.0f), vec2(1.0f, 1.0f), vec4(1.0f)};
+
+        std::vector<ui_vertex> r = {a, b, d, a, d, c};
+        for(ui_vertex& v : r) {
+            v.pos = vec3(vec2(pos) + v.pos.xy() * vec2(size), 0.0f);
+            v.tex_pos = vec2(1.0f, 63.0f);
+            v.color = vec4(1.0f, 1.0f, 1.0f, 0.35f);
+            v.data = 1;
+        }
+        word_ret.insert(word_ret.end(), r.begin(), r.end());
+    };
+
     auto insert_char = [&](uint codepoint) {
         //
 
-        ttf_glyph& gd = f.glyphs.at(f.glyph_map.at(codepoint));
+        glyph_data& gd = f.at(codepoint);
 
-        float stride = gd.h_advance * scale;
+        float stride = gd.advance;
 
-        if(!gd.contours.size()) {
-            word_ret.push_back(
-                character{
-                    word_pos + vec2(stride, 0),
-                    codepoint
-                }
-            );
+        if(!gd.visible) {
+            ui_vertex v;
+            v.pos = vec3(word_pos + vec2(stride, 0), 0.0f);
+            v.data = 0xFFFFFFFF;
+            word_ret.push_back(v);
+            word_ret.push_back(v);
+            word_ret.push_back(v);
 
             if(alignment == axiom::text_alignment::LEFT) {
                 if(word_len == 0) {
@@ -269,12 +242,30 @@ std::vector<ui_vertex> mesh_text(ttf_font& f, uint text_size, std::string str, t
             }
             ++word_len;
             
-            word_ret.push_back(
-                character{
-                    word_pos,
-                    codepoint
+            std::vector<ui_vertex> vs = create_char(gd);
+
+            for(ui_vertex& v : vs) {
+                v.pos += vec3(word_pos, 0.0f);
+            }
+
+            for(ui_vertex& v : vs) {
+                if(italic) {
+                    v.pos.x += float(v.pos.y - word_pos.y - f.line_height * 0.5f) * italic_factor;
                 }
-            );
+
+                v.color = color;
+            }
+
+            word_ret.insert(word_ret.end(), vs.begin(), vs.end());
+
+            if(bold) {
+                for(ui_vertex& v : vs) {
+                    v.pos.x += bold_factor;
+                }
+                stride += bold_factor;
+                
+                word_ret.insert(word_ret.end(), vs.begin(), vs.end());
+            }
             
             word_pos.x += stride;
         }
@@ -385,11 +376,13 @@ std::vector<ui_vertex> mesh_text(ttf_font& f, uint text_size, std::string str, t
     insert_word();
     insert_line();
 
-    float offset = (num_lines - 1) * round(f.line_height * scale);
+    float offset = (num_lines - 1) * f.line_height;
     
     for(ui_vertex& v : ret) {
         v.pos.y = v.pos.y + offset;
         v.pos.x -= min_offset;
+
+        v.pos *= float(text_size);
     }
 
     for(auto& line : text_lines) line.offset -= min_offset;
@@ -401,59 +394,18 @@ std::vector<ui_vertex> mesh_text(ttf_font& f, uint text_size, std::string str, t
         range.w = glm::max(range.w, v.pos.y);
     }
     
-    data.size = {max_x, num_lines * round(f.line_height * scale) - round(f.line_gap * scale)};
+    data.size = {max_x, num_lines * f.line_height};
     data.lines = line_data;
     data.wrap_limits = wrap_limits;
     data.max_width = max_width;
-
-    /*
-    std::vector<ui_vertex> vs = {
-        ui_vertex{
-            .pos = vec3(0.0f, 0.0f, 0.0f),
-            .tex_pos = vec2(1.0f, 63.0f),
-            .color = vec4(1.0, 0.0, 0.0, 1.0),
-            .data = 0x1,
-        },
-        
-        ui_vertex{
-            .pos = vec3(1.0f, 0.0f, 0.0f),
-            .tex_pos = vec2(1.0f, 63.0f),
-            .color = vec4(1.0, 0.0, 0.0, 1.0),
-            .data = 0x1,
-        },
-        
-        ui_vertex{
-            .pos = vec3(0.0f, 1.0f, 0.0f),
-            .tex_pos = vec2(1.0f, 63.0f),
-            .color = vec4(1.0, 0.0, 0.0, 1.0),
-            .data = 0x1,
-        },
-        
-        ui_vertex{
-            .pos = vec3(1.0f, 1.0f, 0.0f),
-            .tex_pos = vec2(1.0f, 63.0f),
-            .color = vec4(1.0, 0.0, 0.0, 1.0),
-            .data = 0x1,
-        }
-    };
-
-    for(auto& v : vs) v.pos = vec3(v.pos.xy() * data.size, 0.0f);
-    vs = {vs[0], vs[1], vs[3], vs[0], vs[3], vs[2]};
-
-    ret.insert(ret.begin(), vs.begin(), vs.end());
-    */
 
     if(lines != nullptr) *lines = text_lines;
 
     return ret;
 }
 
-void measure_text(ttf_font& f, uint text_size, std::string str, text_data& data, uint width, axiom::text_alignment alignment, bool show_debug, std::vector<text_line_data>* lines) {
+void measure_text(font_asset& f, std::string str, text_data& data, uint text_size, uint width, axiom::text_alignment alignment, bool show_debug, std::vector<text_line_data>* lines) {
     data = text_data();
-
-    float scale = float(text_size) / f.base_unit;
-
-    //
 
     vec2 wrap_limits = vec2(-FLT_MAX, FLT_MAX);
     float max_width = 0;
@@ -526,7 +478,7 @@ void measure_text(ttf_font& f, uint text_size, std::string str, text_data& data,
         max_x = glm::max(max_x, pos.x);
 
         pos.x = 0;
-        pos.y -= round(f.line_height * scale);
+        pos.y -= f.line_height;
         ++num_lines;
 
         s.offset = offset;
@@ -575,11 +527,11 @@ void measure_text(ttf_font& f, uint text_size, std::string str, text_data& data,
     };
 
     auto insert_char = [&](uint codepoint) {
-        ttf_glyph& gd = f.glyphs.at(f.glyph_map.at(codepoint));
+        glyph_data& gd = f.at(codepoint);
 
-        float stride = gd.h_advance * scale;
+        float stride = gd.advance;
 
-        if(!gd.contours.size()) {
+        if(!gd.visible) {
             if(alignment == axiom::text_alignment::LEFT) {
                 if(word_len == 0) {
                     word_start.bold = bold;
@@ -743,11 +695,11 @@ void measure_text(ttf_font& f, uint text_size, std::string str, text_data& data,
 
     //
     
-    float offset = (num_lines - 1) * round(f.line_height * scale);
+    float offset = (num_lines - 1) * f.line_height;
     
     for(auto& line : text_lines) line.offset -= min_offset;
 
-    data.size = {max_x, num_lines * round(f.line_height * scale) - round(f.line_gap * scale)};
+    data.size = {max_x, num_lines * f.line_height};
     data.lines = line_data;
     data.wrap_limits = wrap_limits;
     data.max_width = max_width;
@@ -755,10 +707,8 @@ void measure_text(ttf_font& f, uint text_size, std::string str, text_data& data,
     if(lines != nullptr) *lines = text_lines;
 }
 
-std::vector<ui_vertex> mesh_text_select(ttf_font& f, uint text_size, ivec2 selection, std::string str, text_data& data, uint width = 0xFFFFFFFF, axiom::text_alignment alignment, bool show_debug, std::vector<text_line_data>* lines) {    
+std::vector<ui_vertex> mesh_text_select(font_asset& f, ivec2 selection, std::string str, text_data& data, uint text_size, uint width = 0xFFFFFFFF, axiom::text_alignment alignment, bool show_debug, std::vector<text_line_data>* lines) {    
     data = text_data();
-
-    float scale = float(text_size) / f.base_unit;
 
     vec2 wrap_limits = vec2(-FLT_MAX, FLT_MAX);
     float max_width = 0;
@@ -834,7 +784,7 @@ std::vector<ui_vertex> mesh_text_select(ttf_font& f, uint text_size, ivec2 selec
         max_x = glm::max(max_x, pos.x);
 
         pos.x = 0;
-        pos.y -= round(f.line_height * scale);
+        pos.y -= f.line_height;
         ++num_lines;
 
         s.offset = offset;
@@ -864,7 +814,6 @@ std::vector<ui_vertex> mesh_text_select(ttf_font& f, uint text_size, ivec2 selec
         // insert word
         for(ui_vertex& v : word_ret) {
             v.pos += vec3(pos, 0.0f);
-            v.pos = floor(v.pos);
         }
         
         line_ret.insert(line_ret.end(), word_ret.begin(), word_ret.end());
@@ -881,7 +830,7 @@ std::vector<ui_vertex> mesh_text_select(ttf_font& f, uint text_size, ivec2 selec
         word_len = 0;
     };
 
-    auto insert_selection = [&](vec2 pos, vec2 size) {
+    auto insert_selection = [&](ivec2 pos, ivec2 size) {
         ui_vertex a = {vec3(0.0f, 0.0f, 0.0f), vec2(0.0f, 0.0f), vec4(1.0f)};
         ui_vertex b = {vec3(1.0f, 0.0f, 0.0f), vec2(1.0f, 0.0f), vec4(1.0f)};
         ui_vertex c = {vec3(0.0f, 1.0f, 0.0f), vec2(0.0f, 1.0f), vec4(1.0f)};
@@ -900,11 +849,11 @@ std::vector<ui_vertex> mesh_text_select(ttf_font& f, uint text_size, ivec2 selec
     auto insert_char = [&](uint codepoint) {
         //
 
-        ttf_glyph& gd = f.glyphs.at(f.glyph_map.at(codepoint));
+        glyph_data& gd = f.at(codepoint);
 
-        float stride = gd.h_advance * scale;
+        float stride = gd.advance;
 
-        if(!gd.contours.size()) {
+        if(!gd.visible) {
             ui_vertex v;
             v.pos = vec3(word_pos + vec2(stride, 0), 0.0f);
             v.data = 0xFFFFFFFF;
@@ -921,7 +870,7 @@ std::vector<ui_vertex> mesh_text_select(ttf_font& f, uint text_size, ivec2 selec
                 }
                 ++word_len;
                 
-                if(i >= selection.x && i < selection.y) insert_selection(word_pos, {stride, round(f.line_height * scale)});
+                if(i >= selection.x && i < selection.y) insert_selection(word_pos, {gd.advance, f.line_height});
                 word_pos.x += stride;
                 
                 insert_word();
@@ -934,7 +883,7 @@ std::vector<ui_vertex> mesh_text_select(ttf_font& f, uint text_size, ivec2 selec
                 }
                 ++word_len;
 
-                if(i >= selection.x && i < selection.y) insert_selection(word_pos, {stride, round(f.line_height * scale)});
+                if(i >= selection.x && i < selection.y) insert_selection(word_pos, {gd.advance, f.line_height});
                 word_pos.x += stride;
 
                 insert_word();
@@ -949,7 +898,7 @@ std::vector<ui_vertex> mesh_text_select(ttf_font& f, uint text_size, ivec2 selec
                 }
                 ++word_len;
 
-                if(i >= selection.x && i < selection.y) insert_selection(word_pos, {stride, round(f.line_height * scale)});
+                if(i >= selection.x && i < selection.y) insert_selection(word_pos, {gd.advance, f.line_height});
                 word_pos.x += stride;
             }
         } else {
@@ -961,7 +910,7 @@ std::vector<ui_vertex> mesh_text_select(ttf_font& f, uint text_size, ivec2 selec
             }
             ++word_len;
             
-            if(i >= selection.x && i < selection.y) insert_selection(word_pos, {stride + ((bold) ? bold_factor : 0.0f), round(f.line_height * scale)});
+            if(i >= selection.x && i < selection.y) insert_selection(word_pos, {gd.advance + ((bold) ? bold_factor : 0.0f), f.line_height});
 
             word_pos.x += stride;
         }
@@ -981,9 +930,9 @@ std::vector<ui_vertex> mesh_text_select(ttf_font& f, uint text_size, ivec2 selec
             line_start = word_start;
             
             if(i >= selection.x && i < selection.y && (text[i + 1] == '\n' || i == text.size() - 1)) {
-                if(alignment == axiom::text_alignment::LEFT) insert_selection(word_pos, {6, round(f.line_height * scale)});
-                else if(alignment == axiom::text_alignment::CENTER) insert_selection(word_pos - vec2(3, 0), {6, round(f.line_height * scale)});
-                else if(alignment == axiom::text_alignment::RIGHT) insert_selection(word_pos - vec2(6, 0), {6, round(f.line_height * scale)});
+                if(alignment == axiom::text_alignment::LEFT) insert_selection(word_pos, {6, f.line_height});
+                else if(alignment == axiom::text_alignment::CENTER) insert_selection(word_pos - vec2(3, 0), {6, f.line_height});
+                else if(alignment == axiom::text_alignment::RIGHT) insert_selection(word_pos - vec2(6, 0), {6, f.line_height});
             }
 
             continue;
@@ -1078,15 +1027,15 @@ std::vector<ui_vertex> mesh_text_select(ttf_font& f, uint text_size, ivec2 selec
     insert_word();
     insert_line();
 
-    float offset = (num_lines - 1) * round(f.line_height * scale);
+    float offset = (num_lines - 1) * f.line_height;
     
-    for(auto& line : text_lines) {
-        line.offset -= min_offset;
-    }
+    for(auto& line : text_lines) line.offset -= min_offset;
 
     for(ui_vertex& v : ret) {
         v.pos.y = v.pos.y + offset;
         v.pos.x -= min_offset;
+
+        v.pos *= float(text_size);
     }
 
     for(ui_vertex& v : ret) {
@@ -1096,7 +1045,7 @@ std::vector<ui_vertex> mesh_text_select(ttf_font& f, uint text_size, ivec2 selec
         range.w = glm::max(range.w, v.pos.y);
     }
 
-    data.size = {max_x, num_lines * round(f.line_height * scale) - round(f.line_gap * scale)};
+    data.size = {max_x, num_lines * f.line_height};
     data.lines = line_data;
     data.wrap_limits = wrap_limits;
     data.max_width = max_width;
@@ -1113,7 +1062,7 @@ std::vector<ui_vertex> text::mesh() {
         if(!wrap) width = 0xFFFFFFFF;
         
         text_data data;
-        glyph_vertices = mesh_text(*font, text_size, string, data, width, alignment, false, &lines);
+        glyph_vertices = mesh_text(*font, string, data, 1, width, alignment, false, &lines);
         size = data.size;
         wrap_limits = data.wrap_limits;
         max_width = data.max_width;
@@ -1131,13 +1080,13 @@ std::vector<ui_vertex> text::mesh_select() {
         ivec2 abs_select = ivec2(glm::min(select_range.x, select_range.y), glm::max(select_range.x, select_range.y));
         
         text_data data;
-        select_vertices = axiom::mesh_text_select(*font, text_size, abs_select, string, data, width, alignment, false, &lines);
+        select_vertices = axiom::mesh_text_select(*font, abs_select, string, data, 1, width, alignment, false, &lines);
         size = data.size;
         wrap_limits = data.wrap_limits;
         max_width = data.max_width;
 
         if(editable && select_range.x == select_range.y && select_range.x != -1) {
-            vec2 pos = axiom::compute_cursor_pos(*font, *this, select_range.x);
+            vec2 pos = axiom::compute_cursor_pos(select_range.x, *this);
 
             vec4 range = vec4(pos, pos + vec2(1.0f, font->line_height));
             
@@ -1191,7 +1140,7 @@ void text::measure() {
         if(!wrap) width = 0xFFFFFFFF;
         
         text_data data;
-        measure_text(*font, text_size, string, data, width, alignment, false, &lines);
+        measure_text(*font, string, data, 1, width, alignment, false, &lines);
         size = data.size;
         wrap_limits = data.wrap_limits;
         max_width = data.max_width;
@@ -1202,10 +1151,8 @@ void text::measure() {
     }
 }
 
-std::pair<int, bool> compute_cursor_index(axiom::ttf_font& font, axiom::text& text, vec2 cursor_pos, bool cl0, bool cl1, bool cl2) {
-    float scale = float(text.text_size) / text.font->base_unit;
-
-    int line_index = (int)text.lines.size() - glm::floor((cursor_pos.y) / round(text.font->line_height * scale)) - 1;
+std::pair<int, bool> compute_cursor_index(vec2 cursor_pos, axiom::text& text, bool cl0, bool cl1, bool cl2) {
+    int line_index = (int)text.lines.size() - glm::floor(cursor_pos.y / text.font->line_height) - 1;
 
     if(line_index < 0 && cl0) {
         line_index = 0;
@@ -1331,10 +1278,10 @@ std::pair<int, bool> compute_cursor_index(axiom::ttf_font& font, axiom::text& te
 
             //
 
-            auto& glyph = text.font->glyphs.at(text.font->glyph_map.at(c));
+            auto glyph = text.font->at(c);
 
-            advance = glyph.h_advance * scale;
-            if(bold && glyph.contours.size()) advance += bold_factor;
+            advance = glyph.advance;
+            if(bold && glyph.visible) advance += bold_factor;
 
             if(pos - advance * 0.5f > cursor_x && i == line_start) return {-1, false};
 
@@ -1355,9 +1302,7 @@ std::pair<int, bool> compute_cursor_index(axiom::ttf_font& font, axiom::text& te
     return {line_end, false};
 }
 
-vec2 compute_cursor_pos(axiom::ttf_font& font, axiom::text& text, uint32_t index) {
-    float scale = float(text.text_size) / text.font->base_unit;
-
+vec2 compute_cursor_pos(uint32_t index, axiom::text& text) {
     int line_index = 0;
     for(line_index = 0; line_index < text.lines.size() - 1; ++line_index) {
         uint32_t next = text.lines[line_index + 1].start_index;
@@ -1365,7 +1310,7 @@ vec2 compute_cursor_pos(axiom::ttf_font& font, axiom::text& text, uint32_t index
     }
 
     vec2 pos;
-    pos.y = (text.lines.size() - line_index - 1) * (text.font->line_height * scale);
+    pos.y = (text.lines.size() - line_index - 1) * text.font->line_height;
     pos.x = 0.0f;
 
     if(line_index < 0) line_index = 0;
@@ -1473,18 +1418,16 @@ vec2 compute_cursor_pos(axiom::ttf_font& font, axiom::text& text, uint32_t index
             else if(c == 'F') c = 0x85;
         }
 
-        auto glyph = text.font->glyphs.at(text.font->glyph_map.at(c));
+        auto glyph = text.font->at(c);
 
-        pos.x += glyph.h_advance * scale;
-        if(bold && glyph.contours.size()) pos.x += bold_factor;
+        pos.x += glyph.advance;
+        if(bold && glyph.visible) pos.x += bold_factor;
     }
 
     return pos;
 }
 
 ivec2 text::select(vec2 cursor, uint wrap_mode) {
-    float scale = float(text_size) * font->base_unit;
-    
     //if(!capture) return ivec2(-1);
 
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
@@ -1495,8 +1438,7 @@ ivec2 text::select(vec2 cursor, uint wrap_mode) {
 
     //
 
-    int line = (int)lines.size() - floor(float(cursor.y - position.y + round(font->descender * scale)) / round(font->line_height * scale)) - 1;
-    std::cout << "x";
+    int line = (int)lines.size() - floor(float(cursor.y - position.y) / font->line_height) - 1;
 
     vec2 cursor_a = cursor - position;
 
@@ -1505,7 +1447,7 @@ ivec2 text::select(vec2 cursor, uint wrap_mode) {
 
     //
 
-    int index = compute_cursor_index(*font, *this, cursor_a, true, false).first;
+    int index = compute_cursor_index(cursor_a, *this, true, false).first;
 
     return {index, line};
 }
@@ -1551,8 +1493,8 @@ void text::select(vec4 cursor_range, bool anchor) {
 
     //
 
-    int ia = compute_cursor_index(*font, *this, cursor_a, true, false).first;
-    int ib = compute_cursor_index(*font, *this, cursor_b, false, true).first;
+    int ia = compute_cursor_index(cursor_a, *this, true, false).first;
+    int ib = compute_cursor_index(cursor_b, *this, false, true).first;
 
     if(ia == -1 || ib == -1) select_range = {-1, -1};
     else {
@@ -1581,7 +1523,7 @@ void text::select(vec4 cursor_range, bool anchor) {
 
 bool text::collide(vec2 cursor) {
     int ii = -1;
-    ii = compute_cursor_index(*font, *this, cursor - position, false, false, false).first;
+    ii = compute_cursor_index(cursor - position, *this, false, false, false).first;
 
     return ii != -1;
 }
@@ -1602,9 +1544,7 @@ void text::call() {
 
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
-    text_size = 13;
-
-    if(collide(ui_system.window->cursor_pos)/* && includes(ui_system.window->cursor_pos, range)*/) {
+    if(collide(ui_system.window->cursor_pos) && includes(ui_system.window->cursor_pos, range)) {
         ulong current = parent;
         bool hover = false;
         while(true) {
@@ -1820,7 +1760,7 @@ void text::call() {
 }
 
 /*
-std::pair<int, bool> compute_cursor_index(vec2 cursor_pos, ttf_font& f, std::string text, uint text_size, std::vector<text_line_data> text.lines, ALIGNMENT alignment, bool cl0 = true, bool cl1 = true) {
+std::pair<int, bool> compute_cursor_index(vec2 cursor_pos, font_asset& f, std::string text, uint text_size, std::vector<text_line_data> text.lines, ALIGNMENT alignment, bool cl0 = true, bool cl1 = true) {
     int line_index = (int)text.lines.size() - glm::floor(cursor_pos.y / f.line_height) - 1;
 
     if(line_index < 0 && cl0) {
@@ -1964,7 +1904,7 @@ std::pair<int, bool> compute_cursor_index(vec2 cursor_pos, ttf_font& f, std::str
     return {line_end, false};
 }
 
-vec2 compute_cursor_pos(uint index, bool wrap, ttf_font& f, std::string text, uint text_size, std::vector<text_line_data> text.lines, ALIGNMENT alignment) {
+vec2 compute_cursor_pos(uint index, bool wrap, font_asset& f, std::string text, uint text_size, std::vector<text_line_data> text.lines, ALIGNMENT alignment) {
     int line_index = 0;
     for(line_index = 0; line_index < text.lines.size() - 1; ++line_index) {
         uint next = text.lines[line_index + 1].start_index;
@@ -2089,7 +2029,7 @@ vec2 compute_cursor_pos(uint index, bool wrap, ttf_font& f, std::string text, ui
     return pos;
 }
 
-std::vector<float> compute_text_bounds(ttf_font& f, std::string text, uint text_size, uint width, bool wrap, ALIGNMENT alignment) {
+std::vector<float> compute_text_bounds(font_asset& f, std::string text, uint text_size, uint width, bool wrap, ALIGNMENT alignment) {
     vec2 resize_range = vec2(-FLT_MAX, FLT_MAX);
     float max_x = 0.0f;
     float max_w = 0.0f;
@@ -2176,7 +2116,7 @@ std::vector<float> compute_text_bounds(ttf_font& f, std::string text, uint text_
     };
 
     auto insert_char = [&](uint c) {
-        ttf_glyph& gd = f.at(c);
+        glyph_data& gd = f.at(c);
 
         float stride = gd.advance;
 
@@ -2317,7 +2257,7 @@ std::vector<float> compute_text_bounds(ttf_font& f, std::string text, uint text_
     return {resize_range.x, resize_range.y, height, text_x, max_width, max_x};
 }
 
-std::vector<ui_vertex> mesh_select(ttf_font& f, std::string str, uint text_size, uint width, ivec2 select_range, std::vector<text_line_data> line_data, ALIGNMENT alignment, bool show_debug) {
+std::vector<ui_vertex> mesh_select(font_asset& f, std::string str, uint text_size, uint width, ivec2 select_range, std::vector<text_line_data> line_data, ALIGNMENT alignment, bool show_debug) {
     select_range = ivec2(glm::min(select_range.x, select_range.y), glm::max(select_range.x, select_range.y));
     
     if(select_range.x == select_range.y) {
@@ -2479,7 +2419,7 @@ std::vector<ui_vertex> mesh_select(ttf_font& f, std::string str, uint text_size,
         };
 
         auto insert_char = [&](uint codepoint) {
-            ttf_glyph& gd = f.at(codepoint);
+            glyph_data& gd = f.at(codepoint);
 
             float stride = gd.advance;
 
@@ -2663,7 +2603,7 @@ std::vector<ui_vertex> mesh_select(ttf_font& f, std::string str, uint text_size,
     }
 }
 
-std::vector<ui_vertex> mesh_text(ttf_font& f, std::string str, uint text_size, uint width, ivec2 select_range, ALIGNMENT alignment, bool show_debug) {
+std::vector<ui_vertex> mesh_text(font_asset& f, std::string str, uint text_size, uint width, ivec2 select_range, ALIGNMENT alignment, bool show_debug) {
     float max_x = 0.0f;
     text_start.clear();
 
@@ -2772,7 +2712,7 @@ std::vector<ui_vertex> mesh_text(ttf_font& f, std::string str, uint text_size, u
     };
 
     auto insert_char = [&](uint codepoint) {
-        ttf_glyph& gd = f.at(codepoint);
+        glyph_data& gd = f.at(codepoint);
 
         float stride = gd.advance;
 
@@ -2967,7 +2907,7 @@ std::vector<ui_vertex> mesh_text(ttf_font& f, std::string str, uint text_size, u
     return ret;
 }
 
-void text::mesh(ttf_font& font) {
+void text::mesh(font_asset& font) {
     if(wrap) width = size.x;
     else width = 0xFFFFFFFF;
 

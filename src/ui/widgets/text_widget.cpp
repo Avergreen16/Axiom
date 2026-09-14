@@ -5,20 +5,18 @@ namespace axiom {
 
 void text_widget::handle_inputs() {
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
-    vec4 range = ui_system.get_range(self);
+    //vec4 range = ui_system.get_range(self);
 
     std::string str = text[0]->string;
     str = callback(str);
 
-    text[0]->range = range;
+    //text[0]->range = range;
     text[0]->string = str;
 }
 
 void text_widget::mesh() {
     if(dirty) {
         axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
-
-        vec4 range = ui_system.get_range(self);
 
         dirty = false;
 
@@ -36,7 +34,7 @@ void text_widget::mesh() {
             v.pos.y += text[0]->position.y;
             v.pos.z = z;
 
-            v.range = range;
+            v.clip_space = clip;
         }
 
         vertices_before = text_vertices;
@@ -94,7 +92,7 @@ uint64_t text_widget::insert(std::string str, axiom::text_alignment alg, bool wr
     text->string = str;
     text->wrap = wrap;
     text->alignment = alg;
-    text->font = ui_system.font_assets[0];
+    text->font = &ui_system.fonts[0];
 
     widget.text = {text};
 
@@ -127,7 +125,7 @@ void text_widget::init() {
         if(size.x <= text[0]->wrap_limits.x || size.x >= text[0]->wrap_limits.y || size.x == 0.0f) {
             text[0]->size.x = size.x;
             text[0]->width = size.x;
-            //text[0]->dirty = true;
+            text[0]->dirty = true;
 
             text[0]->measure();
 

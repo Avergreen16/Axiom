@@ -97,7 +97,7 @@ uint64_t slider_widget::insert(vec2 size, float slider_width, vec3 color, vec2 r
     std::shared_ptr<axiom::text> text(new axiom::text);
     text->string = str;
     text->wrap = false;
-    text->font = ui_system.font_assets[0];
+    text->font = &ui_system.fonts[0];
 
     widget.text = {text};
 

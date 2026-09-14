@@ -229,7 +229,7 @@ void screen_widget::mesh() {
         ret[0].color.w = 0.0f;
         ret[3].color.w = 0.0f;
         ret[5].color.w = 0.0f;
-        range = {lpos + vec2(-(int)shadow_width, 0.0), lpos + vec2(0.0, lsize.y)};
+        vec4 range = {lpos + vec2(-(int)shadow_width, 0.0), lpos + vec2(0.0, lsize.y)};
         for(ui_vertex &v : ret) {
             v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
             v.tex_pos = vec2(1.0f, 63.0f);

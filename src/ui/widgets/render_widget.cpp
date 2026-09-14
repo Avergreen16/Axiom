@@ -8,8 +8,6 @@ void render_widget::mesh() {
     axiom::ui_system* ui_system = &axiom::ecs.get_system<axiom::ui_system>();
 
     if(dirty) {
-        vec4 range = ui_system->get_range(self);
-
         dirty = false;
         
         std::vector<ui_vertex> ret;
@@ -32,7 +30,8 @@ void render_widget::mesh() {
             v.pos = vec3(floor(vec2(position + v.pos.xy() * size)), z);
             v.color = vec4(1.0f, 1.0f, 1.0f, 1.0f);
             v.data = 0x80000000 + ui_system->target;
-            v.range = range;
+
+            v.clip_space = ui_system->clip_spaces[clip].parent;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 

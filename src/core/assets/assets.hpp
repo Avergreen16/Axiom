@@ -59,6 +59,12 @@ class text_asset {
     static text_asset load(std::string path);
 };
 
+struct binary_asset {
+    std::vector<byte> data;
+    std::string filepath;
+
+    static binary_asset load(std::string path);
+};
 
 struct glyph_data {
     std::vector<byte> bitmap;

@@ -254,7 +254,7 @@ texture_desc get_texture_desc(texture_format f);
 uint get_texture_attachment(texture_attachment attachment);
 
 struct texture {
-    uint id;
+    uint id = 0xFFFFFFFF;
     uint type;
     glm::ivec3 size;
     int num_channels;

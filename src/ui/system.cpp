@@ -56,13 +56,13 @@ void ui_system::make_dirty(ulong root) {
     path = {root};
     child_ids = {0};
     while(true) {
-        if (path.size() == 0) break;
+        if(path.size() == 0) break;
 
         auto& widget = widgets[path.back()];
 
         vec2 children_size = vec2(0.0f);
 
-        if (widget->children.size() <= child_ids.back()) {
+        if(widget->children.size() <= child_ids.back()) {
             widget->dirty = true;
 
             // go up
@@ -93,14 +93,14 @@ void ui_system::measure(ulong root) {
     std::vector<ulong> path = {root};
     std::vector<ulong> child_ids = {0};
     while(true) {
-        if (path.size() == 0) break;
+        if(path.size() == 0) break;
 
         auto& widget = widgets[path.back()];
         if(child_ids.back() == 0) {
             for(auto& f : widget->before) f.func();
         }
 
-        if (widget->children.size() <= child_ids.back()) {
+        if(widget->children.size() <= child_ids.back()) {
             for(auto& f : widget->after) f.func();
 
             // go up
@@ -169,12 +169,12 @@ void ui_system::call() {
         path = {root};
         child_ids = {0};
         while(true) {
-            if (path.size() == 0) break;
+            if(path.size() == 0) break;
 
             auto& widget = widgets[path.back()];
             if(child_ids.back() == 0) widget_ids.push_back(path.back());
 
-            if (widget->children.size() <= child_ids.back()) {
+            if(widget->children.size() <= child_ids.back()) {
                 // go up
                 path.pop_back();
                 child_ids.pop_back();
@@ -229,6 +229,8 @@ void ui_system::call() {
     }
     cursor_pos = window->cursor_pos;
 
+    handle_clip();
+
     // mesh
 
     text_cursor = false;
@@ -243,7 +245,7 @@ void ui_system::call() {
         cursor_pos = window->cursor_pos;
         
         while(true) {
-            if (path.size() == 0) break;
+            if(path.size() == 0) break;
 
             auto& widget = widgets[path.back()];
 
@@ -251,7 +253,7 @@ void ui_system::call() {
                 c.insert(path.back());
             }
 
-            if (widget->children.size() <= child_ids.back()) {
+            if(widget->children.size() <= child_ids.back()) {
                 // go up
                 path.pop_back();
                 child_ids.pop_back();
@@ -300,7 +302,7 @@ void ui_system::call() {
         std::vector<ulong> child_ids = {0};
 
         while(true) {
-            if (path.size() == 0) break;
+            if(path.size() == 0) break;
 
             auto& widget = widgets[path.back()];
 
@@ -311,7 +313,7 @@ void ui_system::call() {
                 vertices.insert(vertices.end(), widget->vertices_before.begin(), widget->vertices_before.end());
             }
 
-            if (widget->children.size() <= child_ids.back()) {
+            if(widget->children.size() <= child_ids.back()) {
                 vertices.insert(vertices.end(), widget->vertices_after.begin(), widget->vertices_after.end());
 
                 // go up
@@ -358,32 +360,6 @@ void ui_system::call() {
     }
 }
 
-//
-
-vec4 ui_system::get_range(ulong v, bool include_self) {
-    ulong current = v;
-    vec4 range = global_view_range;
-    if(include_self) range = widgets[current]->view_range;
-
-    while(true) {
-        ulong parent = widgets[current]->parent;
-
-        if(parent == NULL_WIDGET) break;
-
-        vec4 r = widgets[parent]->view_range;
-        //r.x = floor(r.x);
-        //r.y = floor(r.y);
-        //r.z = ceil(r.z);
-        //r.w = ceil(r.w);
-        
-        range = intersect_range(range, r);
-        current = parent;
-    }
-
-    return floor(range);
-}
-
-
 std::vector<ulong> ui_system::get_children(ulong root) {
     std::vector<ulong> keys;
     
@@ -393,13 +369,13 @@ std::vector<ulong> ui_system::get_children(ulong root) {
     path = {root};
     child_ids = {0};
     while(true) {
-        if (path.size() == 0) break;
+        if(path.size() == 0) break;
 
         auto& widget = widgets[path.back()];
 
         vec2 children_size = vec2(0.0f);
 
-        if (widget->children.size() <= child_ids.back()) {
+        if(widget->children.size() <= child_ids.back()) {
             if(widget->self != root) keys.push_back(widget->self);
 
             // go up
@@ -454,7 +430,7 @@ void ui_system::handle_capture() {
         std::vector<ulong> child_ids = {0};
 
         while(true) {
-            if (path.size() == 0) break;
+            if(path.size() == 0) break;
 
             auto& widget = widgets[path.back()];
 
@@ -474,7 +450,7 @@ void ui_system::handle_capture() {
                 }
             }
 
-            if (widget->children.size() <= child_ids.back()) {
+            if(widget->children.size() <= child_ids.back()) {
                 vertices.insert(vertices.end(), widget->vertices_after.begin(), widget->vertices_after.end());
 
                 // go up
@@ -504,11 +480,58 @@ void ui_system::handle_capture() {
 void ui_init(axiom::window* window) {
     axiom::ecs.register_system<axiom::ui_system>(axiom::ui_system(window));
     
-    static axiom::font_asset default_font = axiom::font_asset::load(axiom::ecs.get_system<axiom::render_system>().resource_root + "/fonts/axiom_default.bdf");
-    axiom::ecs.get_system<axiom::ui_system>().font_assets = {&default_font};
+    //static axiom::font_asset default_font = axiom::font_asset::load(axiom::ecs.get_system<axiom::render_system>().resource_root + "/fonts/axiom_default.bdf");
+    //axiom::ecs.get_system<axiom::ui_system>().font_assets = {&default_font};
     
-    axiom::texture font_tex = std::move(axiom::texture(default_font.texture, axiom::texture_format::RGBA8));
-    axiom::ecs.get_system<axiom::render_system>().textures.emplace("font_axiom_default", std::move(font_tex));
+    //axiom::texture font_tex = std::move(axiom::texture(default_font.texture, axiom::texture_format::RGBA8));
+    //axiom::ecs.get_system<axiom::render_system>().textures.emplace("font_axiom_default", std::move(font_tex));
+}
+
+void ui_system::handle_clip() {
+    std::vector<ulong> roots;
+    for(auto& [key, widget] : widgets) if(widget->parent == NULL_WIDGET) roots.push_back(key);
+
+    clip_spaces.clear();
+
+    for(ulong root : roots) {
+        std::vector<ulong> path = {root};
+        std::vector<uint> path_clip = {};
+        std::vector<ulong> child_ids = {0};
+        //
+
+        std::vector<ulong> widget_ids;
+
+        path = {root};
+        child_ids = {0};
+        while(true) {
+            if(path.size() == 0) break;
+
+            auto& widget = widgets[path.back()];
+            if(child_ids.back() == 0) {
+                // going down
+
+                clip_space space = widget->space;
+
+                if(path_clip.size() > 0) space.parent = path_clip.back();
+
+                clip_spaces.push_back(space);
+                path_clip.push_back(clip_spaces.size() - 1);
+                widget->clip = path_clip.back();
+            }
+
+            if(widget->children.size() <= child_ids.back()) {
+                // go up
+                path.pop_back();
+                path_clip.pop_back();
+                child_ids.pop_back();
+            } else {
+                path.push_back(widget->children[child_ids.back()]);
+
+                ++child_ids.back();
+                child_ids.push_back(0);
+            }
+        }
+    }
 }
 
 }

@@ -169,7 +169,7 @@ void input_box_widget<type>::mesh() {
 
         for(axiom::ui_vertex& v : text_vs) {
             v.pos = vec3(v.pos.xy() + text[0]->position, z);
-            v.range = view_range;
+            v.clip_space = clip;
         }
 
         vertices_before.insert(vertices_before.end(), text_vs.begin(), text_vs.end());
@@ -201,7 +201,7 @@ ulong input_box_widget<type>::insert(vec2 size, type value, std::function<void(i
     text->string = "";
     text->wrap = false;
     text->alignment = axiom::text_alignment::LEFT;
-    text->font = ui_system.font_assets[0];
+    text->font = &ui_system.fonts[0];
     text->selectable = true;
     text->editable = true;
 

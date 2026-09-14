@@ -18,8 +18,6 @@ void debug_widget::mesh() {
         ui_vertex c = {vec3(0.0f, 1.0f, 0.0f), vec2(0.0f, 1.0f), vec4(1.0f)};
         ui_vertex d = {vec3(1.0f, 1.0f, 0.0f), vec2(1.0f, 1.0f), vec4(1.0f)};
 
-        vec4 range = ui_system.get_range(self);
-
         // panel
         std::vector<ui_vertex> ret = {a, b, d, a, d, c};
         for(ui_vertex& v : ret) {
@@ -27,8 +25,8 @@ void debug_widget::mesh() {
             v.tex_pos = vec2(1.0f, 63.0f);
             v.color = vec4(color, 1.0f);
             v.data = 1;
-
-            //v.range = range;
+            
+            v.clip_space = clip;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 

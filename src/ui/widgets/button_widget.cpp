@@ -29,8 +29,6 @@ void button_widget::mesh() {
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     if(dirty) {
-        vec4 view_range = ui_system.get_range(self);
-
         dirty = false;
 
         ui_vertex a = {vec3(0.0f, 0.0f, 0.0f), vec2(0.0f, 0.0f), vec4(1.0f)};
@@ -64,7 +62,7 @@ void button_widget::mesh() {
                 v.color = color;
                 v.data = 0x1;
 
-                v.range = view_range;
+                v.clip_space = clip;
             }
             vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
         }
@@ -82,7 +80,7 @@ void button_widget::mesh() {
                 v.color = vec4(1.0f);
                 v.data = 0x1;
                 
-                v.range = view_range;
+                v.clip_space = clip;
             }
 
             vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
@@ -98,7 +96,7 @@ void button_widget::mesh() {
             for(ui_vertex& v : vs) {
                 v.pos += vec3(round(text_pos), z);
                 
-                v.range = view_range;
+                v.clip_space = clip;
             }
             vertices_before.insert(vertices_before.end(), vs.begin(), vs.end());
         }
@@ -117,7 +115,7 @@ uint64_t button_widget::insert(vec2 size, vec3 color, std::string str, std::func
     std::shared_ptr<axiom::text> text(new axiom::text);
     text->string = str;
     text->wrap = false;
-    text->font = ui_system.font_assets[0];
+    text->font = &ui_system.fonts[0];
 
     widget.text = {text};
 

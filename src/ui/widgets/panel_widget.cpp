@@ -67,8 +67,6 @@ void panel_widget::mesh() {
         bool scrollbar = false;
         float scrollbar_height;
         float scrollbar_pos;
-        
-        vec4 range = ui_system->get_range(self);
 
         ret = {a, b, d, a, d, c};
         for(ui_vertex& v : ret) {
@@ -76,7 +74,8 @@ void panel_widget::mesh() {
             v.tex_pos = vec2(1.0f, 63.0f);
             v.color = vec4(0.125f, 0.125f, 0.125f, 1.0f);
             v.data = 1;
-            v.range = range;
+
+            v.clip_space = ui_system->clip_spaces[clip].parent;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 

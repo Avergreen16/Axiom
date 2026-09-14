@@ -60,12 +60,22 @@ vec4 intersect_range(vec4 a, vec4 b);
 const ulong NULL_WIDGET = 0xFFFFFFFFFFFFFFFF;
 const uint NULL_OPERATION = 0xFFFFFFFF;
 
+struct clip_space {
+    vec4 range = vec4(-max_float, -max_float, max_float, max_float);
+    float radius = 0.0f;
+    uint parent = 0xFFFFFFFF;
+};
+static_assert(sizeof(clip_space) == 24);
+static_assert(offsetof(clip_space, range) == 0);
+static_assert(offsetof(clip_space, radius) == 16);
+static_assert(offsetof(clip_space, parent) == 20);
+
 struct ui_vertex {
     vec3 pos;
     vec2 tex_pos;
     vec4 color = vec4(1.0f);
-    vec4 range = vec4(-FLT_MAX, -FLT_MAX, FLT_MAX, FLT_MAX);
     uint data = 0;
+    uint clip_space = 0xFFFFFFFF;
 };
 
 }

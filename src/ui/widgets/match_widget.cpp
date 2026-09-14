@@ -33,8 +33,6 @@ void match_widget::mesh() {
         if(border) range += vec4(-parent_widget->buffer.x, -parent_widget->buffer.y, parent_widget->buffer.x + parent_widget->buffer.z, parent_widget->buffer.y + parent_widget->buffer.w);
         else range += vec4(-buf.x, -buf.y, buf.x, buf.y);
 
-        vec4 view_range = ui_system.get_range(self);
-
         vertices_before.clear();
         
         ui_vertex a = {vec3(0.0f, 0.0f, 0.0f), vec2(0.0f, 0.0f), vec4(1.0f)};
@@ -50,7 +48,7 @@ void match_widget::mesh() {
             v.color = color;
             v.data = 0x1;
 
-            v.range = view_range;
+            v.clip_space = clip;
         }
         vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
     }
