@@ -14,6 +14,10 @@ render_system::render_system(axiom::window* win_) {
     vert = axiom::text_asset::load(resource_root + "/shaders/ui.vert");
     frag = axiom::text_asset::load(resource_root + "/shaders/ui.frag");
     shaders.emplace("ui", std::move(axiom::shader(vert, frag)));
+    
+    vert = axiom::text_asset::load(resource_root + "/shaders/ui_composite.vert");
+    frag = axiom::text_asset::load(resource_root + "/shaders/ui_composite.frag");
+    shaders.emplace("ui_composite", std::move(axiom::shader(vert, frag)));
 
     vert = axiom::text_asset::load(resource_root + "/shaders/grid.vert");
     frag = axiom::text_asset::load(resource_root + "/shaders/grid.frag");
@@ -94,8 +98,6 @@ void render_system::process_inputs() {
 }
 
 void render_system::call() {
-    process_inputs();
-
     glEnable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_GEQUAL);
@@ -156,6 +158,8 @@ void render_system::call() {
     //
 
     glfwSwapBuffers(win->window_handle);
+    
+    process_inputs();
 }
 
 void render_system::take_screenshot(std::string filepath) {

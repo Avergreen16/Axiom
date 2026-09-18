@@ -26,6 +26,7 @@ struct ttf_glyph {
     uint glyph_address;
 
     ivec4 bounding_box;
+    bool compound = false;
     
     std::vector<ivec4> atlas;
     std::vector<float> frac;

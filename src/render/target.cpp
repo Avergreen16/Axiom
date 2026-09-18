@@ -1,6 +1,8 @@
 #include <graphicsh.hpp>
 #include <render/wrapper.hpp>
 #include <render/target.hpp>
+#include <render/system.hpp>
+#include <render/shadow/shadow.hpp>
 
 namespace axiom {
 
@@ -31,9 +33,13 @@ void render_target::call() {
     //
 
     draw(*this);
+
+    if(shadow != nullptr) {
+        shadow->call();
+    }
 }
 
-render_target render_target::create(std::function<void(render_target&)> draw_func, ivec2 size, std::vector<texture_format> fb_format, std::vector<texture_attachment> fb_attachment, std::vector<int> fb_binding) {
+render_target* render_target::create(std::function<void(render_target&)> draw_func, ivec2 size, std::vector<texture_format> fb_format, std::vector<texture_attachment> fb_attachment, std::vector<int> fb_binding) {
     render_target target;
     target.draw = draw_func;
     target.size = size;
@@ -55,7 +61,10 @@ render_target render_target::create(std::function<void(render_target&)> draw_fun
     }
     target.framebuffer = std::move(axiom::framebuffer(size, std::move(params)));
 
-    return target;
+    axiom::render_system& rs = ecs.get_system<axiom::render_system>();
+    rs.targets.emplace_back(std::move(target));
+
+    return &rs.targets.back();
 }
 
 }

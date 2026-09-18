@@ -17,6 +17,7 @@ struct copy_string {
 struct widget_input_state {
     ulong current_widget = NULL_WIDGET;
     ulong last_widget = NULL_WIDGET;
+    ulong attachment = 0;
 
     axiom::position_mode active_position = axiom::position_mode::TOP_LEFT;
     vec4 active_buffer = vec4(0.0f);
@@ -84,6 +85,7 @@ struct ui_system : system {
     void input_step(int delta = 1);
     void input_reset();
     void input_set(ulong w);
+    void input_attach(ulong a);
 
     void input_z(float z);
 
@@ -94,6 +96,7 @@ struct ui_system : system {
     void make_dirty(ulong root);
 
     void handle_clip();
+    bool cursor_clip(uint clip, vec2 cursor);
 
     void call();
     std::vector<ulong> get_children(ulong root);
@@ -114,11 +117,16 @@ uint64_t ui_system::insert_widget(Type widget, bool step) {
 
     widget.z = input_state.z;
 
-    if(input_state.current_widget != NULL_WIDGET) widgets[input_state.current_widget]->children.push_back(input_state.next_id);
+    if(input_state.current_widget != NULL_WIDGET) {
+        widgets[input_state.current_widget]->children.push_back(input_state.next_id);
+        widgets[input_state.current_widget]->child_attachments.push_back(input_state.attachment);
+    }
 
     if(step) {
         ++input_state.depth;
         input_state.current_widget = input_state.next_id;
+        
+        input_state.attachment = 0;
     }
 
     widgets.emplace(input_state.next_id, std::make_unique<Type>(widget));

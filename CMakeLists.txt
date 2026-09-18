@@ -13,7 +13,7 @@ if(AXIOM_INCLUDE_PHYSICS2D)
 endif()
 
 if(AXIOM_INCLUDE_PHYSICS3D)
-    add_subdirectory(${AXIOM_ROOT}/src/physics-3d)
+    add_subdirectory(${AXIOM_ROOT}/src/physics3d)
     target_link_libraries(Axiom INTERFACE AxiomPhysics3D)
 endif()
 

@@ -7,16 +7,16 @@ namespace axiom {
 void text_box_widget::handle_inputs() {
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
-    view_range = vec4(position, position + size);
+    //view_range = vec4(position, position + size);
 
     if(ui_system.window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
-        if(includes(ui_system.window->cursor_pos, view_range)) {
+        //if(includes(ui_system.window->cursor_pos, view_range)) {
             vec2 clamped_cursor = vec2(glm::clamp(ui_system.window->cursor_pos.x, text[0]->position.x + 1, text[0]->position.x + text[0]->size.x - 1), glm::clamp(ui_system.window->cursor_pos.y, text[0]->position.y + 1, text[0]->position.y + text[0]->size.y - 1));
 
             ui_system.cursor_anchor = clamped_cursor;
 
             text[0]->select(vec4(clamped_cursor, clamped_cursor), true);
-        }
+        //}
     }
 
     if(ui_system.window->char_delta.size()) {

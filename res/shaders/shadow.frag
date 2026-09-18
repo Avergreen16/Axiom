@@ -22,6 +22,42 @@ layout(location = 21) uniform float texture_growth;
 
 layout(location = 0) out vec4 frag_color;
 
+uint hash(uint x) {
+    x ^= x >> 16;
+    x *= 0x7feb352dU;
+    x ^= x >> 15;
+    x *= 0x846ca68bU;
+    x ^= x >> 16;
+    return x;
+}
+
+uint hash(uvec2 v) { 
+    return hash(v.x ^ hash(v.y)); 
+}
+
+uint hash(uvec3 v) { 
+    return hash(v.x ^ hash(v.y) ^ hash(v.z)); 
+}
+
+uint hash(uvec4 v) {
+    return hash(v.x ^ hash(v.y) ^ hash(v.z) ^ hash(v.w)); 
+}
+
+float to_float(uint m) {
+    const uint ieeeMantissa = 0x007FFFFFu; // binary32 mantissa bitmask
+    const uint ieeeOne = 0x3F800000u; // 1.0 in IEEE binary32
+
+    m &= ieeeMantissa;                     // Keep only mantissa bits (fractional part)
+    m |= ieeeOne;                          // Add fractional part to 1.0
+
+    float  f = uintBitsToFloat(m);       // Range [1:2]
+    return f * 2.0 - 3.0;                // Range [-1:1]
+}
+
+//
+
+float pi = 3.141592653;
+
 vec3 hsv_color(float hue, float saturation, float value) {
     float x = mod(hue, 1.0) * 6.0;
     float frac = fract(x);
@@ -47,8 +83,23 @@ mat4 get_transform(mat4 m) {
     );
 }
 
+void create_offsets(out vec2[16] v, ivec2 pos) {
+    for(int i = 0; i < 16; ++i) {
+        vec2 vv = normalize(vec2(to_float(hash(uint((pos.x * 3 * pos.y) * 255 + i))), to_float(hash(uint((pos.x * 2 * pos.y * 5) * 511 + i))))) * (float(i + 1) / 16);
+        v[i] = vv;
+    }
+}
+
+vec2 offsets[16];
+
 void main() {
+    frag_color = vec4(0.0);
+    
     ivec2 ptexel = ivec2(gl_FragCoord.xy);
+
+    ivec2 size = textureSize(shadow_depth_tex[0], 0);
+
+    create_offsets(offsets, ptexel);
 
     float depth = texelFetch(viewport_depth_tex, ptexel, 0).r;
     vec3 normal = texelFetch(viewport_normal_tex, ptexel, 0).rgb * 2.0 - 1.0;
@@ -72,6 +123,8 @@ void main() {
     light_dir = normalize(mat3(transpose(shadow_view[0])) * vec3(0.0, 0.0, 1.0));
     vec3 ppos = light_dir * -1e10;
 
+    bool x = false;
+
     //for(int i = 4; i >= 0; --i) {
     for(int i = 0; i < 5; ++i) {
         float texel_size = pixel_size * pow(texture_growth, i);
@@ -89,14 +142,23 @@ void main() {
         spos /= spos.w;
 
         if(include == 0xFFFFFFFF && spos.x < 1.0 && spos.x > -1.0 && spos.y < 1.0 && spos.y > -1.0 && spos.z >= 0.0 && spos.z < 1.0) {
-            ivec2 stexel = ivec2(floor((spos.xy * 0.5 + 0.5) * vec2(textureSize(shadow_depth_tex[i], 0))));
+            vec2 texel_f = (spos.xy * 0.5 + 0.5) * vec2(textureSize(shadow_depth_tex[i], 0));
+            ivec2 stexel = ivec2(floor(texel_f));
 
             vec3 snormal = texelFetch(shadow_normal_tex[i], stexel, 0).rgb * 2.0 - 1.0;
             float sdepth = texelFetch(shadow_depth_tex[i], stexel, 0).r;
 
+            vec3 vx = vec3(1.0, 0.0, 0.0);
+            vec3 vy = vec3(0.0, 1.0, 0.0);
+            vec3 snormal2 = mat3(sview) * snormal;
+            float slope_x = dot(snormal2, vx);
+            float slope_y = dot(snormal2, vy);
+
             spos = vec4(spos.xy, sdepth, 1.0);
             spos = inverse(sproj) * spos;
             spos = inverse(sview) * spos;
+
+            float psdepth = sdepth;
 
             sdepth = dot(vec3(spos), light_dir);
             pdepth = dot(vec3(pos), light_dir);
@@ -106,28 +168,43 @@ void main() {
             pp = sview * pp;
             pp = sproj * pp;
 
-            if(pp.x < 1.0 && pp.x > -1.0 && pp.y < 1.0 && pp.y > -1.0 && pp.z >= 0.0 && pp.z < 1.0 || sdepth > rdepth) {
+            if((pp.x < 1.0 && pp.x > -1.0 && pp.y < 1.0 && pp.y > -1.0 && pp.z >= 0.0 && pp.z < 1.0 || sdepth > rdepth) && x == false) {
                 sd = sdepth;
 
-                float bias = texel_size * 0.25;
+                float bias = texel_size * 2.0;
 
                 float cos_theta = clamp(dot(snormal, light_dir), 0.1, 1.0);
                 float slope = sqrt(1.0 - cos_theta * cos_theta) / cos_theta;
                 bias += slope * texel_size;
 
-                if(sdepth - bias > pdepth) frag_color = vec4(0.0, 0.0, 0.0, 1.0);
-                else frag_color = vec4(0.0);
+                float target_depth = pdepth;// + bias;
+                target_depth = (sproj * sview * pos).z;
+
+                float frac = 0.0;//float(target_depth < psdepth);
+                float null_pixels = 0;
+
+                for(int j = 0; j < 16; ++j) {
+                    vec2 screen_pos = texel_f;
+                    screen_pos += offsets[j];
+
+                    ivec2 ntexel = ivec2(floor(screen_pos));
+
+                    if(ntexel.x < 0 || ntexel.y < 0 || ntexel.x >= size.x || ntexel.y >= size.y) ++null_pixels;
+                    else {
+                        float sdepth2 = texelFetch(shadow_depth_tex[i], ntexel, 0).r;
+
+                        if(target_depth < sdepth2) ++frac;
+                    }
+                }
                 
-                max_depth = sdepth - bias;
+                frag_color = vec4(0.0, 0.0, 0.0, frac / (16.0 - null_pixels));
 
-                ppos = spos.xyz;
-
-                break;
+                x = true;
             }
         }
     }
     
-    if(!(normal.x == -1.0 && normal.y == -1.0 && normal.z == -1.0)) frag_color = vec4(0.0, 0.0, 0.0, max(frag_color.w, (1.0 - clamp(dot(light_dir, normal), 0.0, 1.0)) * 1.0)); 
+    if(!(normal.x == -1.0 && normal.y == -1.0 && normal.z == -1.0)) frag_color = vec4(0.0, 0.0, 0.0, mix((1.0 - clamp(dot(light_dir, normal), 0.0, 1.0)) * 1.0, 1.0, frag_color.w)); 
     frag_color.w *= shading.w;
 
     //

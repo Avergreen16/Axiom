@@ -11,6 +11,10 @@ ulong window_widget::insert(std::string label, ivec2 size, ivec2 position, vec3 
     widget.position = position;
     widget.label = label;
     widget.header_color = color;
+    
+    widget.attachments.resize(1);
+    widget.has_clip = true;
+    widget.attachments[0].has_clip = true;
 
     widget.layout_mode = axiom::layout_mode::NONE;
     widget.position_mode = axiom::position_mode::STATIC;
@@ -231,11 +235,11 @@ void window_widget::handle_inputs() {
             if(op != NULL_OPERATION) {
                 operation = op;
             }
-     else {
+            else {
                 if(includes(ui_system.window->cursor_pos, range_move)) {
                     operation = 0;
                 }
-         else {
+                else {
                     operation = NULL_OPERATION;
                 }
             }
@@ -249,8 +253,12 @@ void window_widget::mesh() {
     if(dirty) {
         axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
+        float radius = 6.0f;
+
         ui_system.clip_spaces[clip].range = vec4(position, position + vec2(size.x, size.y + header));
-        ui_system.clip_spaces[clip].radius = 10.0f;
+        ui_system.clip_spaces[clip].radius = radius;
+        
+        ui_system.clip_spaces[attachments[0].clip].range = {position, position + size};
 
 
         float text_scale = 1;
@@ -353,41 +361,7 @@ void window_widget::mesh() {
         ret[0].color.w = 0.0f;
         ret[3].color.w = 0.0f;
         ret[5].color.w = 0.0f;
-        range = {position + vec2(-shadow_width, 0.0), position + vec2(0.0, size.y + header)};
-        for(ui_vertex &v : ret) {
-            v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
-            v.tex_pos = vec2(1.0f, 63.0f);
-            v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
-            v.data = 1;
-
-            //v.clip_space = clip;
-        }
-        total_ret.insert(total_ret.end(), ret.begin(), ret.end());
-
-        // top left
-        ret = {a, b, c, b, d, c};
-        ret[0].color.w = 0.0f;
-        ret[2].color.w = 0.0f;
-        ret[4].color.w = 0.0f;
-        ret[5].color.w = 0.0f;
-        range = {position + vec2(-shadow_width, size.y + header), position + vec2(0.0f, shadow_width + size.y + header)};
-        for(ui_vertex &v : ret) {
-            v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
-            v.tex_pos = vec2(1.0f, 63.0f);
-            v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
-            v.data = 1;
-
-            //v.clip_space = clip;
-        }
-        total_ret.insert(total_ret.end(), ret.begin(), ret.end());
-
-        // bottom left
-        ret = {a, b, d, a, d, c};
-        ret[0].color.w = 0.0f;
-        ret[1].color.w = 0.0f;
-        ret[3].color.w = 0.0f;
-        ret[5].color.w = 0.0f;
-        range = {position + vec2(-shadow_width, -shadow_width), position + vec2(0.0f, 0.0f)};
+        range = {position + vec2(-shadow_width, radius), position + vec2(0.0, size.y + header - radius)};
         for(ui_vertex &v : ret) {
             v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
             v.tex_pos = vec2(1.0f, 63.0f);
@@ -403,41 +377,7 @@ void window_widget::mesh() {
         ret[1].color.w = 0.0f;
         ret[2].color.w = 0.0f;
         ret[4].color.w = 0.0f;
-        range = {position + vec2(size.x, 0.0f), position + vec2(size.x + shadow_width, size.y + header)};
-        for(ui_vertex &v : ret) {
-            v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
-            v.tex_pos = vec2(1.0f, 63.0f);
-            v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
-            v.data = 1;
-
-            //v.clip_space = clip;
-        }
-        total_ret.insert(total_ret.end(), ret.begin(), ret.end());
-
-        // top right
-        ret = {a, b, d, a, d, c};
-        ret[1].color.w = 0.0f;
-        ret[2].color.w = 0.0f;
-        ret[4].color.w = 0.0f;
-        ret[5].color.w = 0.0f;
-        range = {position + vec2(size.x, size.y + header), position + vec2(size.x + shadow_width, shadow_width + size.y + header)};
-        for(ui_vertex &v : ret) {
-            v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
-            v.tex_pos = vec2(1.0f, 63.0f);
-            v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
-            v.data = 1;
-
-            //v.clip_space = clip;
-        }
-        total_ret.insert(total_ret.end(), ret.begin(), ret.end());
-
-        // bottom right
-        ret = {a, b, c, b, d, c};
-        ret[0].color.w = 0.0f;
-        ret[1].color.w = 0.0f;
-        ret[3].color.w = 0.0f;
-        ret[4].color.w = 0.0f;
-        range = {position + vec2(size.x, -shadow_width), position + vec2(size.x + shadow_width, 0.0f)};
+        range = {position + vec2(size.x, radius), position + vec2(size.x + shadow_width, size.y + header - radius)};
         for(ui_vertex &v : ret) {
             v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
             v.tex_pos = vec2(1.0f, 63.0f);
@@ -453,7 +393,7 @@ void window_widget::mesh() {
         ret[2].color.w = 0.0f;
         ret[4].color.w = 0.0f;
         ret[5].color.w = 0.0f;
-        range = {position + vec2(0.0f, size.y + header), position + vec2(size.x, shadow_width + size.y + header)};
+        range = {position + vec2(radius, size.y + header), position + vec2(size.x - radius, shadow_width + size.y + header)};
         for(ui_vertex &v : ret) {
             v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
             v.tex_pos = vec2(1.0f, 63.0f);
@@ -469,7 +409,7 @@ void window_widget::mesh() {
         ret[0].color.w = 0.0f;
         ret[1].color.w = 0.0f;
         ret[3].color.w = 0.0f;
-        range = {position + vec2(0.0f, -shadow_width), position + vec2(size.x, 0.0f)};
+        range = {position + vec2(radius, -shadow_width), position + vec2(size.x - radius, 0.0f)};
         for(ui_vertex &v : ret) {
             v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
             v.tex_pos = vec2(1.0f, 63.0f);
@@ -480,7 +420,67 @@ void window_widget::mesh() {
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
-        //
+        // curves
+
+        std::vector<ui_vertex> outer_vertices;
+        std::vector<ui_vertex> inner_vertices;
+
+        for(int i = 0; i < 6; ++i) {
+            float frac = float(i) / (5.0f);
+
+            vec2 pos = vec2(cos((1.0f - frac) * axiom::pi * 0.5f), sin((1.0f - frac) * axiom::pi * 0.5f));
+
+            ui_vertex vv;
+            vv.tex_pos = vec2(1.0f, 63.0f);
+            vv.data = 1;
+
+            vv.pos = vec3(pos * radius, z);
+            vv.color = vec4(0.0f, 0.0f, 0.0f, shadow_w);
+
+            inner_vertices.push_back(vv);
+
+            vv.pos = vec3(pos * (radius + shadow_width), z);
+            vv.color = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+
+            outer_vertices.push_back(vv);
+        }
+
+        std::vector<mat2> orientations = {
+            mat2(-1.0f, 0.0f, 0.0f, -1.0f),
+            mat2(0.0f, -1.0f, 1.0f, 0.0f),
+            mat2(0.0f, 1.0f, -1.0f, 0.0f),
+            mat2(1.0f, 0.0f, 0.0f, 1.0f),
+        };
+        std::vector<vec2> positions = {
+            vec2(radius, radius),
+            vec2(size.x - radius, radius),
+            vec2(radius, size.y + header - radius),
+            vec2(size.x - radius, size.y + header - radius),
+        };
+
+        for(int i = 0; i < 4; ++i) {
+            for(int j = 0; j < 5; ++j) {
+                int a = j;
+                int b = j + 1;
+
+                ui_vertex va = inner_vertices[a];
+                ui_vertex vb = inner_vertices[b];
+                ui_vertex vc = outer_vertices[a];
+                ui_vertex vd = outer_vertices[b];
+
+                va.pos = vec3(position + orientations[i] * va.pos.xy() + positions[i], va.pos.z);
+                vb.pos = vec3(position + orientations[i] * vb.pos.xy() + positions[i], vb.pos.z);
+                vc.pos = vec3(position + orientations[i] * vc.pos.xy() + positions[i], vc.pos.z);
+                vd.pos = vec3(position + orientations[i] * vd.pos.xy() + positions[i], vd.pos.z);
+                
+                total_ret.push_back(va);
+                total_ret.push_back(vb);
+                total_ret.push_back(vd);
+                total_ret.push_back(va);
+                total_ret.push_back(vd);
+                total_ret.push_back(vc);
+            }
+        }
 
         vertices_before = total_ret;
 
@@ -490,17 +490,20 @@ void window_widget::mesh() {
 
 void window_widget::init() {
     axiom::ui_system* ui_system = &axiom::ecs.get_system<axiom::ui_system>();
-
+    
     widget_constraint c;
     c.func = [this, ui_system]() {
+        attachments[0].region = {position, size};
+
         for(int i = 0; i < children.size(); ++i) {
             auto &p0 = ui_system->widgets[children[i]];
+            auto attachment = attachments[child_attachments[i]];
 
-            p0->size.y = size.y;
-            p0->size.x = size.x;
+            p0->size.x = attachment.region.z;
+            p0->size.y = attachment.region.w;
 
-            p0->position.x = position.x;
-            p0->position.y = position.y;
+            p0->position.x = attachment.region.x;
+            p0->position.y = attachment.region.y;
         }
     };
     before.push_back(c);
@@ -508,7 +511,7 @@ void window_widget::init() {
     c.func = [this]() {
         float a = (float(header) - text[0]->size.y) * 0.5f;
 
-        text[0]->position = position + vec2(0.0f, size.y) + a;
+        text[0]->position = position + vec2(0.0f, size.y) + vec2(a + 2.0f, a);
         text[0]->position = round(text[0]->position);
     };
     after.push_back(c);

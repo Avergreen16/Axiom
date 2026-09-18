@@ -10,38 +10,40 @@ void screen_widget::handle_inputs() {
 
     vec4 region;
 
-    if(ui_system.window->is_fullscreen()) fullscreen = true;
+    if(win->is_fullscreen()) fullscreen = true;
     else fullscreen = false;
 
-    if(ui_system.hover_capture == self && (ui_system.click_capture == NULL_WIDGET || ui_system.click_capture == self)) {
+    uint ctr = 0;
+
+    if(ui_system.hover_capture == self && (ui_system.click_capture == NULL_WIDGET || ui_system.click_capture == self) && !win->decorated) {
         region = vec4(position.x + size.x - header, position.y + size.y - header, header, header);
         region.z += region.x;
         region.w += region.y;
-        if(includes(ui_system.window->cursor_pos, region)) {
+        if(includes(win->cursor_pos, region)) {
             hover_close = true;
             ui_system.cursor.cursor_mode = axiom::cursor_mode::CLICK;
 
-            if(ui_system.window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
+            if(win->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
                 // close
-                glfwSetWindowShouldClose(ui_system.window->window_handle, GLFW_TRUE);
+                glfwSetWindowShouldClose(win->window_handle, GLFW_TRUE);
             }
         } else hover_close = false;
 
         region = vec4(position.x + size.x - header * 2.0f, position.y + size.y - header, header, header);
         region.z += region.x;
         region.w += region.y;
-        if(includes(ui_system.window->cursor_pos, region)) {
+        if(includes(win->cursor_pos, region)) {
             hover_maximize = true;
             ui_system.cursor.cursor_mode = axiom::cursor_mode::CLICK;
 
-            if(ui_system.window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
+            if(win->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
                 // maximize/demaximize
-                if(ui_system.window->is_fullscreen()) {
-                    ui_system.window->make_windowed();
-                } else if(ui_system.window->is_maximized()) {
-                    ui_system.window->make_windowed();
+                if(win->is_fullscreen()) {
+                    win->make_windowed();
+                } else if(win->is_maximized()) {
+                    win->make_windowed();
                 } else { 
-                    ui_system.window->make_maximized();
+                    win->make_maximized();
                 }
             }
         } else hover_maximize = false;
@@ -49,22 +51,34 @@ void screen_widget::handle_inputs() {
         region = vec4(position.x + size.x - header * 3.0f, position.y + size.y - header, header, header);
         region.z += region.x;
         region.w += region.y;
-        if(includes(ui_system.window->cursor_pos, region)) {
+        if(includes(win->cursor_pos, region)) {
             hover_minimize = true;
             ui_system.cursor.cursor_mode = axiom::cursor_mode::CLICK;
             
-            if(ui_system.window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
+            if(win->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
                 // minimize
-                if(ui_system.window->is_fullscreen()) {
-                    ui_system.window->make_windowed();
+                if(win->is_fullscreen()) {
+                    win->make_windowed();
                 }
-                ui_system.window->make_minimized();
+                win->make_minimized();
             }
         } else hover_minimize = false;
+
+        if(!hover_close && !hover_maximize && !hover_minimize) {
+            if(win->input_map[axiom::input_code::MOUSE_LEFT]) {
+                ctr = 0;
+                win->move = true;
+            } else {
+                win->move = false;
+            }
+        }
     } else {
         hover_close = false;
         hover_maximize = false;
         hover_minimize = false;
+
+        ++ctr;
+        if(ctr > 1) win->move = false;
     }
 }
 
@@ -81,6 +95,10 @@ void screen_widget::mesh() {
     ui_vertex c = {vec3(0.0f, 1.0f, 0.0f), vec2(0.0f, 1.0f), vec4(1.0f)};
     ui_vertex d = {vec3(1.0f, 1.0f, 0.0f), vec2(1.0f, 1.0f), vec4(1.0f)};
     std::vector<ui_vertex> ret;
+    
+    ui_system.clip_spaces[attachments[0].clip].range = {position, position + vec2(size.x, size.y - header)};
+    ui_system.clip_spaces[attachments[1].clip].range = {position + vec2(0.0f, size.y - header), position + size};
+    //ui_system.clip_spaces[attachments[1].clip].radius = 20;
 
     if(header > 0) {
         // title bar
@@ -160,7 +178,7 @@ void screen_widget::mesh() {
             r = vec4(position.x + size.x - header * 2.0f, position.y + size.y - header, header, header);
             nsize = vec2(10);
             texture_range = vec4(14, 24, 10, 10);
-            if(glfwGetWindowAttrib(ui_system.window->window_handle, GLFW_MAXIMIZED) || fullscreen) texture_range = vec4(14, 34, 10, 10);
+            if(glfwGetWindowAttrib(win->window_handle, GLFW_MAXIMIZED) || fullscreen) texture_range = vec4(14, 34, 10, 10);
             
             col = hover_maximize ? hover_color : color;
             ret = {a, b, d, a, d, c};
@@ -215,151 +233,6 @@ void screen_widget::mesh() {
         }
         vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
     }
-
-    if(!win->decorated && win->is_windowed()) {
-        float shadow_w = 0.6f;
-
-        std::vector<ui_vertex> shadow_vs;
-
-        vec2 lsize = size + vec2(border_width, border_width) * 2.0f;
-        vec2 lpos = position - vec2(border_width, border_width);
-
-        // left
-        ret = {a, b, d, a, d, c};
-        ret[0].color.w = 0.0f;
-        ret[3].color.w = 0.0f;
-        ret[5].color.w = 0.0f;
-        vec4 range = {lpos + vec2(-(int)shadow_width, 0.0), lpos + vec2(0.0, lsize.y)};
-        for(ui_vertex &v : ret) {
-            v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
-            v.tex_pos = vec2(1.0f, 63.0f);
-            v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
-            v.data = 1;
-        }
-        shadow_vs.insert(shadow_vs.end(), ret.begin(), ret.end());
-
-        // top left
-        ret = {a, b, c, b, d, c};
-        ret[0].color.w = 0.0f;
-        ret[2].color.w = 0.0f;
-        ret[4].color.w = 0.0f;
-        ret[5].color.w = 0.0f;
-        range = {lpos + vec2(-(int)shadow_width, lsize.y), lpos + vec2(0.0f, shadow_width + lsize.y)};
-        for(ui_vertex &v : ret) {
-            v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
-            v.tex_pos = vec2(1.0f, 63.0f);
-            v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
-            v.data = 1;
-        }
-        shadow_vs.insert(shadow_vs.end(), ret.begin(), ret.end());
-
-        // bottom left
-        ret = {a, b, d, a, d, c};
-        ret[0].color.w = 0.0f;
-        ret[1].color.w = 0.0f;
-        ret[3].color.w = 0.0f;
-        ret[5].color.w = 0.0f;
-        range = {lpos + vec2(-(int)shadow_width, -(int)shadow_width), lpos + vec2(0.0f, 0.0f)};
-        for(ui_vertex &v : ret) {
-            v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
-            v.tex_pos = vec2(1.0f, 63.0f);
-            v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
-            v.data = 1;
-        }
-        shadow_vs.insert(shadow_vs.end(), ret.begin(), ret.end());
-
-        // right
-        ret = {a, b, d, a, d, c};
-        ret[1].color.w = 0.0f;
-        ret[2].color.w = 0.0f;
-        ret[4].color.w = 0.0f;
-        range = {lpos + vec2(lsize.x, 0.0f), lpos + vec2(lsize.x + shadow_width, lsize.y)};
-        for(ui_vertex &v : ret) {
-            v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
-            v.tex_pos = vec2(1.0f, 63.0f);
-            v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
-            v.data = 1;
-        }
-        shadow_vs.insert(shadow_vs.end(), ret.begin(), ret.end());
-
-        // top right
-        ret = {a, b, d, a, d, c};
-        ret[1].color.w = 0.0f;
-        ret[2].color.w = 0.0f;
-        ret[4].color.w = 0.0f;
-        ret[5].color.w = 0.0f;
-        range = {lpos + vec2(lsize.x, lsize.y), lpos + vec2(lsize.x + shadow_width, shadow_width + lsize.y)};
-        for(ui_vertex &v : ret) {
-            v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
-            v.tex_pos = vec2(1.0f, 63.0f);
-            v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
-            v.data = 1;
-        }
-        shadow_vs.insert(shadow_vs.end(), ret.begin(), ret.end());
-
-        // bottom right
-        ret = {a, b, c, b, d, c};
-        ret[0].color.w = 0.0f;
-        ret[1].color.w = 0.0f;
-        ret[3].color.w = 0.0f;
-        ret[4].color.w = 0.0f;
-        range = {lpos + vec2(lsize.x, -(int)shadow_width), lpos + vec2(lsize.x + shadow_width, 0.0f)};
-        for(ui_vertex &v : ret) {
-            v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
-            v.tex_pos = vec2(1.0f, 63.0f);
-            v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
-            v.data = 1;
-        }
-        shadow_vs.insert(shadow_vs.end(), ret.begin(), ret.end());
-
-        // top
-        ret = {a, b, d, a, d, c};
-        ret[2].color.w = 0.0f;
-        ret[4].color.w = 0.0f;
-        ret[5].color.w = 0.0f;
-        range = {lpos + vec2(0.0f, lsize.y), lpos + vec2(lsize.x, shadow_width + lsize.y)};
-        for(ui_vertex &v : ret) {
-            v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
-            v.tex_pos = vec2(1.0f, 63.0f);
-            v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
-            v.data = 1;
-        }
-        shadow_vs.insert(shadow_vs.end(), ret.begin(), ret.end());
-
-        // bottom
-        ret = {a, b, d, a, d, c};
-        ret[0].color.w = 0.0f;
-        ret[1].color.w = 0.0f;
-        ret[3].color.w = 0.0f;
-        range = {lpos + vec2(0.0f, -(int)shadow_width), lpos + vec2(lsize.x, 0.0f)};
-        for(ui_vertex &v : ret) {
-            v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
-            v.tex_pos = vec2(1.0f, 63.0f);
-            v.color = vec4(0.0f, 0.0f, 0.0f, v.color.w * shadow_w);
-            v.data = 1;
-        }
-        shadow_vs.insert(shadow_vs.end(), ret.begin(), ret.end());
-        
-        vertices_before.insert(vertices_before.end(), shadow_vs.begin(), shadow_vs.end());
-
-        //
-        
-        ret = {a, b, d, a, d, c};
-        ret[0].color = vec4(1.0f);//vec4(color, 1.0f);
-        ret[1].color = vec4(1.0f);
-        ret[2].color = vec4(1.0f);
-        ret[3].color = vec4(1.0f);
-        ret[4].color = vec4(1.0f);
-        ret[5].color = vec4(1.0f);
-
-        range = {lpos, lpos + lsize};
-        for(ui_vertex &v : ret) {
-            v.pos = vec3(range.xy() + v.pos.xy() * (range.zw() - range.xy()), z);
-            v.tex_pos = vec2(1.0f, 63.0f);
-            v.data = 1;
-        }
-        vertices_before.insert(vertices_before.begin(), ret.begin(), ret.end());
-    }
 }
 
 void screen_widget::init() {
@@ -367,18 +240,29 @@ void screen_widget::init() {
 
     widget_constraint c;
     c.func = [this, ui_system]() {
+        if(!win->decorated && win->is_windowed()) {
+            attachments[0].region = {0.0f, 0.0f, win->size.x, win->size.y - header};
+            attachments[1].region = {header, win->size.y - header, win->size.x - header, header};
+        } else if(win->is_fullscreen()) {
+            attachments[0].region = {0.0f, 0.0f, win->size.x, win->size.y - header};
+            attachments[1].region = {header, win->size.y - header, win->size.x - header, header};
+        } else {
+            attachments[0].region = {0.0f, 0.0f, win->size.x, win->size.y - header};
+            attachments[1].region = {header, win->size.y - header, win->size.x - header, header};
+        }
+
         position = vec2(0.0f);
+        size = win->size;
+        
         if(!ui_system->window->is_minimized()) {
-            ivec4 range = ivec4(0, 0, win->size);
-            if(!win->decorated && win->is_windowed()) range = ivec4(shadow_width + border_width, shadow_width + border_width, win->size - int(shadow_width + border_width) * 2);
-            else if(win->is_fullscreen()) range = ivec4(0, 0, win->size);
+            //ivec4 range = ivec4(0, 0, win->size);
+            //if(!win->decorated && win->is_windowed()) range = ivec4(shadow_width + border_width, shadow_width + border_width, win->size - int(shadow_width + border_width) * 2);
+            //else if(win->is_fullscreen()) range = ivec4(0, 0, win->size);
 
-            position = range.xy();
-            size = range.zw();
+            //position = range.xy();
+            //size = range.zw();
 
-            view_range = {position.x, position.y, position.x + size.x, position.y + size.y - header};
-
-            ui_system->global_view_range = view_range;
+            //ui_system->global_view_range = view_range;
         }
     };
     before.push_back(c);
@@ -386,15 +270,15 @@ void screen_widget::init() {
     c.func = [this, ui_system]() {
         for(int i = 0; i < children.size(); ++i) {
             auto& p0 = ui_system->widgets[children[i]];
+            auto& attachment = attachments[child_attachments[i]];
 
-            if(fullscreen || true) p0->size.y = size.y - header;
-            else p0->size.y = size.y;
-            
-            p0->size.x = size.x;
-            
-            p0->position.x = position.x;
+            p0->size.x = attachment.region.z - (p0->buffer.x + p0->buffer.z);
 
-            p0->position.y = position.y;
+            p0->size.y = attachment.region.w - (p0->buffer.y + p0->buffer.w);
+            
+            p0->position.x = attachment.region.x + p0->buffer.x;
+
+            p0->position.y = attachment.region.y + p0->buffer.y;
         }
     };
     before.push_back(c);
@@ -412,6 +296,10 @@ ulong screen_widget::insert(std::string name, vec3 color, axiom::window* win) {
     widget.position_mode = axiom::position_mode::STATIC;
 
     widget.win = win;
+    
+    widget.attachments.resize(2);
+    widget.attachments[0].has_clip = true;
+    widget.attachments[1].has_clip = true;
 
     return ui_system.insert_widget(widget, true);
 }
@@ -426,7 +314,7 @@ capture_data screen_widget::handle_capture() {
     };
 
     for(vec4 range : ranges) {
-        if(includes(ui_system.window->cursor_pos, range)) return {self, z, true};
+        if(includes(win->cursor_pos, range)) return {self, z, true};
     }
 
     return {self, z, false};

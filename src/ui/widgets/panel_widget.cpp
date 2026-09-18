@@ -27,15 +27,8 @@ void panel_widget::init() {
 
             p0->position.y = position.y + p0->buffer.y;
         }
-        
-        view_range = vec4(position, position + size);
     };
     before.push_back(c);
-    
-    c.func = [this, ui_system]() {
-        view_range = vec4(position, position + size);
-    };
-    after.push_back(c);
 }
 
 
@@ -75,7 +68,7 @@ void panel_widget::mesh() {
             v.color = vec4(0.125f, 0.125f, 0.125f, 1.0f);
             v.data = 1;
 
-            v.clip_space = ui_system->clip_spaces[clip].parent;
+            if(clip != 0xFFFFFFFF) v.clip_space = ui_system->clip_spaces[clip].parent;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 

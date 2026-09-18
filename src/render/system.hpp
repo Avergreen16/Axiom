@@ -5,6 +5,7 @@
 #include <render/window/window.hpp>
 #include <render/target.hpp>
 #include <render/wrapper.hpp>
+#include <render/shadow/shadow.hpp>
 
 namespace axiom {
     
@@ -18,6 +19,7 @@ struct render_system : axiom::system {
     std::unordered_map<std::string, axiom::shader> shaders;
 
     std::vector<axiom::render_target> targets;
+    std::vector<axiom::shadow_renderer> shadow_renderers;
 
     // shadow parameters
     float light_altitude = 50.0f;

@@ -363,10 +363,20 @@ void scroll_widget::mesh() {
             scrollbar_height *= visible_height;
             scrollbar_pos *= visible_height;
         }
+
+        auto& ui_system = ecs.get_system<axiom::ui_system>();
         
         if(scrollbar) {
-            vec2 sb_size = vec2(scroll_width, scrollbar_height);
-            vec2 sb_pos = vec2(position.x + size.x - scroll_width, position.y + ((size.y - scrollbar_height) - scrollbar_pos));
+            vec2 sb_size = round(vec2(scroll_width, scrollbar_height));
+            vec2 sb_pos = round(vec2(position.x + size.x - scroll_width, position.y + ((size.y - scrollbar_height) - scrollbar_pos)));
+
+            clip_space scrollbar_clip;
+            scrollbar_clip.radius = scroll_width * 0.5f;
+            scrollbar_clip.range = vec4(sb_pos, sb_pos + sb_size);
+            scrollbar_clip.parent = clip;
+
+            uint clip_id = ui_system.clip_spaces.size();
+            ui_system.clip_spaces.push_back(scrollbar_clip);
 
             ret = {a, b, d, a, d, c};
             for(ui_vertex& v : ret) {
@@ -375,7 +385,7 @@ void scroll_widget::mesh() {
                 v.color = vec4(1.0f, 1.0f, 1.0f, 0.25f);
                 v.data = 1;
                 
-                v.clip_space = clip;
+                v.clip_space = clip_id;
             }
             total_ret.insert(total_ret.end(), ret.begin(), ret.end());
         }

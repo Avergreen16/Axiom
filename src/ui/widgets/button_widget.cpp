@@ -40,6 +40,9 @@ void button_widget::mesh() {
         if(hovered) base_color = vec4(color + 0.25f, 1.0f);
         if(held) base_color = vec4(color * 0.75f, 1.0f);
 
+        ui_system.clip_spaces[clip].range = vec4(position, position + size);
+        ui_system.clip_spaces[clip].radius = 4.0f;
+
         // panel
         float border = 3.0f;
         std::vector<vec4> ranges = {
@@ -118,6 +121,8 @@ uint64_t button_widget::insert(vec2 size, vec3 color, std::string str, std::func
     text->font = &ui_system.fonts[0];
 
     widget.text = {text};
+    
+    widget.has_clip = true;
 
     //
     
@@ -146,6 +151,8 @@ uint64_t button_widget::insert(vec2 size, vec3 color, vec4 icon, std::function<v
     widget.icon = icon;
 
     //
+    
+    widget.has_clip = true;
     
     widget.layout_mode = axiom::layout_mode::NONE;
     widget.buffer = ui_system.input_state.active_buffer;

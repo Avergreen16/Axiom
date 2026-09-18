@@ -96,7 +96,7 @@ window::window(ivec2 position, ivec2 size, float border, std::string name, bool 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    if(!decorated) glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
+    //if(!decorated) glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
     this->decorated = decorated;
     
     //glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
@@ -108,7 +108,7 @@ window::window(ivec2 position, ivec2 size, float border, std::string name, bool 
     glfwMakeContextCurrent(window_handle);
     glfwShowWindow(window_handle);
 
-    if(!decorated) remove_header(window_handle);
+    handle_window_platform(*this);
 
     int width, height;
     glfwGetWindowSize(window_handle, &width, &height);
@@ -244,217 +244,18 @@ void window::poll_events() {
         int border = 10;
 
         if(is_windowed()) {
-            if(click_capture) {
-                if(operation == 0) {
-                    s.x += global_cursor_delta.x;
-                    s.z -= global_cursor_delta.x;
-                    
-                    s.y += global_cursor_delta.y;
-                    s.w -= global_cursor_delta.y;
+            if(move) {
+                s.x += global_cursor_delta.x;
+                s.y += global_cursor_delta.y;
 
-                    std::cout << s.x << " " << s.y << "\n";
-
-                    glfwSetWindowSize(window_handle, s.z, s.w);
-                    glfwSetWindowPos(window_handle, s.x, s.y);
-                    
-                    show_cursor();
-                    set_cursor(window_handle, 3);
-                } else if(operation == 1) { 
-                    s.z += global_cursor_delta.x;
-                    
-                    s.y += global_cursor_delta.y;
-                    s.w -= global_cursor_delta.y;
-
-                    glfwSetWindowSize(window_handle, s.z, s.w);
-                    glfwSetWindowPos(window_handle, s.x, s.y);
-                    
-                    show_cursor();
-                    set_cursor(window_handle, 4);
-                } else if(operation == 2) {
-                    s.x += global_cursor_delta.x;
-                    s.z -= global_cursor_delta.x;
-                    
-                    s.w += global_cursor_delta.y;
-
-                    glfwSetWindowSize(window_handle, s.z, s.w);
-                    glfwSetWindowPos(window_handle, s.x, s.y);
-                    
-                    show_cursor();
-                    set_cursor(window_handle, 4);
-                } else if(operation == 3) {
-                    s.z += global_cursor_delta.x;
-                    
-                    s.w += global_cursor_delta.y;
-
-                    glfwSetWindowSize(window_handle, s.z, s.w);
-                    glfwSetWindowPos(window_handle, s.x, s.y);
-                    
-                    show_cursor();
-                    set_cursor(window_handle, 3);
-                } else if(operation == 4) {
-                    s.x += global_cursor_delta.x;
-                    s.z -= global_cursor_delta.x;
-
-                    glfwSetWindowSize(window_handle, s.z, s.w);
-                    glfwSetWindowPos(window_handle, s.x, s.y);
-                    
-                    show_cursor();
-                    set_cursor(window_handle, 1);
-                } else if(operation == 5) {
-                    s.z += global_cursor_delta.x;
-
-                    glfwSetWindowSize(window_handle, s.z, s.w);
-                    glfwSetWindowPos(window_handle, s.x, s.y);
-                    
-                    show_cursor();
-                    set_cursor(window_handle, 1);
-                } else if(operation == 6) {
-                    s.y += global_cursor_delta.y;
-                    s.w -= global_cursor_delta.y;
-
-                    glfwSetWindowSize(window_handle, s.z, s.w);
-                    glfwSetWindowPos(window_handle, s.x, s.y);
-                    
-                    show_cursor();
-                    set_cursor(window_handle, 2);
-                } else if(operation == 7) {
-                    s.w += global_cursor_delta.y;
-
-                    glfwSetWindowSize(window_handle, s.z, s.w);
-                    glfwSetWindowPos(window_handle, s.x, s.y);
-                    
-                    show_cursor();
-                    set_cursor(window_handle, 2);
-                } else if(operation == 8) {
-                    s.x += global_cursor_delta.x;
-
-                    s.y += global_cursor_delta.y;
-
-                    glfwSetWindowSize(window_handle, s.z, s.w);
-                    glfwSetWindowPos(window_handle, s.x, s.y);
-                    
-                    show_cursor();
-                    set_cursor(window_handle, 0);
-                }
-            } else {
-                if(click_capture == true) {
-                    hide_cursor();
-                }
-
-                click_capture = false;
-            }
-            
-            if(global_cursor_pos.x < s.x + border && global_cursor_pos.y < s.y + border) {
-                show_cursor();
-                set_cursor(window_handle, 3);
-
-                hover_capture = true;
-
-                if(pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
-                    click_capture = true;
-                    operation = 0;
-                }
-            } else if(global_cursor_pos.x > s.x + s.z - border && global_cursor_pos.y < s.y + border) {
-                show_cursor();
-                set_cursor(window_handle, 4);
+                glfwSetWindowPos(window_handle, s.x, s.y);
                 
-                hover_capture = true;
-
-                if(pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
-                    click_capture = true;
-                    operation = 1;
-                }
-            } else if(global_cursor_pos.x < s.x + border && global_cursor_pos.y > s.y + s.w - border) {
-                show_cursor();
-                set_cursor(window_handle, 4);
-                
-                hover_capture = true;
-
-                if(pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
-                    click_capture = true;
-                    operation = 2;
-                }
-            } else if(global_cursor_pos.x > s.x + s.z - border && global_cursor_pos.y > s.y + s.w - border) {
-                show_cursor();
-                set_cursor(window_handle, 3);
-                
-                hover_capture = true;
-
-                if(pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
-                    click_capture = true;
-                    operation = 3;
-                }
-            } else if(global_cursor_pos.x < s.x + border) {
-                show_cursor();
-                set_cursor(window_handle, 1);
-                
-                hover_capture = true;
-
-                if(pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
-                    click_capture = true;
-                    operation = 4;
-                }
-            } else if(global_cursor_pos.x > s.x + s.z - border) {
-                show_cursor();
-                set_cursor(window_handle, 1);
-                
-                hover_capture = true;
-
-                if(pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
-                    click_capture = true;
-                    operation = 5;
-                }
-            } else if(global_cursor_pos.y < s.y + border) {
-                show_cursor();
-                set_cursor(window_handle, 2);
-                
-                hover_capture = true;
-
-                if(pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
-                    click_capture = true;
-                    operation = 6;
-                }
-            } else if(global_cursor_pos.y > s.y + s.w - border) {
-                show_cursor();
-                set_cursor(window_handle, 2);
-                
-                hover_capture = true;
-
-                if(pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
-                    click_capture = true;
-                    operation = 7;
-                }
-            } else if(global_cursor_pos.y < s.y + border + 8 && is_windowed()) {
                 show_cursor();
                 set_cursor(window_handle, 0);
-                
-                hover_capture = true;
-                
-                if(pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
-                    click_capture = true;
-                    operation = 8;
-                }
-            } else {
-                if(hover_capture == true) {
-                    hide_cursor();
-                }
-                
-                hover_capture = false;
-            }
-            
-            if(!input_map[axiom::input_code::MOUSE_LEFT]) {
-                if(click_capture == true) {
-                    hide_cursor();
-                }
-                
-                click_capture = false;
             }
         }
-
-        size = s.zw();
-        size = s.zw();
     }
-
+    
     if(target != nullptr) {
         if(target->size != size) {
             target->set_size(size);
@@ -533,7 +334,7 @@ void window::hide_cursor() {
     cursor_hidden = true;
     cursor_disabled = false;
 
-    set_cursor(window_handle, -1);
+    //set_cursor(window_handle, -1);
 }
 
 void window::disable_cursor() {
@@ -556,13 +357,8 @@ void window::attach(axiom::render_target* target_) {
     target = target_;
 }
 
-bool window::cursor_in_window() {
-    double x, y;
-    int width, height;
-    glfwGetCursorPos(window_handle, &x, &y);
-    glfwGetWindowSize(window_handle, &width, &height);
-
-    return x >= 0 && x < width && y >= 0 && y < height;
+window::~window() {
+    window_platform_destruct(*this);
 }
 
 }

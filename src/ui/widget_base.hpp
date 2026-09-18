@@ -52,6 +52,13 @@ struct capture_data {
     bool overwrite = false;
 };
 
+struct widget_attachment {
+    vec4 region;
+    vec2 offset;
+    uint clip = 0xFFFFFFFF;
+    bool has_clip = false;
+};
+
 struct widget {
     ulong self;
     bool flag = false;
@@ -61,20 +68,18 @@ struct widget {
     vec2 next_position;
     vec2 next_size;
     vec4 buffer = vec4(0.0f);
-    
     float z = 0.0f;
     
-    vec4 child_region = vec4(0.0f);
-    vec2 child_offset = vec2(0.0f);
     std::vector<ui_vertex> vertices_before;
     std::vector<ui_vertex> vertices_after;
 
-    uint clip = 0xFFFFFFFF;
-    clip_space space;
+    ulong parent = NULL_WIDGET;
 
-    std::function<float(std::unique_ptr<widget>&)> get_height = [](std::unique_ptr<widget>& w) {
-        return w->size.y;
-    };
+    uint clip = 0xFFFFFFFF;
+    bool has_clip = false;
+    std::vector<widget_attachment> attachments;
+    std::vector<ulong> children;
+    std::vector<uint> child_attachments;
 
     //
 
@@ -94,17 +99,14 @@ struct widget {
     vec4 available_space;
     bool dirty = true;
 
-    ulong parent = NULL_WIDGET;
-    std::vector<ulong> children;
-
-    vec4 view_range = vec4(-FLT_MAX, -FLT_MAX, FLT_MAX, FLT_MAX);
-
-    //std::vector<text> texts;
-
     std::vector<std::shared_ptr<axiom::text>> text;
 
     std::vector<widget_constraint> before;
     std::vector<widget_constraint> after;
+    
+    std::function<float(std::unique_ptr<widget>&)> get_height = [](std::unique_ptr<widget>& w) {
+        return w->size.y;
+    };
 
     virtual void handle_inputs() {};
     virtual void mesh() {};

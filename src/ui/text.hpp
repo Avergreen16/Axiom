@@ -74,6 +74,7 @@ class text {
     public:
     
     double time = 0.0;
+    uint clip = 0xFFFFFFFF;
     ///vec4 range = vec4(-FLT_MAX, -FLT_MAX, FLT_MAX, FLT_MAX);
 
     ttf_font* font;

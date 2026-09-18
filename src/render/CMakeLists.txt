@@ -9,6 +9,8 @@ add_library(AxiomRender STATIC
     mesh/mesh.cpp
 
     window/input.cpp
+
+    shadow/shadow.cpp
 )
 
 target_include_directories(AxiomRender PRIVATE

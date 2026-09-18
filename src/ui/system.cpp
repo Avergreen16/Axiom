@@ -21,6 +21,7 @@ void ui_system::input_root(int delta) {
         input_state.current_widget = widgets[input_state.current_widget]->parent;
         --input_state.depth;
     }
+    input_state.attachment = 0;
 }
 
 void ui_system::input_step(int delta) {
@@ -29,11 +30,17 @@ void ui_system::input_step(int delta) {
         input_state.current_widget = widgets[input_state.current_widget]->parent;
         --input_state.depth;
     }
+    if(widgets[input_state.current_widget]->parent != NULL_WIDGET) {
+        input_state.attachment = widgets[input_state.current_widget]->child_attachments.back();
+    } else {
+        input_state.attachment = 0;
+    }
 }
 
 void ui_system::input_reset() {
     input_state.current_widget = NULL_WIDGET;
     input_state.depth = 0;
+    input_state.attachment = 0;
 }
 
 void ui_system::input_z(float z) {
@@ -193,6 +200,10 @@ void ui_system::call() {
             }
         }
     }
+    
+    for(auto& t : text) {
+        t->call();
+    }
 
     for(int i = 0; i < 8; ++i) {
         iter = i;
@@ -287,10 +298,6 @@ void ui_system::call() {
         if(n_focused) isolate_selection = true;
         else isolate_selection = false;
     }
-    
-    for(auto& t : text) {
-        t->call();
-    }
 
     //
     
@@ -332,6 +339,13 @@ void ui_system::call() {
         std::vector<ui_vertex> cursor_vertices = mesh_cursor(cursor.cursor_mode, window->cursor_pos);
 
         vertices.insert(vertices.end(), cursor_vertices.begin(), cursor_vertices.end());
+    } else if(!window->cursor_hidden && !window->cursor_disabled && window->cursor_in_window()) {
+        if(cursor.cursor_mode == axiom::cursor_mode::DEFAULT) set_cursor(window->window_handle, 0);
+        else if(cursor.cursor_mode == axiom::cursor_mode::DRAG_L || cursor.cursor_mode == axiom::cursor_mode::DRAG_R) set_cursor(window->window_handle, 1);
+        else if(cursor.cursor_mode == axiom::cursor_mode::DRAG_B || cursor.cursor_mode == axiom::cursor_mode::DRAG_T) set_cursor(window->window_handle, 2);
+        else if(cursor.cursor_mode == axiom::cursor_mode::DRAG_BR || cursor.cursor_mode == axiom::cursor_mode::DRAG_TL) set_cursor(window->window_handle, 3);
+        else if(cursor.cursor_mode == axiom::cursor_mode::DRAG_BL || cursor.cursor_mode == axiom::cursor_mode::DRAG_TR) set_cursor(window->window_handle, 4);
+        else if(cursor.cursor_mode == axiom::cursor_mode::CLICK) set_cursor(window->window_handle, 5);
     }
 
     for(ulong k : delete_buffer) {
@@ -478,7 +492,7 @@ void ui_system::handle_capture() {
 }
 
 void ui_init(axiom::window* window) {
-    axiom::ecs.register_system<axiom::ui_system>(axiom::ui_system(window));
+    axiom::ecs.register_system(axiom::ui_system(window));
     
     //static axiom::font_asset default_font = axiom::font_asset::load(axiom::ecs.get_system<axiom::render_system>().resource_root + "/fonts/axiom_default.bdf");
     //axiom::ecs.get_system<axiom::ui_system>().font_assets = {&default_font};
@@ -507,16 +521,29 @@ void ui_system::handle_clip() {
             if(path.size() == 0) break;
 
             auto& widget = widgets[path.back()];
+
+            bool d = false;
             if(child_ids.back() == 0) {
                 // going down
 
-                clip_space space = widget->space;
+                if(widget->has_clip) {
+                    clip_space space;
 
-                if(path_clip.size() > 0) space.parent = path_clip.back();
+                    if(path_clip.size() > 0) {
+                        space.parent = path_clip.back();
+                    }
 
-                clip_spaces.push_back(space);
-                path_clip.push_back(clip_spaces.size() - 1);
-                widget->clip = path_clip.back();
+                    clip_spaces.push_back(space);
+                    path_clip.push_back(clip_spaces.size() - 1);
+                    widget->clip = path_clip.back();
+                } else {
+                    if(path_clip.size() == 0) path_clip.push_back(0xFFFFFFFF);
+                    else path_clip.push_back(path_clip.back());
+
+                    widget->clip = path_clip.back();
+                }
+
+                d = true;
             }
 
             if(widget->children.size() <= child_ids.back()) {
@@ -524,14 +551,80 @@ void ui_system::handle_clip() {
                 path.pop_back();
                 path_clip.pop_back();
                 child_ids.pop_back();
+
+                if(widget->parent != 0xFFFFFFFFFFFFFFFF) {
+                    auto& wparent = widgets[widget->parent];
+                    if(wparent->attachments.size() && wparent->children.size() && path.size()) {
+                        path_clip.pop_back();
+                        path.pop_back();
+                    }
+                }
+
             } else {
+                if(widget->attachments.size()) {
+                    if(d || widget->child_attachments[child_ids.back()] != path.back()) {
+                        if(!d) {
+                            path_clip.pop_back();
+                            path.pop_back();
+                        }
+
+                        auto& attachment = widget->attachments[widget->child_attachments[child_ids.back()]];
+                        if(attachment.has_clip) {
+                            clip_space space;
+
+                            if(path_clip.size() > 0) {
+                                space.parent = path_clip.back();
+                            }   
+
+                            clip_spaces.push_back(space);
+                            path_clip.push_back(clip_spaces.size() - 1);
+                            attachment.clip = path_clip.back();
+                        } else {
+                            if(path_clip.size() == 0) path_clip.push_back(0xFFFFFFFF);
+                            else path_clip.push_back(path_clip.back());
+
+                            attachment.clip = path_clip.back();
+                        }
+
+                        path.push_back(widget->child_attachments[child_ids.back()]);
+                    }
+                }
+                
                 path.push_back(widget->children[child_ids.back()]);
 
                 ++child_ids.back();
-                child_ids.push_back(0);
+                child_ids.push_back(0);   
             }
         }
     }
+
+}
+
+float clip_sdf(clip_space& space, vec2 point) {
+    vec2 center = (space.range.zw() + space.range.xy()) * 0.5f;
+    vec2 half_size = space.range.zw() - center;
+
+    vec2 p = abs(point - center) - half_size + space.radius;
+
+    return glm::min(glm::max(p.x, p.y), 0.0f) + length(glm::max(p, vec2(0.0f))) - space.radius; 
+}
+
+bool ui_system::cursor_clip(uint clip, vec2 cursor) {
+    uint current_clip = clip;
+    while(current_clip != 0xFFFFFFFF) {
+        auto& space = clip_spaces[current_clip];
+
+        float sdf = clip_sdf(space, cursor);
+
+        if(sdf > 0.0f) return false;
+
+        current_clip = space.parent;
+    }
+    return true;
+}
+
+void ui_system::input_attach(ulong a) {
+    input_state.attachment = a;
 }
 
 }

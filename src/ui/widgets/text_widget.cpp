@@ -10,7 +10,7 @@ void text_widget::handle_inputs() {
     std::string str = text[0]->string;
     str = callback(str);
 
-    //text[0]->range = range;
+    text[0]->clip = clip;
     text[0]->string = str;
 }
 

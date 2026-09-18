@@ -234,7 +234,7 @@ void message_widget::init() {
 axiom::capture_data message_widget::handle_capture() {
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
-    if(!includes(ui_system.window->cursor_pos, view_range)) return {z, false};
+    //if(!includes(ui_system.window->cursor_pos, view_range)) return {z, false};
 
     vec4 hover_range = vec4(position, position + size + vec2(0.0f, buffer.w));
     if(inserted) hover_range.w += ui_system.fonts[0].line_height + buffer.y;

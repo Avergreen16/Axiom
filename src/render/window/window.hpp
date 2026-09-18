@@ -114,6 +114,8 @@ class window {
 
     public:
 
+    void* platform_data;
+
     bool should_close = false;
     
     std::unordered_map<axiom::input_code, bool> input_map;
@@ -129,9 +131,13 @@ class window {
     float scroll_delta;
     std::string char_delta;
 
+    bool move = false;
+
     window() = default;
 
     window(ivec2 position, ivec2 size, float border, std::string name = "Axiom", bool title_bar = true);
+
+    ~window();
 
     void poll_events();
 
@@ -168,13 +174,15 @@ class window {
 void copy_to_clipboard(GLFWwindow* window, std::string str);
 std::string paste_from_clipboard(GLFWwindow* window);
 
-void remove_header(GLFWwindow* window);
+void handle_window_platform(window& win);
+void window_platform_destruct(window& win);
 
 bool is_fullscreen(GLFWwindow* window);
 bool is_maximized(GLFWwindow* window);
 bool is_minimized(GLFWwindow* window);
 
 ivec4 get_window_range(GLFWwindow* window);
+int get_caption_height(GLFWwindow* window);
 
 void print_wsize(GLFWwindow* window);
 

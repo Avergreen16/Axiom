@@ -31,7 +31,7 @@ void render_widget::mesh() {
             v.color = vec4(1.0f, 1.0f, 1.0f, 1.0f);
             v.data = 0x80000000 + ui_system->target;
 
-            v.clip_space = ui_system->clip_spaces[clip].parent;
+            if(clip != 0xFFFFFFFF) v.clip_space = ui_system->clip_spaces[clip].parent;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -58,7 +58,7 @@ void render_widget::handle_inputs() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if(target->size != ivec2(size)) target->set_size(ivec2(size));
-    target->call();
+    //target->call();
     callback(this);
 
     ui_system->target_textures.push_back(&target->framebuffer.textures[texture]);

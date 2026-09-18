@@ -4,6 +4,8 @@
 
 namespace axiom {
 
+struct shadow_renderer;
+
 struct render_target {
     // attributes
     ivec2 size;
@@ -11,6 +13,8 @@ struct render_target {
     // resources
     framebuffer framebuffer;
     std::function<void(render_target&)> draw;
+
+    shadow_renderer* shadow = nullptr;
 
     void set_size(ivec2 new_size);
     void call();
@@ -27,7 +31,7 @@ struct render_target {
 
     //
     
-    static render_target create(std::function<void(render_target&)> draw_func, ivec2 size, std::vector<texture_format> fb_format, std::vector<texture_attachment> fb_attachment, std::vector<int> fb_binding = {});
+    static render_target* create(std::function<void(render_target&)> draw_func, ivec2 size, std::vector<texture_format> fb_format, std::vector<texture_attachment> fb_attachment, std::vector<int> fb_binding = {});
 };
 
 }

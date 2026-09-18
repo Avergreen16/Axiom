@@ -1331,18 +1331,20 @@ std::pair<int, bool> compute_cursor_index(axiom::ttf_font& font, axiom::text& te
 
             //
 
-            auto& glyph = text.font->glyphs.at(text.font->glyph_map.at(c));
+            if(text.font->glyph_map.contains(c)) {
+                auto& glyph = text.font->glyphs.at(text.font->glyph_map.at(c));
 
-            advance = glyph.h_advance * scale;
-            if(bold && glyph.contours.size()) advance += bold_factor;
+                advance = glyph.h_advance * scale;
+                if(bold && glyph.contours.size()) advance += bold_factor;
 
-            if(pos - advance * 0.5f > cursor_x && i == line_start) return {-1, false};
+                if(pos - advance * 0.5f > cursor_x && i == line_start) return {-1, false};
 
-            if(pos + advance * 0.5f > cursor_x) {
-                return {i, false};
+                if(pos + advance * 0.5f > cursor_x) {
+                    return {i, false};
+                }
+                
+                pos += advance;
             }
-            
-            pos += advance;
         }
     } else {
         return {-1, false};
@@ -1496,7 +1498,6 @@ ivec2 text::select(vec2 cursor, uint wrap_mode) {
     //
 
     int line = (int)lines.size() - floor(float(cursor.y - position.y + round(font->descender * scale)) / round(font->line_height * scale)) - 1;
-    std::cout << "x";
 
     vec2 cursor_a = cursor - position;
 
@@ -1602,9 +1603,9 @@ void text::call() {
 
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
-    text_size = 13;
+    text_size = 12;
 
-    if(collide(ui_system.window->cursor_pos)/* && includes(ui_system.window->cursor_pos, range)*/) {
+    if(collide(ui_system.window->cursor_pos) && ui_system.cursor_clip(clip, ui_system.window->cursor_pos)) {
         ulong current = parent;
         bool hover = false;
         while(true) {

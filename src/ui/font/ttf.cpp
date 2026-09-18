@@ -180,8 +180,6 @@ ttf_font process_ttf(std::string filepath) {
         font.descender = descender;
         font.line_gap = line_gap;
 
-        std::cout << font.ascender << " " << font.descender << " " << font.line_gap << "\n";
-
         font.line_height = ascender - descender + line_gap;
     }
 
@@ -316,6 +314,249 @@ ttf_font process_ttf(std::string filepath) {
             }
         }
     }
+
+    std::vector<uint> compound_glyphs;
+
+    std::function<std::vector<ttf_contour>(uint index)> process_compound;
+
+    process_compound = [&](uint index) {
+        ttf_table& table = tables["glyf"];
+        ttf_glyph& glyph = font.glyphs[index];
+
+        cursor = table.offset + glyph.glyph_address + 10;
+
+        if(!glyph.contours.size()) {
+            while(true) {
+                uint16_t flags = read_ushort_be();
+                uint16_t glyph_index = read_ushort_be();
+
+                // flags:
+                // 0x0001 -> on: arguments are 16 bits, off: arguments are 8 bits
+                // 0x0002 -> on: arguments are signed coordinates, off: arguments are unsigned point indices 
+                // this means that point a on the composite glyph constructed so far, is aligned with point b on this component glyph
+
+                // 0x0004 -> if 0x0002 is set (so arguments are coordinates), then... on: the coordinate arguments are rounded to the nearest grid line,
+                // grid lines are used for rendering text at small sizes (so the SDF implementation will not use this)
+                // off: arguments are NOT rounded to the nearest grid line
+
+                // 0x0008 -> the component has a simple scale factor
+                // 0x0020 -> there is another component glyph after this one
+                // 0x0040 -> there are two scale factors, one for the x axis and another for the y axis
+                // 0x0080 -> there is a 2x2 matrix transformation factor that must be applied to the component glyph
+                // 0x0100 -> there are instructions following the end of the last glyph
+                // 0x0200 -> use the metrics (advance width, right/left side bearing) of this component glyph for the entire glyph
+                // 0x0400 -> the components of this compound glyph overlap (remember, each component glyph can itself be a composite glyph)... also this flag is not required to be set
+                // 0x0800 -> the component's offset is transformed by the component's transform (ignored if 0x0002 is not set)
+                // 0x1000 -> the component's offset is NOT transformed by the component's transform (ignored if 0x0002 is not set)
+
+                uint current_cursor = cursor;
+                auto& child_glyph = font.glyphs[glyph_index];
+                std::vector<ttf_contour> new_contours = process_compound(glyph_index);
+
+                cursor = current_cursor;
+
+                ivec2 offset;
+
+                std::vector<float> scale;
+
+                if(flags & 0x0008) { // simple scale factor
+                    int16_t scale_factor = read_ushort_be();
+
+                    scale.push_back(float(scale_factor) / 16384.0f);
+                } else if(flags & 0x0040) { // x and y scale factors
+                    int16_t scale_factor_x = read_short_be();
+                    int16_t scale_factor_y = read_short_be();
+
+                    scale.push_back(float(scale_factor_x) / 16384.0f);
+                    scale.push_back(float(scale_factor_y) / 16384.0f);
+                } else if(flags & 0x0080) { // 2x2 transformation
+                    int16_t nxx = read_short_be();
+                    int16_t nxy = read_short_be();
+                    int16_t nyx = read_short_be();
+                    int16_t nyy = read_short_be();
+                    
+                    scale.push_back(float(nxx) / 16384.0f);
+                    scale.push_back(float(nxy) / 16384.0f);
+                    scale.push_back(float(nyx) / 16384.0f);
+                    scale.push_back(float(nyy) / 16384.0f);
+                }
+
+                if(scale.size() == 1) {
+                    float factor = scale[0];
+
+                    for(ttf_contour& contour : new_contours) {
+                        for(auto& pt : contour.points) pt.point *= factor;
+                    }
+                } else if(scale.size() == 2) {
+                    vec2 factors = {scale[0], scale[1]};
+
+                    for(ttf_contour& contour : new_contours) {
+                        for(auto& pt : contour.points) pt.point *= factors;
+                    }
+                } else if(scale.size() == 4) {
+                    mat2 m = {
+                        scale[0], scale[1], scale[2], scale[3]
+                    };
+
+                    for(ttf_contour& contour : new_contours) {
+                        for(auto& pt : contour.points) pt.point = m * pt.point;
+                    }
+                }
+            
+                if((flags & 0x0001) && (flags & 0x0002)) { // arguments are signed 16 bit coords
+                    int16_t arg_a = read_short_be();
+                    int16_t arg_b = read_short_be();
+
+                    //
+
+                    offset = {arg_a, arg_b};
+
+                    if(flags & 0x0800) {
+                        vec2 offset2 = offset;
+                        
+                        if(scale.size() == 1) {
+                            float factor = scale[0];
+
+                            offset2 = factor * offset2;
+                            offset2 = round(offset2);
+
+                            offset = offset2;
+                        } else if(scale.size() == 2) {
+                            vec2 factors = {scale[0], scale[1]};
+
+                            offset2 = factors * offset2;
+                            offset2 = round(offset2);
+
+                            offset = offset2;
+                        } else if(scale.size() == 4) {
+                            mat2 m = {
+                                scale[0], scale[1], scale[2], scale[3]
+                            };
+
+                            offset2 = m * offset2;
+                            offset2 = round(offset2);
+
+                            offset = offset2;
+                        }
+                    }
+                } else if(!(flags & 0x0001) && (flags & 0x0002)) { // arguments are signed 8 bit coords
+                    int8_t arg_a = read_byte();
+                    int8_t arg_b = read_byte();
+
+                    //
+
+                    offset = {arg_a, arg_b};
+                    
+                    if(flags & 0x0800) {
+                        vec2 offset2 = offset;
+                        
+                        if(scale.size() == 1) {
+                            float factor = scale[0];
+
+                            offset2 = factor * offset2;
+                            offset2 = round(offset2);
+
+                            offset = offset2;
+                        } else if(scale.size() == 2) {
+                            vec2 factors = {scale[0], scale[1]};
+
+                            offset2 = factors * offset2;
+                            offset2 = round(offset2);
+
+                            offset = offset2;
+                        } else if(scale.size() == 4) {
+                            mat2 m = {
+                                scale[0], scale[1], scale[2], scale[3]
+                            };
+
+                            offset2 = m * offset2;
+                            offset2 = round(offset2);
+
+                            offset = offset2;
+                        }
+                    }
+                } else if((flags & 0x0001) && !(flags & 0x0002)) { // arguments are unsigned 16 bit indices
+                    uint16_t arg_a = read_ushort_be();
+                    uint16_t arg_b = read_ushort_be();
+
+                    //
+
+                    ttf_point p0;
+                    ttf_point p1;
+
+                    uint c = 0;
+                    for(ttf_contour& contour : glyph.contours) {
+                        uint new_c = contour.points.size();
+                        if(c + new_c > arg_a) {
+                            p0 = contour.points[arg_a - c];
+                        }
+                    }
+
+                    c = 0;
+                    for(ttf_contour& contour : new_contours) {
+                        uint new_c = contour.points.size();
+                        if(c + new_c > arg_b) {
+                            p1 = contour.points[arg_b - c];
+                        }
+                    }
+
+                    offset = p0.point - p1.point;
+                } else if(!(flags & 0x0001) && !(flags & 0x0002)) { // arguments are unsigned 8 bit indices
+                    byte arg_a = read_byte();
+                    byte arg_b = read_byte();
+
+                    //
+
+                    ttf_point p0;
+                    ttf_point p1;
+
+                    uint c = 0;
+                    for(ttf_contour& contour : glyph.contours) {
+                        uint new_c = contour.points.size();
+                        if(c + new_c > arg_a) {
+                            p0 = contour.points[arg_a - c];
+                        }
+                    }
+
+                    c = 0;
+                    for(ttf_contour& contour : new_contours) {
+                        uint new_c = contour.points.size();
+                        if(c + new_c > arg_b) {
+                            p1 = contour.points[arg_b - c];
+                        }
+                    }
+
+                    offset = p0.point - p1.point;
+                }
+
+                for(auto& contour : new_contours) {
+                    for(auto& pt : contour.points) pt.point += offset;
+                }
+
+                if(flags & 0x0200) {
+                    glyph.h_advance = child_glyph.h_advance;
+                    glyph.h_bearing = child_glyph.h_bearing;
+                }
+
+                glyph.contours.insert(glyph.contours.end(), new_contours.begin(), new_contours.end());
+
+                if(!(flags & 0x0020)) { // there is NOT another component glyph after this one
+                    if(flags & 0x0100) {
+                        uint16_t num_instructions = read_ushort_be();
+                        std::vector<byte> instructions;
+                        for(uint i = 0; i < num_instructions; ++i) {
+                            instructions.push_back(read_byte());
+                        }
+                    }
+
+                    //step = cursor - offset;
+                    break;
+                }
+            }
+        }
+
+        return glyph.contours;
+    };
 
     {
         ttf_table table = tables["loca"];
@@ -540,37 +781,6 @@ ttf_font process_ttf(std::string filepath) {
                         }
                     }
 
-                    uint offset = 0;
-                    for(auto& bezier : contour.beziers) {
-                        uint pa = bezier.a + offset;
-                        uint pb = bezier.b + offset;
-                        uint pc = bezier.c + offset;
-                        if(bezier.b < 2) pb = bezier.b;
-                        if(bezier.c < 2) pc = bezier.c;
-
-                        ttf_point& point_a = contour.points[pa];
-                        ttf_point& point_b = contour.points[pb];
-                        ttf_point& point_c = contour.points[pc];
-
-                        std::vector<ttf_point> new_points;
-                        int num_points = 3;
-
-                        for(int i = 0; i < num_points; ++i) {
-                            float frac = float(i + 1) / (num_points + 2);
-
-                            vec2 pa = point_a.point * (1.0f - frac) + point_b.point * frac;
-                            vec2 pb = point_b.point * (1.0f - frac) + point_c.point * frac;
-
-                            vec2 point = pa * (1.0f - frac) + pb * frac;
-
-                            new_points.push_back(ttf_point(point, true));
-                        }
-
-                        contour.points.erase(contour.points.begin() + pb);
-                        contour.points.insert(contour.points.begin() + pb, new_points.begin(), new_points.end());
-                        offset += num_points - 1;
-                    }
-
                     glyph.contours.push_back(contour);
 
                     start_index = end_index + 1;
@@ -578,82 +788,49 @@ ttf_font process_ttf(std::string filepath) {
 
                 //std::cout << "num vertices: " << num_vertices << "\n";
             } else if(num_contours < 0) { // compound glyph
-                while(true) {
-                    uint16_t flags = read_ushort_be();
-                    uint16_t glyph_index = read_ushort_be();
-
-                    // flags:
-                    // 0x0001 -> on: arguments are 16 bits, off: arguments are 8 bits
-                    // 0x0002 -> on: arguments are signed coordinates, off: arguments are unsigned point indices 
-                    // this means that point a on the composite glyph constructed so far, is aligned with point b on this component glyph
-
-                    // 0x0004 -> if 0x0002 is set (so arguments are coordinates), then... on: the coordinate arguments are rounded to the nearest grid line,
-                    // grid lines are used for rendering text at small sizes (so the SDF implementation will not use this)
-                    // off: arguments are NOT rounded to the nearest grid line
-
-                    // 0x0008 -> the component has a simple scale factor
-                    // 0x0020 -> there is another component glyph after this one
-                    // 0x0040 -> there are two scale factors, one for the x axis and another for the y axis
-                    // 0x0080 -> there is a 2x2 matrix transformation factor that must be applied to the component glyph
-                    // 0x0100 -> there are instructions following the end of the last glyph
-                    // 0x0200 -> use the metrics (advance width, right/left side bearing) of this component glyph for the entire glyph
-                    // 0x0400 -> the components of this compound glyph overlap (remember, each component glyph can itself be a composite glyph)... also this flag is not required to be set
-                    // 0x0800 -> the component's offset is transformed by the component's transform (ignored if 0x0002 is not set)
-                    // 0x1000 -> the component's offset is NOT transformed by the component's transform (ignored if 0x0002 is not set)
-                
-                    if((flags & 0x0001) && (flags & 0x0002)) { // arguments are signed 16 bit coords
-                        int16_t arg_a = read_short_be();
-                        int16_t arg_b = read_short_be();
-
-                        //
-
-                    } else if(!(flags & 0x0001) && (flags & 0x0002)) { // arguments are signed 8 bit coords
-                        int8_t arg_a = read_byte();
-                        int8_t arg_b = read_byte();
-
-                        //
-
-                    } else if((flags & 0x0001) && !(flags & 0x0002)) { // arguments are unsigned 16 bit indices
-                        uint16_t arg_a = read_ushort_be();
-                        uint16_t arg_b = read_ushort_be();
-
-                        //
-
-                    } else if(!(flags & 0x0001) && !(flags & 0x0002)) { // arguments are unsigned 8 bit indices
-                        byte arg_a = read_byte();
-                        byte arg_b = read_byte();
-
-                        //
-
-                    }
-
-                    if(flags & 0x0008) { // simple scale factor
-                        uint16_t scale_factor = read_ushort_be();
-                    } else if(flags & 0x0040) { // x and y scale factors
-                        uint16_t scale_factor_x = read_ushort_be();
-                        uint16_t scale_factor_y = read_ushort_be();
-                    } else if(flags & 0x0080) { // 2x2 transformation
-                        uint16_t nxx = read_ushort_be();
-                        uint16_t nxy = read_ushort_be();
-                        uint16_t nyx = read_ushort_be();
-                        uint16_t nyy = read_ushort_be();
-                    }
-
-                    if(!(flags & 0x0020)) { // there is NOT another component glyph after this one
-                        if(flags & 0x0100) {
-                            uint16_t num_instructions = read_ushort_be();
-                            std::vector<byte> instructions;
-                            for(uint i = 0; i < num_instructions; ++i) {
-                                instructions.push_back(read_byte());
-                            }
-                        }
-
-                        //step = cursor - offset;
-                        break;
-                    }
-                }
+                glyph.compound = true;
+                compound_glyphs.push_back(k);
             } else if(num_contours == 0) {
 
+            }
+        }
+
+        for(uint i : compound_glyphs) {
+            process_compound(i);
+        }
+
+        for(auto [k, glyph] : font.glyphs) {
+            for(auto& contour : glyph.contours) {
+                uint offset = 0;
+                for(auto& bezier : contour.beziers) {
+                    uint pa = bezier.a + offset;
+                    uint pb = bezier.b + offset;
+                    uint pc = bezier.c + offset;
+                    if(bezier.b < 2) pb = bezier.b;
+                    if(bezier.c < 2) pc = bezier.c;
+
+                    ttf_point& point_a = contour.points[pa];
+                    ttf_point& point_b = contour.points[pb];
+                    ttf_point& point_c = contour.points[pc];
+
+                    std::vector<ttf_point> new_points;
+                    int num_points = 3;
+
+                    for(int i = 0; i < num_points; ++i) {
+                        float frac = float(i + 1) / (num_points + 2);
+
+                        vec2 pa = point_a.point * (1.0f - frac) + point_b.point * frac;
+                        vec2 pb = point_b.point * (1.0f - frac) + point_c.point * frac;
+
+                        vec2 point = pa * (1.0f - frac) + pb * frac;
+
+                        new_points.push_back(ttf_point(point, true));
+                    }
+
+                    contour.points.erase(contour.points.begin() + pb);
+                    contour.points.insert(contour.points.begin() + pb, new_points.begin(), new_points.end());
+                    offset += num_points - 1;
+                }
             }
         }
     }
@@ -733,93 +910,114 @@ ttf_font process_ttf(std::string filepath) {
 
             float min_width = glm::min(size.x, size.y);
 
-            uint supersample = 5;
+            ivec2 supersample = {2, 6};
+            bool subpixel = true;
 
-            float frac = 0.0f;
+            if(subpixel) {
 
-            for(int ii = 0; ii < supersample * supersample; ++ii) {
-                vec2 offset = vec2(ii % supersample + 0.5f, ii / supersample + 0.5f) / float(supersample);
-                vec2 pt_o = pt + offset;
+                for(int c = 0; c < 3; ++c) {
+                    float frac = 0.0f;
 
-                pt_o = (pt_o / vec2(size)) * psize + pmin;
+                    float cfrac = float(c) / 3;
 
-                int count = 0;
-                float min_dist = axiom::max_float;
-                
-                for(int i = 0; i < glyph.contours.size(); ++i) {
-                    auto& contour = glyph.contours[i];
+                    for(int ii = 0; ii < supersample.x * supersample.y; ++ii) {
+                        vec2 offset = vec2(ii % supersample.x + 0.5f, ii / supersample.x + 0.5f) / vec2(supersample);
+                        offset.x /= 3;
+                        offset.x += cfrac;
+                        
+                        vec2 pt_o = pt + offset;
 
-                    for(int j = 0; j < contour.points.size(); ++j) {
-                        int a = j;
-                        int b = (j + 1) % contour.points.size();
+                        pt_o = (pt_o / vec2(size)) * psize + pmin;
 
-                        auto& point_a = contour.points[a];
-                        auto& point_b = contour.points[b];
+                        int count = 0;
+                        float min_dist = axiom::max_float;
+                        
+                        for(int i = 0; i < glyph.contours.size(); ++i) {
+                            auto& contour = glyph.contours[i];
 
-                        vec2 pt_s;
+                            for(int j = 0; j < contour.points.size(); ++j) {
+                                int a = j;
+                                int b = (j + 1) % contour.points.size();
 
-                        bool did_intersect = intersect(point_a.point, point_b.point, pt_o, pt_s);
+                                auto& point_a = contour.points[a];
+                                auto& point_b = contour.points[b];
 
-                        if(pt_s.x < pt_o.x) did_intersect = false;
+                                vec2 pt_s;
 
-                        if(did_intersect) {
-                            if(point_a.point.y < point_b.point.y || (point_a.point.y == point_b.point.y && point_a.point.x < point_b.point.x)) {
-                                ++count;
-                            } else {
-                                --count;
+                                bool did_intersect = intersect(point_a.point, point_b.point, pt_o, pt_s);
+
+                                if(pt_s.x < pt_o.x) did_intersect = false;
+
+                                if(did_intersect) {
+                                    if(point_a.point.y < point_b.point.y || (point_a.point.y == point_b.point.y && point_a.point.x < point_b.point.x)) {
+                                        ++count;
+                                    } else {
+                                        --count;
+                                    }
+                                }
                             }
                         }
-
-                        //
-
-                        /*
-                        vec2 a0 = point_a.point;
-                        vec2 a1 = point_b.point;
-
-                        vec2 r = normalize(a1 - a0);
-                        vec2 rx = vec2(r.y, -r.x);
-
-                        vec2 rel = pt - a0;
-                        rel -= rx * dot(rel, rx);
-
-                        float l = dot(r, rel);
-                        l = glm::clamp(l, 0.0f, length(a1 - a0));
-
-                        vec2 point = a0 + r * l;
-
-                        float dist = length((pt_o - point) / size);
-
-                        min_dist = glm::min(dist, min_dist);
-                        */
+                        
+                        if(count != 0) {
+                            frac += 1.0f;
+                        }
                     }
+
+                    frac = (frac / (supersample.x * supersample.y)) * 0xFF;
+
+                    colors[k * 4 + c] = frac;
                 }
-                
-                if(count != 0) {
-                    frac += 1.0f;
-                }
-            }
-
-            frac = (frac / (supersample * supersample)) * 0xFF;
-
-            colors[k * 4] = 0xFF;
-            colors[k * 4 + 1] = 0xFF;
-            colors[k * 4 + 2] = 0xFF;
-            colors[k * 4 + 3] = frac;
-
-            /*
-            float f = min_dist * 255;
-            if(count != 0) {
-                colors[k * 4] = glm::clamp((int)glm::round(127.5f + f), 0x00, 0xFF);
-                colors[k * 4 + 1] = 0x00;
-                colors[k * 4 + 2] = 0x00;
                 colors[k * 4 + 3] = 0xFF;
             } else {
-                colors[k * 4] = glm::clamp((int)glm::round(127.5f - f), 0x00, 0xFF);
-                colors[k * 4 + 1] = 0x00;
-                colors[k * 4 + 2] = 0x00;
+                float frac = 0.0f;
+
+                for(int ii = 0; ii < supersample.x * supersample.y; ++ii) {
+                    vec2 offset = vec2(ii % supersample.x + 0.5f, ii / supersample.x + 0.5f) / vec2(supersample);
+                    vec2 pt_o = pt + offset;
+
+                    pt_o = (pt_o / vec2(size)) * psize + pmin;
+
+                    int count = 0;
+                    float min_dist = axiom::max_float;
+                    
+                    for(int i = 0; i < glyph.contours.size(); ++i) {
+                        auto& contour = glyph.contours[i];
+
+                        for(int j = 0; j < contour.points.size(); ++j) {
+                            int a = j;
+                            int b = (j + 1) % contour.points.size();
+
+                            auto& point_a = contour.points[a];
+                            auto& point_b = contour.points[b];
+
+                            vec2 pt_s;
+
+                            bool did_intersect = intersect(point_a.point, point_b.point, pt_o, pt_s);
+
+                            if(pt_s.x < pt_o.x) did_intersect = false;
+
+                            if(did_intersect) {
+                                if(point_a.point.y < point_b.point.y || (point_a.point.y == point_b.point.y && point_a.point.x < point_b.point.x)) {
+                                    ++count;
+                                } else {
+                                    --count;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if(count != 0) {
+                        frac += 1.0f;
+                    }
+                }
+
+                frac = (frac / (supersample.x * supersample.y)) * 0xFF;
+
+                colors[k * 4] = frac;
+                colors[k * 4 + 1] = frac;
+                colors[k * 4 + 2] = frac;
                 colors[k * 4 + 3] = 0xFF;
             }
-            */
         }
 
         axiom::texture_asset asset = axiom::texture_asset::load(colors, size, 4);
@@ -832,7 +1030,7 @@ ttf_font process_ttf(std::string filepath) {
     std::vector<byte> bytes;
     ivec2 img_size = ivec2(0);
 
-    uint em_size = 13;
+    uint em_size = 12;
 
     uint width = 1024;
     std::vector<uint> heights(1024, 0);
