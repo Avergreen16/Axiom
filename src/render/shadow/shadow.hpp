@@ -11,6 +11,10 @@ struct shadow_renderer {
     float cascade_factor = 8.0f;
     float base_pixel_size = 1.0f / 16.0f;
     uint texture_size = 2048;
+    
+    float altitude = 12.5f;
+    float azimuth = 35.0f;
+    float contrast = 0.98f;
 
     uint camera_entity;
     render_target* target;

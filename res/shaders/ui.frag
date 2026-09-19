@@ -27,8 +27,11 @@ float sdf(vec2 pos, clip_space clip) {
     vec2 center = (clip.range.xy + clip.range.zw) * 0.5;
     vec2 half_size = clip.range.zw - center;
 
-    vec2 d = abs(pos - center) - half_size + clip.radius;
-    return min(max(d.x, d.y), 0.0) + length(max(d, 0.0)) - clip.radius; 
+    vec2 d = abs(pos - center) - half_size + abs(clip.radius);
+    float c = min(max(d.x, d.y), 0.0) + length(max(d, 0.0)) - abs(clip.radius);
+    if(clip.radius < 0.0) c = -c;
+    
+    return c; 
 }
 
 void main() {

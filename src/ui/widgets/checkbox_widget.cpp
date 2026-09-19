@@ -24,6 +24,34 @@ void checkbox_widget::mesh() {
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     if(dirty) {
+        float thickness = 2.0f;
+
+        clip_space space0;
+        space0.parent = clip;
+        space0.radius = glm::min(size.x, size.y) * 0.5f;
+        space0.range = vec4(position, position + size);
+        
+        uint space0_index = ui_system.clip_spaces.size();
+        ui_system.clip_spaces.push_back(space0);
+        
+        clip_space space1;
+        space1.parent = space0_index; 
+        space1.radius = (glm::min(size.x, size.y) * 0.5f - thickness) * -1.0f;
+        space1.range = vec4(position + thickness, position + size - thickness);
+        
+        uint space1_index = ui_system.clip_spaces.size();
+        ui_system.clip_spaces.push_back(space1);
+
+        clip_space space2;
+        space2.parent = clip; 
+        space2.radius = glm::min(size.x, size.y) * 0.5f - thickness * 2.0f;
+        space2.range = vec4(position + thickness * 2.0f, position + size - thickness * 2.0f);
+
+        uint space2_index = ui_system.clip_spaces.size();
+        ui_system.clip_spaces.push_back(space2);
+
+        //
+
         dirty = false;
 
         ui_vertex a = {vec3(0.0f, 0.0f, 0.0f), vec2(0.0f, 0.0f), vec4(1.0f)};
@@ -33,41 +61,41 @@ void checkbox_widget::mesh() {
 
         // panel
         float border = 3.0f;
-        std::vector<vec4> ranges = {
-            vec4(2.0f, 2.0f, size.x - 4.0f, size.y - 4.0f),
-            vec4(0.0f, 0.0f, 1.0f, size.y),
-            vec4(size.x - 1, 0.0f, 1.0f, size.y),
-            vec4(0.0f, 0.0f, size.y, 1.0f),
-            vec4(0.0f, size.y - 1, size.x, 1.0f),
-        };
-        std::vector<vec4> colors = {
-            vec4(color, 0.0f),
-            vec4(color, 1.0f),
-            vec4(color, 1.0f),
-            vec4(color, 1.0f),
-            vec4(color, 1.0f),
-        };
-
-        if(checked) colors[0] = vec4(color, 1.0f);
+        vec4 range_a = vec4(position, size);
+        vec4 range_b = vec4(position, size);
         
         vertices_before.clear();
 
-        for(int i = 0; i < ranges.size(); ++i) {
+        {
             std::vector<ui_vertex> ret = {a, b, d, a, d, c};
-            vec4 range = ranges[i];
-            vec4 color = colors[i];
+            vec4 range = range_a;
 
             for(ui_vertex& v : ret) {
-                v.pos = vec3(position + range.xy() + v.pos.xy() * range.zw(), z);
+                v.pos = vec3(range.xy() + v.pos.xy() * range.zw(), z);
                 v.tex_pos = vec2(1.0f, 63.0f);
-                v.color = color;
+                v.color = vec4(color, 1.0f);
                 v.data = 0x1;
 
-                v.clip_space = clip;
+                v.clip_space = space1_index;
             }
             vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
         }
 
+        if(checked) {
+            std::vector<ui_vertex> ret = {a, b, d, a, d, c};
+            vec4 range = range_b;
+
+            for(ui_vertex& v : ret) {
+                v.pos = vec3(range.xy() + v.pos.xy() * range.zw(), z);
+                v.tex_pos = vec2(1.0f, 63.0f);
+                v.color = vec4(color, 1.0f);
+                v.data = 0x1;
+
+                v.clip_space = space2_index;
+            }
+            vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
+        }
+        
         icon_size = icon.zw();
 
         if(icon.z != 0.0f) {

@@ -20,7 +20,7 @@ struct menu_widget : widget {
     uint index = 0xFFFFFFFF;
     double timer = 0.0;
 
-    std::shared_ptr<menu_node> root;
+    menu_node* root;
     std::vector<uint> path;
 
     float scroll = 0.0f;
@@ -33,7 +33,7 @@ struct menu_widget : widget {
     void init();
     capture_data handle_capture();
     
-    static ulong insert(vec2 position, float z, vec3 color, float w, float h, float h2, std::shared_ptr<menu_node> root, std::vector<uint> path);
+    static ulong insert(vec2 position, float z, vec3 color, float w, float h, float h2, menu_node* root, std::vector<uint> path);
 };
 
 }

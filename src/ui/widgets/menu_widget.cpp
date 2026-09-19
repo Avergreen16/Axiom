@@ -6,7 +6,7 @@ namespace axiom {
 void menu_widget::handle_inputs() {
     axiom::ui_system &ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
-    menu_node *rootn = root.get();
+    menu_node *rootn = root;
     for(uint p : path) {
         rootn = &rootn->children[p];
     }
@@ -150,7 +150,7 @@ void menu_widget::handle_inputs() {
                 menu_widget* menu = dynamic_cast<menu_widget*>(ww.get());
 
                 if(menu->hovered != 0xFFFFFFFF) {
-                    axiom::menu_node* rnode = menu->root.get();
+                    axiom::menu_node* rnode = menu->root;
                     for(uint32_t path : menu->path) {
                         rnode = &rnode->children[path];
                     }
@@ -176,7 +176,7 @@ void menu_widget::mesh() {
 
     if(hovered != 0xFFFFFFFF) ui_system.cursor.cursor_mode = axiom::cursor_mode::CLICK;
 
-    menu_node *rootn = root.get();
+    menu_node *rootn = root;
     for(uint p : path) {
         rootn = &rootn->children[p];
     }
@@ -188,6 +188,10 @@ void menu_widget::mesh() {
 
     std::vector<std::pair<std::vector<ui_vertex>, vec2>> label_vertices;
     label_vertices.reserve(rootn->children.size());
+    
+    clip_space& space = ui_system.clip_spaces[clip];
+    space.radius = 6;
+    space.range = vec4(position, position + size);
 
     z = 0.5f;
 
@@ -220,6 +224,8 @@ void menu_widget::mesh() {
             v.tex_pos = vec2(1.0f, 63.0f);
             v.color = col;
             v.data = 0x1;
+
+            v.clip_space = clip;
         }
         vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
 
@@ -233,13 +239,23 @@ void menu_widget::mesh() {
             vec4 range = vec4(position.x, position.y + panel_height + offset - (drop_unit_height * (float(h) + 1.0f)) + scroll, size.x, drop_unit_height);
             vec4 col = vec4(color, 1.0f);
 
+            clip_space space;
+            space.radius = 6;
+            space.range = vec4(range.xy(), range.xy() + range.zw());
+            space.parent = clip;
+            ui_system.clip_spaces.push_back(space);
+
+            uint space_id = ui_system.clip_spaces.size() - 1;
+
+            //
+            
             for(ui_vertex &v : ret) {
                 v.pos = vec3(range.xy() + v.pos.xy() * range.zw(), z);
                 v.tex_pos = vec2(1.0f, 63.0f);
                 v.color = col;
                 v.data = 0x1;
 
-                v.clip_space = clip;
+                v.clip_space = space_id;
             }
             vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
         }
@@ -250,7 +266,7 @@ void menu_widget::mesh() {
             
             std::vector<ui_vertex> vs = text[i]->mesh();
 
-            vec2 origin = position + vec2(4.0f, panel_height + scroll - (drop_unit_height * float(i + 1.0f)) + 2.0f);
+            vec2 origin = position + vec2(4.0f, (panel_height + (drop_unit_height - text[i]->size.y) * 0.5f) + scroll - (drop_unit_height * float(i + 1.0f)));
             origin = round(origin);
 
             text[i]->position = origin;
@@ -280,7 +296,7 @@ void menu_widget::mesh() {
         }
 
         if(content_height > panel_height) {
-            float scroll_width = 2.0f;
+            float scroll_width = 4.0f;
 
             float scroll_region = content_height - panel_height;
 
@@ -294,6 +310,18 @@ void menu_widget::mesh() {
             ret = {a, b, d, a, d, c};
 
             range = scrollbar;
+            
+            //
+            
+            clip_space space;
+            space.radius = 2;
+            space.range = vec4(range.xy(), range.xy() + range.zw());
+            space.parent = clip;
+            ui_system.clip_spaces.push_back(space);
+
+            uint space_id = ui_system.clip_spaces.size() - 1;
+
+            //
 
             for(ui_vertex &v : ret) {
                 v.pos = vec3(range.xy() + v.pos.xy() * range.zw(), z);
@@ -301,7 +329,7 @@ void menu_widget::mesh() {
                 v.color = vec4(1.0f, 1.0f, 1.0f, 0.5f);
                 v.data = 0x1;
                 
-                v.clip_space = clip;
+                v.clip_space = space_id;
             }
             vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
         }
@@ -311,12 +339,14 @@ void menu_widget::mesh() {
 void menu_widget::init() {
 }
 
-uint64_t menu_widget::insert(vec2 position, float z, vec3 color, float w, float h, float h2, std::shared_ptr<menu_node> root, std::vector<uint> path) {
+uint64_t menu_widget::insert(vec2 position, float z, vec3 color, float w, float h, float h2, menu_node* root, std::vector<uint> path) {
     axiom::ui_system &ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     menu_widget widget;
 
-    menu_node *rootn = root.get();
+    widget.has_clip = true;
+
+    menu_node *rootn = root;
     for(uint p : path) {
         rootn = &rootn->children[p];
     }

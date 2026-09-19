@@ -41,6 +41,9 @@ void ui_system::input_reset() {
     input_state.current_widget = NULL_WIDGET;
     input_state.depth = 0;
     input_state.attachment = 0;
+
+    position(axiom::position_mode::TOP_LEFT);
+    buffer(vec4(0.0f));
 }
 
 void ui_system::input_z(float z) {

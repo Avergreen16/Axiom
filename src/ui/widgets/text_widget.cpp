@@ -140,7 +140,8 @@ void text_widget::init() {
         size.y = text[0]->size.y;
         
         max_width = text[0]->max_width;
-        min_width = 0;
+        if(!text[0]->wrap) min_width = text[0]->size.x;
+        else min_width = 0.0f;
     };
 
     before.push_back(c);

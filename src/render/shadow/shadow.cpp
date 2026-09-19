@@ -49,12 +49,9 @@ void shadow_renderer::call() {
         return texture_size * base_pixel_size * pow(cascade_factor, t);
     };
 
-    float light_altitude = 12.5f;
-    float light_azimuth = 35.0f;
-
     mat3 orientation = glm::identity<mat3>();
-    orientation = (mat3)glm::rotate(-(light_altitude - 90.0f) / 360.0f * 2.0f * axiom::pi, vec3(0.0f, 1.0f, 0.0f)) * orientation;
-    orientation = (mat3)glm::rotate(light_azimuth / 360.0f * 2.0f * axiom::pi, vec3(0.0f, 0.0f, 1.0f)) * orientation;
+    orientation = (mat3)glm::rotate(-(altitude - 90.0f) / 360.0f * 2.0f * axiom::pi, vec3(0.0f, 1.0f, 0.0f)) * orientation;
+    orientation = (mat3)glm::rotate(azimuth / 360.0f * 2.0f * axiom::pi, vec3(0.0f, 0.0f, 1.0f)) * orientation;
 
     std::vector<vec3> frustum = {
         vec3(-1.0f, -1.0f, 0.5f),
@@ -195,6 +192,7 @@ void shadow_renderer::call() {
     axiom::push_uniform(19, texture_size);
     axiom::push_uniform(20, base_pixel_size);
     axiom::push_uniform(21, cascade_factor);
+    axiom::push_uniform(22, contrast);
 
     target->framebuffer.textures[1].bind(0);
     target->framebuffer.textures[2].bind(1);
@@ -298,14 +296,14 @@ void shadow_renderer::call() {
 
 void shadow_renderer::create(uint num_cascades, float cascade_factor, float base_pixel_size, uint texture_size, uint camera, render_target* target, std::function<void(framebuffer&, transform3d&, mat4, mat4)> render_func) {
     shadow_renderer renderer {
-        num_cascades,
-        cascade_factor,
-        base_pixel_size,
-        texture_size,
-        camera, 
-        target
+        .num_cascades = num_cascades,
+        .cascade_factor = cascade_factor,
+        .base_pixel_size = base_pixel_size,
+        .texture_size = texture_size,
+        .camera_entity = camera,
+        .target = target,
+        .render_func = render_func
     };
-    renderer.render_func = render_func;
 
     //
 

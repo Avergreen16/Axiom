@@ -57,6 +57,11 @@ void slider_widget::mesh() {
             base_color,
         };
 
+        std::vector<float> clips = {
+            -1.0f,
+            3.0f
+        };
+
         //
         
         vertices_before.clear();
@@ -65,12 +70,28 @@ void slider_widget::mesh() {
             std::vector<ui_vertex> ret = {a, b, d, a, d, c};
             vec4 range = ranges[i];
             vec4 color = colors[i];
+            float clip_rad = clips[i];
+            
+            if(clip_rad >= 0.0f) {
+                clip_space space;
+                space.range = vec4(position + range.xy(), position + range.xy() + range.zw());
+                space.radius = clip_rad;
+                space.parent = clip;
+                
+                ui_system.clip_spaces.push_back(space);
+            }
 
             for(ui_vertex& v : ret) {
                 v.pos = vec3(position + range.xy() + v.pos.xy() * range.zw(), z);
                 v.tex_pos = vec2(1.0f, 63.0f);
                 v.color = color;
                 v.data = 0x1;
+
+                if(clip_rad >= 0.0f) {
+                    v.clip_space = ui_system.clip_spaces.size() - 1;
+                } else {
+                    v.clip_space = clip;
+                }
             }
             vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
         }
@@ -80,6 +101,8 @@ void slider_widget::mesh() {
         std::vector<ui_vertex> vs = text_vertices;
         for(ui_vertex& v : vs) {
             v.pos += vec3(round(text_pos), 0.0f);
+            
+            v.clip_space = clip;
         }
         vertices_before.insert(vertices_before.end(), vs.begin(), vs.end());
     }
@@ -127,12 +150,16 @@ uint64_t slider_widget::insert(vec2 size, float slider_width, vec3 color, vec2 r
 capture_data slider_widget::handle_capture() {
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
-    std::vector<vec4> ranges = {
-        vec4(position, position + size)
-    };
+    bool clip_cursor = ui_system.cursor_clip(clip, ui_system.cursor_pos);
 
-    for(vec4 range : ranges) {
-        if(includes(ui_system.window->cursor_pos, range)) return {self, z, true};
+    if(clip_cursor) {
+        std::vector<vec4> ranges = {
+            vec4(position, position + size)
+        };
+
+        for(vec4 range : ranges) {
+            if(includes(ui_system.window->cursor_pos, range)) return {self, z, true};
+        }
     }
 
     return {self, z, false};

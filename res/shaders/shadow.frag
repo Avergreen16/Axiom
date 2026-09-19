@@ -19,6 +19,7 @@ layout(location = 13) uniform mat4 shadow_proj[5];
 layout(location = 19) uniform float texture_size;
 layout(location = 20) uniform float pixel_size;
 layout(location = 21) uniform float texture_growth;
+layout(location = 22) uniform float contrast;
 
 layout(location = 0) out vec4 frag_color;
 
@@ -83,14 +84,22 @@ mat4 get_transform(mat4 m) {
     );
 }
 
-void create_offsets(out vec2[16] v, ivec2 pos) {
-    for(int i = 0; i < 16; ++i) {
-        vec2 vv = normalize(vec2(to_float(hash(uint((pos.x * 3 * pos.y) * 255 + i))), to_float(hash(uint((pos.x * 2 * pos.y * 5) * 511 + i))))) * (float(i + 1) / 16);
-        v[i] = vv;
+const int num_samples = 32;
+
+void create_offsets(out vec2[num_samples] v, ivec2 pos) {
+    for(int i = 0; i < num_samples; ++i) {
+        vec2 vv = vec2(1.0);
+        uint ctr = 0;
+
+        while(length(vv) > 1.0 && ctr < 5) {
+            vv = vec2(to_float(hash(uint((pos.x * 3 * pos.y) * 255 + i))), to_float(hash(uint((pos.x * 2 * pos.y * 5) * 511 + i))));
+            v[i] = vv;
+            ++ctr;
+        }
     }
 }
 
-vec2 offsets[16];
+vec2 offsets[num_samples];
 
 void main() {
     frag_color = vec4(0.0);
@@ -125,9 +134,12 @@ void main() {
 
     bool x = false;
 
+    vec4 save_pos = pos;
+
     //for(int i = 4; i >= 0; --i) {
     for(int i = 0; i < 5; ++i) {
         float texel_size = pixel_size * pow(texture_growth, i);
+        pos = save_pos + vec4(normal * texel_size * 1.5, 0.0);
         vec4 spos = pos;
 
         mat4 smodel = shadow_model[i];// * inv_viewport_model);
@@ -145,14 +157,14 @@ void main() {
             vec2 texel_f = (spos.xy * 0.5 + 0.5) * vec2(textureSize(shadow_depth_tex[i], 0));
             ivec2 stexel = ivec2(floor(texel_f));
 
-            vec3 snormal = texelFetch(shadow_normal_tex[i], stexel, 0).rgb * 2.0 - 1.0;
             float sdepth = texelFetch(shadow_depth_tex[i], stexel, 0).r;
 
+            vec3 snormal = texelFetch(shadow_normal_tex[i], stexel, 0).rgb * 2.0 - 1.0;
             vec3 vx = vec3(1.0, 0.0, 0.0);
             vec3 vy = vec3(0.0, 1.0, 0.0);
-            vec3 snormal2 = mat3(sview) * snormal;
-            float slope_x = dot(snormal2, vx);
-            float slope_y = dot(snormal2, vy);
+            vec3 snormal2 = mat3(sview) * normal;
+            float slope_x = snormal2.x / snormal2.z;
+            float slope_y = snormal2.y / snormal2.z;
 
             spos = vec4(spos.xy, sdepth, 1.0);
             spos = inverse(sproj) * spos;
@@ -168,44 +180,65 @@ void main() {
             pp = sview * pp;
             pp = sproj * pp;
 
+            float d0 = (inverse(sproj) * vec4(0.0, 0.0, 0.0, 1.0)).z;
+            float d1 = (inverse(sproj) * vec4(0.0, 0.0, 1.0, 1.0)).z;
+
+            float d = d1 - d0;
+            d /= float(4294967295.0);
+
             if((pp.x < 1.0 && pp.x > -1.0 && pp.y < 1.0 && pp.y > -1.0 && pp.z >= 0.0 && pp.z < 1.0 || sdepth > rdepth) && x == false) {
                 sd = sdepth;
 
-                float bias = texel_size * 2.0;
-
-                float cos_theta = clamp(dot(snormal, light_dir), 0.1, 1.0);
-                float slope = sqrt(1.0 - cos_theta * cos_theta) / cos_theta;
-                bias += slope * texel_size;
-
-                float target_depth = pdepth;// + bias;
-                target_depth = (sproj * sview * pos).z;
+                float target_depth = pdepth;
+                //target_depth = (sproj * sview * (pos + vec4(light_dir * bias, 0.0))).z;
 
                 float frac = 0.0;//float(target_depth < psdepth);
                 float null_pixels = 0;
 
-                for(int j = 0; j < 16; ++j) {
+                for(int j = 0; j < num_samples; ++j) {
+                    vec2 offset = offsets[j];
                     vec2 screen_pos = texel_f;
-                    screen_pos += offsets[j];
+                    screen_pos += offset;
 
                     ivec2 ntexel = ivec2(floor(screen_pos));
+                    vec2 nt = offset;
 
                     if(ntexel.x < 0 || ntexel.y < 0 || ntexel.x >= size.x || ntexel.y >= size.y) ++null_pixels;
                     else {
-                        float sdepth2 = texelFetch(shadow_depth_tex[i], ntexel, 0).r;
+                        vec3 snormal = texelFetch(shadow_normal_tex[i], ntexel, 0).rgb * 2.0 - 1.0;
+                        vec3 vx = vec3(1.0, 0.0, 0.0);
+                        vec3 vy = vec3(0.0, 1.0, 0.0);
+                        vec3 snormal2 = mat3(sview) * snormal;
+                        float nslope_x = clamp(snormal2.x / snormal2.z, -10.0, 10.0);
+                        float nslope_y = clamp(snormal2.y / snormal2.z, -10.0, 10.0);
 
-                        if(target_depth < sdepth2) ++frac;
+                        //nslope_x = (abs(nslope_x) < abs(slope_x)) ? nslope_x : slope_x;
+                        //nslope_y = (abs(nslope_y) < abs(slope_y)) ? nslope_y : slope_y;
+
+                        //nslope_x = min(slope_x, nslope_x);
+                        //nslope_y = min(slope_y, nslope_y);
+
+                        float sdepth2 = texelFetch(shadow_depth_tex[i], ntexel, 0).r;
+                        vec3 pp = (inverse(sview) * inverse(sproj) * vec4(0.0, 0.0, sdepth2, 1.0)).xyz;
+                        float sd = dot(pp, light_dir);
+                        
+                        float bias = texel_size * length(vec2(nslope_x, nslope_y));
+
+                        sd += (nslope_x * nt.x + nslope_y * nt.y) * texel_size;
+
+                        if(target_depth + bias < sd) ++frac;
                     }
                 }
                 
-                frag_color = vec4(0.0, 0.0, 0.0, frac / (16.0 - null_pixels));
+                frag_color = vec4(0.0, 0.0, 0.0, frac / (num_samples - null_pixels)); 
 
                 x = true;
             }
         }
     }
     
-    if(!(normal.x == -1.0 && normal.y == -1.0 && normal.z == -1.0)) frag_color = vec4(0.0, 0.0, 0.0, mix((1.0 - clamp(dot(light_dir, normal), 0.0, 1.0)) * 1.0, 1.0, frag_color.w)); 
-    frag_color.w *= shading.w;
+    if(!(normal.x == -1.0 && normal.y == -1.0 && normal.z == -1.0)) frag_color = vec4(frag_color.xyz, mix(1.0 - clamp(dot(light_dir, normal), 0.0, 1.0), 1.0, frag_color.w)); 
+    frag_color.w *= contrast;
 
     //
     

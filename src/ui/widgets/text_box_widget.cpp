@@ -72,7 +72,7 @@ void text_box_widget::handle_inputs() {
     */
 
     if(ui_system.window->pressed_buttons.contains(axiom::input_code::MOUSE_RIGHT) && includes(ui_system.window->cursor_pos, vec4(position, position + size))) {
-        std::shared_ptr<axiom::menu_node> node(new axiom::menu_node{
+        axiom::menu_node* node = new axiom::menu_node{
             "",
             {
                 axiom::menu_node("COPY", {},
@@ -103,7 +103,7 @@ void text_box_widget::handle_inputs() {
                     }
                 ),
             }
-        });
+        };
         
         axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
         ui_system.input_reset();

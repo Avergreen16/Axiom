@@ -304,6 +304,15 @@ void scroll_widget::handle_inputs() {
 
 void scroll_widget::mesh() {
     if(dirty) {
+        axiom::ui_system& system = axiom::ecs.get_system<axiom::ui_system>();
+
+        if(has_clip) {
+            auto& space = system.clip_spaces[clip];
+
+            space.radius = 0.0f;
+            space.range = vec4(position, position + size + vec2(-scroll_width, 0.0f));
+        }
+
         dirty = false;
         
         std::vector<ui_vertex> ret;
@@ -343,7 +352,7 @@ void scroll_widget::mesh() {
                 v.color = vec4(0.0625f, 0.0625f, 0.0625f, 1.0f);
                 v.data = 1;
 
-                v.clip_space = clip;
+                v.clip_space = system.clip_spaces[clip].parent;
             }
             total_ret.insert(total_ret.end(), ret.begin(), ret.end());
         }
@@ -400,6 +409,8 @@ uint64_t scroll_widget::insert(float scroll_width, bool reserve) {
     scroll_widget widget;
     widget.position_mode = axiom::position_mode::BOTTOM_LEFT;
     widget.layout_mode = axiom::layout_mode::NONE;
+
+    if(reserve) widget.has_clip = true;
 
     widget.min_width = 0.0f;
     widget.max_width = FLT_MAX;

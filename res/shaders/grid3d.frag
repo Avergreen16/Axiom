@@ -363,10 +363,10 @@ void main() {
 
     if(lcolor.w != 0.0) fcolor = blend(fcolor, lcolor);
 
-    if(depth == 0.0) frag_color = vec4(base_color, 1.0);
-    else frag_color = vec4(0.0);
+    //if(depth == 0.0) frag_color = vec4(base_color, 1.0);
+    frag_color = vec4(0.0, 0.0, 0.0, 0.0);
 
-    frag_color = vec4(frag_color.xyz * (1.0 - fcolor.w), frag_color.w) + vec4(fcolor.xyz * fcolor.w, fcolor.w);
+    frag_color = vec4(frag_color.xyz * (1.0 - fcolor.w), frag_color.w) + vec4(fcolor.xyz, fcolor.w);
 
     //frag_normal = vec4(0.0);
 

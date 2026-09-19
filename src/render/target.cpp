@@ -34,9 +34,11 @@ void render_target::call() {
 
     draw(*this);
 
+    /*
     if(shadow != nullptr) {
         shadow->call();
     }
+    */
 }
 
 render_target* render_target::create(std::function<void(render_target&)> draw_func, ivec2 size, std::vector<texture_format> fb_format, std::vector<texture_attachment> fb_attachment, std::vector<int> fb_binding) {
