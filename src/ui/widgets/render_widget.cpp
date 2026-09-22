@@ -38,8 +38,6 @@ void render_widget::mesh() {
         vertices_before = total_ret;
     }
 
-    //std::cout << position.x << " " << position.y << " " << size.x << " " << size.y << " " << target->size.x << " " << target->size.y << "\n";
-
     ++ui_system->target;
 }
 

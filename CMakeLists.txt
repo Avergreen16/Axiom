@@ -8,7 +8,7 @@ add_subdirectory(${AXIOM_ROOT}/src/core)
 target_link_libraries(Axiom INTERFACE AxiomCore)
 
 if(AXIOM_INCLUDE_PHYSICS2D)
-    add_subdirectory(${AXIOM_ROOT}/src/physics-2d)
+    add_subdirectory(${AXIOM_ROOT}/src/physics2d)
     target_link_libraries(Axiom INTERFACE AxiomPhysics2D)
 endif()
 

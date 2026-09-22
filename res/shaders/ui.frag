@@ -81,6 +81,6 @@ void main() {
         base_color = cc * color;
         base_color.w *= sdfc;
         
-        text_color = vec4(0.0);
+        text_color = vec4(0.0, 0.0, 0.0, base_color.w);
     }
 }

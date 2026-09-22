@@ -19,21 +19,25 @@ render_system::render_system(axiom::window* win_) {
     frag = axiom::text_asset::load(resource_root + "/shaders/ui_composite.frag");
     shaders.emplace("ui_composite", std::move(axiom::shader(vert, frag)));
 
-    vert = axiom::text_asset::load(resource_root + "/shaders/grid.vert");
-    frag = axiom::text_asset::load(resource_root + "/shaders/grid.frag");
-    shaders.emplace("grid", std::move(axiom::shader(vert, frag)));
+    vert = axiom::text_asset::load(resource_root + "/shaders/grid2d.vert");
+    frag = axiom::text_asset::load(resource_root + "/shaders/grid2d.frag");
+    shaders.emplace("grid2d", std::move(axiom::shader(vert, frag)));
     
     vert = axiom::text_asset::load(resource_root + "/shaders/grid3d.vert");
     frag = axiom::text_asset::load(resource_root + "/shaders/grid3d.frag");
     shaders.emplace("grid3d", std::move(axiom::shader(vert, frag)));
     
-    vert = axiom::text_asset::load(resource_root + "/shaders/color.vert");
-    frag = axiom::text_asset::load(resource_root + "/shaders/color.frag");
-    shaders.emplace("color", std::move(axiom::shader(vert, frag)));
+    vert = axiom::text_asset::load(resource_root + "/shaders/color2d.vert");
+    frag = axiom::text_asset::load(resource_root + "/shaders/color2d.frag");
+    shaders.emplace("color2d", std::move(axiom::shader(vert, frag)));
     
     vert = axiom::text_asset::load(resource_root + "/shaders/color3d.vert");
     frag = axiom::text_asset::load(resource_root + "/shaders/color3d.frag");
     shaders.emplace("color3d", std::move(axiom::shader(vert, frag)));
+
+    vert = axiom::text_asset::load(resource_root + "/shaders/texture2d.vert");
+    frag = axiom::text_asset::load(resource_root + "/shaders/texture2d.frag");
+    shaders.emplace("texture2d", std::move(axiom::shader(vert, frag)));
 
     vert = axiom::text_asset::load(resource_root + "/shaders/texture3d.vert");
     frag = axiom::text_asset::load(resource_root + "/shaders/texture3d.frag");

@@ -561,61 +561,173 @@ std::vector<collision_data2d> physics_system2d::collision(transform2d& ta, colli
                         vec2 pa = support(-collision_normal, a_vertices);
                         float da0 = FLT_MAX;
                         float da1 = -FLT_MAX;
+                        vec2 va0;
+                        vec2 va1;
 
                         vec2 pb = support(collision_normal, b_vertices);
                         float db0 = FLT_MAX;
                         float db1 = -FLT_MAX;
+                        vec2 vb0;
+                        vec2 vb1;
 
                         vec2 sideways = {collision_normal.y, -collision_normal.x};
 
                         float margin = 0.01f;
 
-                        for(int i = 0; i < a_vertices.size(); ++i) {
+                        //
+
+                        uint afi = 0xFFFFFFFF;
+                        float af = -axiom::max_float;
+                        uint bfi = 0xFFFFFFFF;
+                        float bf = -axiom::max_float;
+
+                        uint i = 0;
+                        for(auto& face : ca.faces) {
+                            vec2 norm = ta.orientation * face.normal;
+
+                            float d = dot(norm, collision_normal);
+
+                            if(d > af) {
+                                afi = i;
+                                af = d;
+                            }
+
+                            ++i;
+                        }
+                        
+                        i = 0;
+                        for(auto& face : cb.faces) {
+                            vec2 norm = tb.orientation * face.normal;
+
+                            float d = dot(norm, -collision_normal);
+
+                            if(d > bf) {
+                                bfi = i;
+                                bf = d;
+                            }
+
+                            ++i;
+                        }
+                        
+                        vec2 norm_a = ta.orientation * ca.faces[afi].normal;
+                        vec2 norm_b = tb.orientation * cb.faces[bfi].normal;
+                        
+                        vec2 focus_normal = (dot(norm_a, collision_normal) > dot(norm_b, -collision_normal)) ? norm_a : -norm_b;
+
+                        //std::string str = std::to_string(collision_normal.x) + " " + std::to_string(collision_normal.y) + " " + std::to_string(focus_edge.x) + " " + std::to_string(focus_edge.y) + "\n";
+                        //std::cout << str;
+
+                        vec2 edge_a = vec2(-norm_a.y, norm_a.x);
+                        vec2 edge_b = vec2(-norm_b.y, norm_b.x);
+                        vec2 focus_edge = vec2(-focus_normal.y, focus_normal.x);
+
+                        for(int i : ca.faces[afi].vertices) {
                             vertex_element2d& v = a_vertices[i];
-                            float d = glm::dot(v.center, sideways);
+                            float d = glm::dot(v.center, focus_edge);
 
-                            bool c = glm::dot(v.center - pa, -collision_normal) > -margin;
-
-                            if(c) {
-                                if(d < da0) da0 = d;
-                                if(d > da1) da1 = d;
+                            if(d < da0) {
+                                da0 = d;
+                                va0 = v.center;
+                            }
+                            if(d > da1) {
+                                da1 = d;
+                                va1 = v.center;
                             }
                         }
 
-                        for(int i = 0; i < b_vertices.size(); ++i) {
+                        for(int i : cb.faces[bfi].vertices) {
                             vertex_element2d& v = b_vertices[i];
-                            float d = glm::dot(v.center, sideways);
+                            float d = glm::dot(v.center, focus_edge);
 
-                            bool c = glm::dot(v.center - pb, collision_normal) > -margin;
-
-                            if(c) {
-                                if(d < db0) db0 = d;
-                                if(d > db1) db1 = d;
+                            if(d < db0) {
+                                db0 = d;
+                                vb0 = v.center;
+                            }
+                            if(d > db1) {
+                                db1 = d;
+                                vb1 = v.center;
                             }
                         }
+
+                        //std::cout << edge_a << " " << edge_b << "\n";
 
                         float c0 = glm::max(da0, db0);
                         float c1 = glm::min(da1, db1);
 
-                        vec2 a2 = pa + sideways * (c0 - glm::dot(pa, sideways));
-                        vec2 a3 = pa + sideways * (c1 - glm::dot(pa, sideways));
+                        vec2 a0;
+                        vec2 a1;
+                        vec2 b0;
+                        vec2 b1;
 
-                        vec2 b2 = pb + sideways * (c0 - glm::dot(pb, sideways));
-                        vec2 b3 = pb + sideways * (c1 - glm::dot(pb, sideways));
+                        if(focus_edge == edge_a) {
+                            a0 = va0 + focus_edge * (c0 - dot(focus_edge, va0));
+                            a1 = va0 + focus_edge * (c1 - dot(focus_edge, va0));
+
+                            vec2 borigin = vb0;
+                            vec2 bdir = normalize(vb1 - vb0);
+
+                            float x0 = a0.x;
+                            float y0 = a0.y;
+                            float x1 = norm_a.x;
+                            float y1 = norm_a.y;
+                            
+                            float x2 = vb0.x;
+                            float y2 = vb0.y;
+                            float x3 = bdir.x;
+                            float y3 = bdir.y;
+
+                            float fb0 = (x3 * y2 - x3 * y0 + x0 * y3 - x2 * y3) / (x3 * y1 - x1 * y3);
+
+                            b0 = vec2(x0 + x1 * fb0, y0 + y1 * fb0);
+                            
+                            x0 = a1.x;
+                            y0 = a1.y;
+                            
+                            fb0 = (x3 * y2 - x3 * y0 + x0 * y3 - x2 * y3) / (x3 * y1 - x1 * y3);
+                            
+                            b1 = vec2(x0 + x1 * fb0, y0 + y1 * fb0);
+                        } else {
+                            b0 = vb0 + focus_edge * (c0 - dot(focus_edge, vb0));
+                            b1 = vb0 + focus_edge * (c1 - dot(focus_edge, vb0));
+
+                            vec2 aorigin = va0;
+                            vec2 adir = normalize(va1 - va0);
+
+                            float x0 = b0.x;
+                            float y0 = b0.y;
+                            float x1 = norm_b.x;
+                            float y1 = norm_b.y;
+                            
+                            float x2 = va0.x;
+                            float y2 = va0.y;
+                            float x3 = adir.x;
+                            float y3 = adir.y;
+
+                            float fa0 = (x3 * y2 - x3 * y0 + x0 * y3 - x2 * y3) / (x3 * y1 - x1 * y3);
+
+                            a0 = vec2(x0 + x1 * fa0, y0 + y1 * fa0);
+                            
+                            x0 = b1.x;
+                            y0 = b1.y;
+                            
+                            fa0 = (x3 * y2 - x3 * y0 + x0 * y3 - x2 * y3) / (x3 * y1 - x1 * y3);
+                            
+                            a1 = vec2(x0 + x1 * fa0, y0 + y1 * fa0);
+                        }
 
                         if(da0 <= db1 && db0 <= da1) {
                             collision_data2d collision_data2d;
                             collision_data2d.collide = true;
                             collision_data2d.a = 0;
                             collision_data2d.b = 0;
-                            collision_data2d.pa = a2;
-                            collision_data2d.pb = b2;
-                            collision_data2d.normal = collision_normal;
+                            collision_data2d.pa = a0;
+                            collision_data2d.pb = b0;
+                            collision_data2d.normal = focus_normal;
 
                             data.push_back(collision_data2d);
 
-                            collision_data2d.pa = a3;
-                            collision_data2d.pb = b3;
+                            collision_data2d.pa = a1;
+                            collision_data2d.pb = b1;
 
                             data.push_back(collision_data2d);
                         } else {
@@ -625,7 +737,7 @@ std::vector<collision_data2d> physics_system2d::collision(transform2d& ta, colli
                             collision_data2d.b = 0;
                             collision_data2d.pa = cp_a;
                             collision_data2d.pb = cp_b;
-                            collision_data2d.normal = collision_normal;
+                            collision_data2d.normal = focus_normal;
 
                             data.push_back(collision_data2d);
                         }
@@ -735,7 +847,7 @@ void physics_system2d::insert_collision(collision_data2d c) {
     }
 
     std::vector<collision_data2d>& v = collision_table[a];
-
+    
     for(int i = v.size() - 1; i >= 0; --i) {
         collision_data2d& d = v[i];
         vec2 diff_a = d.pa - c.pa;
@@ -1120,6 +1232,8 @@ void physics_system2d::physics_loop() {
         }
     }
 
+    //
+
     collision_constraint2ds.clear();
     collision_constraint2ds.resize(collision_table.size());
 
@@ -1171,6 +1285,7 @@ void physics_system2d::physics_loop() {
         integrate();
     }
 
+    
     // prune
 
     std::vector<uint64_t> remove_table;
@@ -1188,8 +1303,12 @@ void physics_system2d::physics_loop() {
             float v = length(distance - cc.d->normal * dot_normal);
 
             if(dot_normal > contact_sep || v > contact_sep) {
+                uint n = (uint64_t(cc.d) - uint64_t(d.data())) / sizeof(collision_data2d);
 
-                n_erase.push_back((uint64_t(cc.d) - uint64_t(d.data())) / sizeof(collision_data2d));
+                auto& nc = d[n];
+                if(nc.frame > 0) n_erase.push_back(n);
+
+                ++nc.frame;  
             }
         }
 
@@ -1285,11 +1404,11 @@ void constraint_distance::get_values() {
 }
 
 void physics_system2d::velocity_solve() {
-    float spring = 0.5f;
-    float softness = 0.005f;
+    float spring = 0.4f;
+    float softness = 0.015f;
 
     float spring_constraint = 0.5f;
-    float softness_constraint = 0.005f;
+    float softness_constraint = 0.025f;
     float factor = 1.0f / physics_step;
     float factor_constraint = 1.0f / physics_step;
 
@@ -1685,6 +1804,7 @@ vec2 physics_system2d::calculate_inertia(collider2d& c) {
     }
 
     center /= c.mass;
+    if(c.mass == 0.0) center = vec2(0.0f);
 
     //
 
@@ -1692,6 +1812,8 @@ vec2 physics_system2d::calculate_inertia(collider2d& c) {
 
     float dist = length(center);
     c.inertia -= dist * dist * c.mass;
+    
+    if(c.mass == 0.0f) c.is_static = true;
 
     return center;
 }
@@ -1932,6 +2054,10 @@ std::vector<collision_data2d> physics_system2d::collide(transform2d t, std::vect
     }
 
     return ret;
+}
+
+void physics2d_init() {
+    axiom::ecs.register_system(axiom::physics_system2d());
 }
 
 }

@@ -175,4 +175,71 @@ vec2 support(vec2 direction, std::vector<vertex_element2d> ellipsoids) {
     return point;
 }
 
+void create_faces(collision_shape2d& shape) {
+    vec2 center = vec2(0.0f);
+
+    std::vector<uint> points;
+    for(int i = 0; i < shape.vertices.size(); ++i) {
+        points.push_back(i);
+
+        center += shape.vertices[i].center;
+    }
+
+    center /= float(shape.vertices.size());
+
+    std::sort(points.begin(), points.end(), 
+        [&shape, center](const uint& a, const uint& b) {
+            vec2 pta = shape.vertices[a].center;
+            vec2 ptb = shape.vertices[b].center;
+            
+            float theta_a = std::atan2(pta.y - center.y, pta.x - center.x);
+            float theta_b = std::atan2(ptb.y - center.y, ptb.x - center.x);
+
+            return theta_a < theta_b;
+        }
+    );
+
+    for(int i = 0; i < shape.vertices.size(); ++i) {
+        int i0 = i;
+        int i1 = (i + 1) % shape.vertices.size();
+
+        vec2 a = shape.vertices[points[i0]].center;
+        vec2 b = shape.vertices[points[i1]].center;
+
+        vec2 normal = normalize(a - b);
+        normal = vec2(normal.y, -normal.x);
+
+        shape_face2d face;
+        face.normal = normal;
+        face.vertices = {points[i0], points[i1]};
+
+        shape.faces.push_back(face);
+    }
+
+    /*
+    for(int i = 0; i < shape.faces.size(); ++i) {
+        auto& face_a = shape.faces[i];
+        for(int j = i + 1; j < shape.faces.size(); ++j) {
+            auto& face_b = shape.faces[j];
+
+            if(dot(normalize(face_a.normal), normalize(face_b.normal)) > 0.999f) {
+                face_a.normal = face_a.normal + face_b.normal;
+                face_a.vertices.insert(face_a.vertices.end(), face_b.vertices.begin(), face_b.vertices.end());
+
+                std::sort(face_a.vertices.begin(), face_a.vertices.end());
+
+                auto last = std::unique(face_a.vertices.begin(), face_a.vertices.end());
+
+                face_a.vertices.erase(last, face_a.vertices.end());
+
+                shape.faces.erase(shape.faces.begin() + j);
+                --j;
+            }
+        }
+
+        face_a.normal = normalize(face_a.normal);
+    }
+    */
+}
+
 }

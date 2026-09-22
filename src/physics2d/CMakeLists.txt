@@ -8,6 +8,7 @@ add_library(AxiomPhysics2D STATIC
 target_include_directories(AxiomPhysics2D PUBLIC
     ${AXIOM_ROOT}/src
     ${AXIOM_ROOT}/src/physics-2d
+    ${AXIOM_ROOT}
 )
 
 target_link_libraries(AxiomPhysics2D PUBLIC

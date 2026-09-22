@@ -100,7 +100,7 @@ uint64_t text_widget::insert(std::string str, axiom::text_alignment alg, bool wr
 
     widget.size = vec2(0.0f);
     widget.min_width = 0.0f;
-    widget.max_width = FLT_MAX;
+    widget.max_width = 0.0f;
     widget.min_height = 0.0f;
     widget.max_height = 0.0f;
     widget.weight_height = 0.0f;

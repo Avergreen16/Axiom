@@ -193,6 +193,7 @@ void shadow_renderer::call() {
     axiom::push_uniform(20, base_pixel_size);
     axiom::push_uniform(21, cascade_factor);
     axiom::push_uniform(22, contrast);
+    axiom::push_uniform(23, blend_radius);
 
     target->framebuffer.textures[1].bind(0);
     target->framebuffer.textures[2].bind(1);

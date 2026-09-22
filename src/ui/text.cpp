@@ -103,7 +103,7 @@ std::vector<ui_vertex> mesh_text(ttf_font& f, uint text_size, std::string str, t
     bool hex = false;
     float min_offset = 0.0;
 
-    uint num_lines = 0;
+    int num_lines = 0;
 
     std::vector<character> word_ret;
     vec2 word_pos = vec2(0.0f);

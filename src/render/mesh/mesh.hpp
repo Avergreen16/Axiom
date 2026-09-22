@@ -9,6 +9,12 @@ struct color_vertex2d {
     vec4 color;
 };
 
+struct texture_vertex2d {
+    vec2 position;
+    vec2 texture;
+    vec4 color;
+};
+
 struct color_vertex3d {
     vec3 position;
     vec4 color;
@@ -36,6 +42,16 @@ struct color_mesh2d {
 
     std::shared_ptr<axiom::vertices> v_lines;
     std::shared_ptr<axiom::vertices> v_tris;
+    
+    void load();
+};
+
+struct texture_mesh2d {
+    std::vector<texture_vertex2d> vs;
+
+    std::shared_ptr<axiom::vertices> vertices;
+    
+    void load();
 };
 
 struct color_mesh3d {

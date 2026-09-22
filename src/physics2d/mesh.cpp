@@ -113,10 +113,10 @@ void create_mesh(axiom::collider2d& collider, std::vector<vec2>* perimeter, std:
     }
 
     float width = 0.125f;
-    perimeter->push_back(vec2(-width, -width));
-    perimeter->push_back(vec2(width, width));
-    perimeter->push_back(vec2(width, -width));
-    perimeter->push_back(vec2(-width, width));
+    //perimeter->push_back(vec2(-width, -width));
+    //perimeter->push_back(vec2(width, width));
+    //perimeter->push_back(vec2(width, -width));
+    //perimeter->push_back(vec2(-width, width));
     
     delete p;
     if(a) delete a;

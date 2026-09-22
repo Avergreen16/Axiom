@@ -10,6 +10,7 @@ layout(location = 2) uniform mat4 proj;
 
 layout(location = 0) out vec4 o_color;
 layout(location = 1) out vec3 o_normal;
+layout(location = 2) out vec3 o_position;
 
 void main() {
     gl_Position = view * model * vec4(position, 1.0);
@@ -18,4 +19,6 @@ void main() {
 
     o_color = color;
     o_normal = mat3(model) * normal;
+
+    o_position = mat3(model) * position;
 }

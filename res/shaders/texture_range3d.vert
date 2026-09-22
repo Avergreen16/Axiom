@@ -14,6 +14,7 @@ layout(location = 0) out vec4 o_color;
 layout(location = 1) out vec2 o_texture;
 layout(location = 2) flat out vec4 o_texture_range;
 layout(location = 3) out vec3 o_normal;
+layout(location = 4) out vec3 o_position;
 
 void main() {
     gl_Position = view * model * vec4(position, 1.0);
@@ -24,4 +25,6 @@ void main() {
     o_texture = tex;
     o_normal = mat3(model) * normal;
     o_texture_range = tex_range;
+
+    o_position = mat3(model) * position;
 }

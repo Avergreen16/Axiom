@@ -504,11 +504,59 @@ void ui_init(axiom::window* window) {
     //axiom::ecs.get_system<axiom::render_system>().textures.emplace("font_axiom_default", std::move(font_tex));
 }
 
+/*
+does erase
+0 0 1 
+0 0 2 3 
+0 0 2 4 
+0 0 2 5 
+0 0 2 
+0 0 6 7 8 
+0 0 6 7 
+0 0 6 
+1 9 10 
+1 9 11 
+1 9 12 
+1 9 13 
+1 9 
+
+15 0 16 
+15 0 2 3 
+15 0 2 4 
+15 0 2 5 
+15 0 2 
+15 0 6 7 8 
+15 0 6 7 
+15 0 6 
+15
+
+does NOT erase
+0 0 1 
+0 0 2 3 
+0 0 2 4 
+0 0 2 5 
+0 0 2 
+0 0 6 7 8 
+0 0 6 7 
+0 0 6 
+1 9 10 
+1 9 11 
+1 9 12 
+1 9 13 
+1 9 
+
+15 0 16 
+15
+
+*/
+
 void ui_system::handle_clip() {
     std::vector<ulong> roots;
     for(auto& [key, widget] : widgets) if(widget->parent == NULL_WIDGET) roots.push_back(key);
 
     clip_spaces.clear();
+    
+    uint n = 0;
 
     for(ulong root : roots) {
         std::vector<ulong> path = {root};
@@ -524,25 +572,26 @@ void ui_system::handle_clip() {
             if(path.size() == 0) break;
 
             auto& widget = widgets[path.back()];
+            for(auto& p : path) std::cout << p << " ";
+            std::cout << "\n";
 
             bool d = false;
             if(child_ids.back() == 0) {
+                if(widget->attachments.size()) {
+                    for(auto& attachment : widget->attachments) attachment.clip = 0xFFFFFFFF;
+                }
                 // going down
 
                 if(widget->has_clip) {
                     clip_space space;
-
-                    if(path_clip.size() > 0) {
-                        space.parent = path_clip.back();
-                    }
-
                     clip_spaces.push_back(space);
+
                     path_clip.push_back(clip_spaces.size() - 1);
                     widget->clip = path_clip.back();
                 } else {
                     if(path_clip.size() == 0) path_clip.push_back(0xFFFFFFFF);
                     else path_clip.push_back(path_clip.back());
-
+                    
                     widget->clip = path_clip.back();
                 }
 
@@ -555,42 +604,32 @@ void ui_system::handle_clip() {
                 path_clip.pop_back();
                 child_ids.pop_back();
 
-                if(widget->parent != 0xFFFFFFFFFFFFFFFF) {
+                if(widget->parent != NULL_WIDGET) {
                     auto& wparent = widgets[widget->parent];
-                    if(wparent->attachments.size() && wparent->children.size() && path.size()) {
+                    if(wparent->attachments.size() && wparent->children.size()) {
                         path_clip.pop_back();
                         path.pop_back();
                     }
                 }
-
             } else {
+                // go down
+
                 if(widget->attachments.size()) {
-                    if(d || widget->child_attachments[child_ids.back()] != path.back()) {
-                        if(!d) {
-                            path_clip.pop_back();
-                            path.pop_back();
-                        }
-
-                        auto& attachment = widget->attachments[widget->child_attachments[child_ids.back()]];
-                        if(attachment.has_clip) {
+                    path.push_back(widget->child_attachments[child_ids.back()]);
+                    if(widget->attachments[widget->child_attachments[child_ids.back()]].has_clip) {
+                        if(widget->attachments[widget->child_attachments[child_ids.back()]].clip == 0xFFFFFFFF) {
                             clip_space space;
-
-                            if(path_clip.size() > 0) {
-                                space.parent = path_clip.back();
-                            }   
-
                             clip_spaces.push_back(space);
-                            path_clip.push_back(clip_spaces.size() - 1);
-                            attachment.clip = path_clip.back();
-                        } else {
-                            if(path_clip.size() == 0) path_clip.push_back(0xFFFFFFFF);
-                            else path_clip.push_back(path_clip.back());
 
-                            attachment.clip = path_clip.back();
+                            widget->attachments[widget->child_attachments[child_ids.back()]].clip = clip_spaces.size() - 1;
                         }
 
-                        path.push_back(widget->child_attachments[child_ids.back()]);
+                        path_clip.push_back(widget->attachments[widget->child_attachments[child_ids.back()]].clip);
+                    } else {
+                        widget->attachments[widget->child_attachments[child_ids.back()]].clip = path_clip.back();
+                        path_clip.push_back(path_clip.back());
                     }
+                    
                 }
                 
                 path.push_back(widget->children[child_ids.back()]);
@@ -599,6 +638,10 @@ void ui_system::handle_clip() {
                 child_ids.push_back(0);   
             }
         }
+
+        
+        std::cout << "\n";
+        ++n;
     }
 
 }

@@ -24,6 +24,8 @@ struct collision_data2d {
     float deltaT = 0.0f;
     float deltaN = 0.0f;
     float sumN = 0.0f;
+
+    uint frame = 0;
 };
 
 struct col_constraint {
@@ -185,9 +187,9 @@ struct physics_system2d : axiom::system {
 
     // parameters
     float fps = 60.0f;
-    uint velocity_iterations = 4;
+    uint velocity_iterations = 8;
     uint position_iterations = 0;
-    uint substeps = 4;
+    uint substeps = 1;
     float contact_sep = 0.02f;
     float static_dist = 0.0625f;
     float penetration_threshold = FLT_MAX;
@@ -263,5 +265,7 @@ struct physics_system2d : axiom::system {
 vec2 get_gravity(vec2 pos);
 
 void get_normal(vec2 a, vec2 b, vec2 r, vec2& normal, vec2& center);
+
+void physics2d_init();
 
 }

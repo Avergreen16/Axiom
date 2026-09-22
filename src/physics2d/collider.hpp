@@ -29,12 +29,18 @@ struct BVH_node2d {
     std::vector<uint> children;
 };
 
+struct shape_face2d {
+    vec2 normal;
+    std::vector<uint> vertices;
+};
+
 struct collision_shape2d {
     axiom::bounding_box2d bounding_box;
 
     //
 
     std::vector<vertex_element2d> vertices;
+    std::vector<shape_face2d> faces;
     vec2 radius = vec2(0.0f);
 
     float mass;
@@ -59,9 +65,6 @@ struct collider2d {
 
     vec2 velocity = vec2(0.0f);
     float angular_velocity = 0.0f;
-    
-    vec2 beta_velocity = vec2(0.0f);
-    float beta_angular_velocity = 0.0f;
 
     //
 
@@ -82,5 +85,7 @@ struct collider2d {
 
 vec2 support(vec2 direction, vec2 center, mat2 orientation, vec2 radii);
 vec2 support(vec2 direction, std::vector<vertex_element2d> ellipsoids);
+
+void create_faces(collision_shape2d& shape);
 
 }
