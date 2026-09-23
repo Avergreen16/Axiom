@@ -37,6 +37,7 @@ void main() {
     vec4 line_a = vec4(0.0);
 
     float f = 1.0 - filtered_grid(coords, dx, dy, 0.5);
+    f *= 0.125;
 
     c.rgb = vec3(1.0) * f + c.rgb * (1.0 - f);
 

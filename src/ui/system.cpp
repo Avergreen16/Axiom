@@ -572,8 +572,8 @@ void ui_system::handle_clip() {
             if(path.size() == 0) break;
 
             auto& widget = widgets[path.back()];
-            for(auto& p : path) std::cout << p << " ";
-            std::cout << "\n";
+            //for(auto& p : path) std::cout << p << " ";
+            //std::cout << "\n";
 
             bool d = false;
             if(child_ids.back() == 0) {
@@ -591,7 +591,7 @@ void ui_system::handle_clip() {
                 } else {
                     if(path_clip.size() == 0) path_clip.push_back(0xFFFFFFFF);
                     else path_clip.push_back(path_clip.back());
-                    
+
                     widget->clip = path_clip.back();
                 }
 
@@ -638,9 +638,8 @@ void ui_system::handle_clip() {
                 child_ids.push_back(0);   
             }
         }
-
         
-        std::cout << "\n";
+        //std::cout << "\n";
         ++n;
     }
 

@@ -124,6 +124,8 @@ void main() {
     vec3 normal = texelFetch(viewport_normal_tex, ptexel, 0).rgb * 2.0 - 1.0;
     vec3 shade_normal = texelFetch(viewport_shading_tex, ptexel, 0).rgb * 2.0 - 1.0;
 
+    if(depth == 0.0) discard;
+
     vec4 shading = texelFetch(viewport_shading_tex, ptexel, 0);
     shading.xyz = shading.xyz * 2.0 - 1.0;
 
