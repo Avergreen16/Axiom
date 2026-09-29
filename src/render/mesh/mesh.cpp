@@ -37,6 +37,18 @@ void texture_mesh2d::load() {
 }
 
 void color_mesh3d::load() {
+    vec3 min = vec3(axiom::max_float);
+    vec3 max = vec3(-axiom::max_float);
+
+    for(auto& v : vs) {
+        min = glm::min(min, v.position);
+        max = glm::max(max, v.position);
+    }
+
+    radius = length(max - min);
+
+    //
+
     if(!vertices) {
         vertices = std::shared_ptr<axiom::vertices>(new axiom::vertices);
         vertices->init();
@@ -49,6 +61,16 @@ void color_mesh3d::load() {
 }
 
 void texture_mesh3d::load() {
+    vec3 min = vec3(axiom::max_float);
+    vec3 max = vec3(-axiom::max_float);
+
+    for(auto& v : vs) {
+        min = glm::min(min, v.position);
+        max = glm::max(max, v.position);
+    }
+
+    radius = length(max - min);
+
     if(!vertices) {
         vertices = std::shared_ptr<axiom::vertices>(new axiom::vertices);
         vertices->init();
@@ -62,6 +84,16 @@ void texture_mesh3d::load() {
 }
 
 void texture_range_mesh3d::load() {
+    vec3 min = vec3(axiom::max_float);
+    vec3 max = vec3(-axiom::max_float);
+
+    for(auto& v : vs) {
+        min = glm::min(min, v.position);
+        max = glm::max(max, v.position);
+    }
+
+    radius = length(max - min);
+    
     if(!vertices) {
         vertices = std::shared_ptr<axiom::vertices>(new axiom::vertices);
         vertices->init();

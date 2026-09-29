@@ -12,7 +12,7 @@ ui_system::ui_system(axiom::window* window_) {
 }
     
 void ui_system::init() {
-    //fonts.emplace("default mono", font("resources/fonts/axiom_default.bdf"));
+    font_handler.process_ttf("res/JetBrainsMono-Regular.ttf", "test");
 }
 
 void ui_system::input_root(int delta) {
@@ -143,9 +143,9 @@ void ui_system::input_set(ulong w) {
 }
 
 void ui_system::call() {
+    target_textures.clear();
+    
     handle_capture();
-
-    target = 0;
 
     copy = false;
     paste = false;
@@ -166,8 +166,6 @@ void ui_system::call() {
 
     std::vector<ulong> roots;
     for(auto& [key, widget] : widgets) if(widget->parent == NULL_WIDGET) roots.push_back(key);
-
-    target_textures.clear();
 
     for(ulong root : roots) {
         std::vector<ulong> path = {root};
@@ -206,11 +204,12 @@ void ui_system::call() {
     
     for(auto& t : text) {
         t->call();
+        t->shape();
     }
 
+    //
+
     for(int i = 0; i < 8; ++i) {
-        iter = i;
-        
         solve_constraints();
         
         for(auto& t : text) {
@@ -242,6 +241,9 @@ void ui_system::call() {
         cursor_anchor = window->cursor_pos;
     }
     cursor_pos = window->cursor_pos;
+
+    for(auto& t : text) t->touch();
+    font_handler.touch_texture();
 
     handle_clip();
 
@@ -584,6 +586,8 @@ void ui_system::handle_clip() {
 
                 if(widget->has_clip) {
                     clip_space space;
+                    if(path_clip.size()) space.parent = path_clip.back();
+
                     clip_spaces.push_back(space);
 
                     path_clip.push_back(clip_spaces.size() - 1);
@@ -619,6 +623,8 @@ void ui_system::handle_clip() {
                     if(widget->attachments[widget->child_attachments[child_ids.back()]].has_clip) {
                         if(widget->attachments[widget->child_attachments[child_ids.back()]].clip == 0xFFFFFFFF) {
                             clip_space space;
+                            if(path_clip.size()) space.parent = path_clip.back();
+
                             clip_spaces.push_back(space);
 
                             widget->attachments[widget->child_attachments[child_ids.back()]].clip = clip_spaces.size() - 1;

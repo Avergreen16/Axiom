@@ -14,16 +14,16 @@ struct shadow_renderer {
     
     float altitude = 12.5f;
     float azimuth = 35.0f;
-    float contrast = 0.98f;
+    float contrast = 0.99f;
     float blend_radius = 1.0;
 
     uint camera_entity;
     render_target* target;
 
     std::vector<framebuffer> framebuffers;
-    std::function<void(framebuffer&, transform3d&, mat4, mat4)> render_func;
+    std::function<void(framebuffer&, transform3d&, mat4, mat4, float)> render_func;
 
-    static void create(uint num_cascades, float cascade_factor, float base_pixel_size, uint texture_size, uint camera, render_target* target, std::function<void(framebuffer&, transform3d&, mat4, mat4)> render_func);
+    static void create(uint num_cascades, float cascade_factor, float base_pixel_size, uint texture_size, uint camera, render_target* target, std::function<void(framebuffer&, transform3d&, mat4, mat4, float)> render_func);
     void call();
 };
 

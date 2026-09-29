@@ -12,7 +12,7 @@ void message_widget::handle_inputs() {
     bool prev_hover = hover;
 
     vec4 include_range = vec4(position, position + size + vec2(0.0f, buffer.w));
-    if(inserted) include_range.w += ui_system.fonts[0].line_height + buffer.y;
+    if(inserted) include_range.w += ui_system.font_handler.fonts["test"].line_height + buffer.y;
 
     if(includes(ui_system.window->cursor_pos, include_range) && ui_system.hover_capture == self) {
         hover = true;
@@ -162,7 +162,7 @@ uint64_t message_widget::insert(std::string sender, ulong timestamp, std::string
     text->string = message;
     text->wrap = true;
     text->alignment = alg;
-    text->font = &ui_system.fonts[0];
+    text->font = &ui_system.font_handler.fonts["test"];
 
     widget.text = {text};
 
@@ -237,7 +237,7 @@ axiom::capture_data message_widget::handle_capture() {
     //if(!includes(ui_system.window->cursor_pos, view_range)) return {z, false};
 
     vec4 hover_range = vec4(position, position + size + vec2(0.0f, buffer.w));
-    if(inserted) hover_range.w += ui_system.fonts[0].line_height + buffer.y;
+    if(inserted) hover_range.w += ui_system.font_handler.fonts["test"].line_height + buffer.y;
 
     if(includes(ui_system.window->cursor_pos, hover_range)) return {self, z, true};
 

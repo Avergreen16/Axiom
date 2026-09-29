@@ -68,7 +68,7 @@ void panel_widget::mesh() {
             v.color = vec4(0.125f, 0.125f, 0.125f, 1.0f);
             v.data = 1;
 
-            if(clip != 0xFFFFFFFF) v.clip_space = ui_system->clip_spaces[clip].parent;
+            v.clip_space = clip;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 

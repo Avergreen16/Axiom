@@ -22,8 +22,8 @@ struct physics_system3d : system {
     float physics_time = 0.0f;
 
     float contact_sep = 0.0625f;
-    uint iterations = 4;
-    uint substeps = 4;
+    uint iterations = 3;
+    uint substeps = 12;
     float sub_dt = physics_step / substeps;
 
     //

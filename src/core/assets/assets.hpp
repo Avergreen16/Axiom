@@ -44,7 +44,7 @@ class texture_asset {
 
     std::string filepath;
 
-    void save(std::string path);
+    void save(std::string path, bool flip = true);
 
     static texture_asset load(std::string path);
     static texture_asset load(std::vector<byte> data, uvec2 size, uint num_channels);

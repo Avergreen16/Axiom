@@ -146,7 +146,10 @@ void shadow_renderer::call() {
     }
 
     for(int i = 0; i < num_cascades; ++i) {
-        render_func(framebuffers[i], camera_transform, shadow_view[i], shadow_proj[i]);
+        float width = vfunc(i);
+        float texel_size = width / texture_size;
+
+        render_func(framebuffers[i], camera_transform, shadow_view[i], shadow_proj[i], texel_size);
     }
 
     //
@@ -295,7 +298,7 @@ void shadow_renderer::call() {
     */
 }
 
-void shadow_renderer::create(uint num_cascades, float cascade_factor, float base_pixel_size, uint texture_size, uint camera, render_target* target, std::function<void(framebuffer&, transform3d&, mat4, mat4)> render_func) {
+void shadow_renderer::create(uint num_cascades, float cascade_factor, float base_pixel_size, uint texture_size, uint camera, render_target* target, std::function<void(framebuffer&, transform3d&, mat4, mat4, float)> render_func) {
     shadow_renderer renderer {
         .num_cascades = num_cascades,
         .cascade_factor = cascade_factor,

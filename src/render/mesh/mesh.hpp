@@ -55,6 +55,8 @@ struct texture_mesh2d {
 };
 
 struct color_mesh3d {
+    float radius = 0.0f;
+
     std::vector<color_vertex3d> vs;
 
     std::shared_ptr<axiom::vertices> vertices;
@@ -63,6 +65,8 @@ struct color_mesh3d {
 };
 
 struct texture_mesh3d {
+    float radius = 0.0f;
+
     std::vector<texture_vertex3d> vs;
     std::shared_ptr<axiom::vertices> vertices;
 
@@ -72,6 +76,8 @@ struct texture_mesh3d {
 };
 
 struct texture_range_mesh3d {
+    float radius = 0.0f;
+
     std::vector<texture_range_vertex3d> vs;
     std::shared_ptr<axiom::vertices> vertices;
 

@@ -29,7 +29,7 @@ void render_widget::mesh() {
         for(ui_vertex& v : ret) {
             v.pos = vec3(floor(vec2(position + v.pos.xy() * size)), z);
             v.color = vec4(1.0f, 1.0f, 1.0f, 1.0f);
-            v.data = 0x80000000 + ui_system->target;
+            v.data = 0x80000000 + target_id;
 
             if(clip != 0xFFFFFFFF) v.clip_space = ui_system->clip_spaces[clip].parent;
         }
@@ -37,8 +37,6 @@ void render_widget::mesh() {
 
         vertices_before = total_ret;
     }
-
-    ++ui_system->target;
 }
 
 void render_widget::init() {
@@ -58,6 +56,8 @@ void render_widget::handle_inputs() {
     if(target->size != ivec2(size)) target->set_size(ivec2(size));
     //target->call();
     callback(this);
+    
+    target_id = ui_system->target_textures.size();
 
     ui_system->target_textures.push_back(&target->framebuffer.textures[texture]);
 }

@@ -86,8 +86,8 @@ mat4 get_transform(mat4 m) {
     );
 }
 
-const int num_blocker = 49;
-const int num_samples = 64;
+const int num_blocker = 1;//49;
+const int num_samples = 1;//;
 
 void create_offsets(out vec2[num_samples] v, ivec2 pos, float rad) {
     for(int i = 0; i < num_samples; ++i) {
@@ -150,7 +150,8 @@ void main() {
     vec4 save_pos = pos;
 
     //
-    
+
+    /*
     create_blocker(blocker_offsets, ptexel, 3.0);
 
     float farthest = 10000.0;
@@ -248,8 +249,9 @@ void main() {
     }
 
     if(farthest == 10000.0) farthest = 0.0;
+    */
     
-    float penumbra_rad = abs(farthest) * tan(4.0 / 180.0 * 3.14159265358979);
+    float penumbra_rad = 0.0;//abs(farthest) * tan(4.0 / 180.0 * 3.14159265358979);
     
     create_offsets(offsets, ptexel, penumbra_rad);
 

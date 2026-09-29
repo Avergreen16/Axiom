@@ -30,50 +30,50 @@ struct widget_input_state {
 };
 
 struct ui_system : system {
-    uint32_t iter;
+    //////////////
     
-    axiom::window* window;
-    std::vector<axiom::ttf_font> fonts;
+    uint32_t iter;
+    vec4 global_view_range = vec4(-axiom::max_float, -axiom::max_float, axiom::max_float, axiom::max_float);
 
+    // window 
+
+    axiom::window* window;
     axiom::cursor cursor;
 
     std::vector<ui_vertex> vertices;
     bool hex_mode = true;
 
-    std::map<ulong, std::unique_ptr<widget>> widgets;
+    // text
+
+    axiom::font_handler font_handler;
+
+    // widgets
 
     widget_input_state input_state;
 
-    vec4 global_view_range = vec4(-axiom::max_float, -axiom::max_float, axiom::max_float, axiom::max_float);
-
-    //
-    
-    uint32_t target;
+    std::map<ulong, std::unique_ptr<widget>> widgets;
     std::vector<axiom::texture*> target_textures;
+    std::vector<std::shared_ptr<axiom::text>> text;
+    std::vector<clip_space> clip_spaces;
 
-    //
+    // interaction
 
     bool copy = false;
     bool paste = false;
     std::vector<copy_string> copy_strings;
     
-    bool isolate_selection = false;
-
-    vec2 cursor_pos;
-    vec2 cursor_anchor;
-    std::vector<std::pair<ulong, uint>> text_selected;
-
     ulong hover_capture = NULL_WIDGET;
     ulong click_capture = NULL_WIDGET;
     ulong text_capture = NULL_WIDGET;
     bool text_cursor = false;
-
+    
+    bool isolate_selection = false;
+    
     std::vector<ulong> delete_buffer;
 
-    //
-
-    std::vector<std::shared_ptr<axiom::text>> text;
-    std::vector<clip_space> clip_spaces;
+    vec2 cursor_pos;
+    vec2 cursor_anchor;
+    std::vector<std::pair<ulong, uint>> text_selected;
 
     //
 

@@ -353,7 +353,7 @@ uint64_t menu_widget::insert(vec2 position, float z, vec3 color, float w, float 
 
     for(menu_node& child : rootn->children) {
         std::shared_ptr<axiom::text> text(new axiom::text);
-        text->font = &ui_system.fonts[0];
+        text->font = &ui_system.font_handler.fonts["test"];
         text->string = child.label;
         text->wrap = false;
 

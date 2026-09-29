@@ -149,10 +149,6 @@ void scroll_widget::init() {
                     float n = end + (start - end) * anchor_frac;//* (1.0f - anchor_frac); // TOP float new_scroll = -widget->size.y * (1.0f - anchor_frac);
                     float p = scroll_pos;
                     new_scroll = n + size.y;
-                    
-                    //std::cout << start << " " << end << " " << new_scroll << " | " << widget->position.y << " " << ui_system->widgets[children[0]]->position.y << " " << ui_system->widgets[children[0]]->size.y << " " << ui_system->widgets[children[0]]->max_width << " " << ui_system->widgets[children[0]]->min_width << " " << ui_system->widgets[children[0]]->max_height << " " << ui_system->widgets[children[0]]->min_height << " " << scroll_pos << "\n";
-
-                    //std::cout << index << " " << start << " " << end << " " << new_scroll << "\n";
                 }
                 if(anchor_mode == 1) {
                     new_scroll = 0.0f;
@@ -295,9 +291,11 @@ void scroll_widget::handle_inputs() {
         if(!ui_system.window->input_map[axiom::input_code::MOUSE_LEFT]) capture_scroll = false;
     }
 
+    /*
     if(scroll_pos != 0.0f) {
         anchor_mode = 0;
     }
+    */
 
     //view_range = vec4(position, position + size);
 }
@@ -382,7 +380,7 @@ void scroll_widget::mesh() {
             clip_space scrollbar_clip;
             scrollbar_clip.radius = scroll_width * 0.5f;
             scrollbar_clip.range = vec4(sb_pos, sb_pos + sb_size);
-            scrollbar_clip.parent = clip;
+            scrollbar_clip.parent = system.clip_spaces[clip].parent;
 
             uint clip_id = ui_system.clip_spaces.size();
             ui_system.clip_spaces.push_back(scrollbar_clip);

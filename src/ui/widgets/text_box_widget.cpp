@@ -202,7 +202,7 @@ ulong text_box_widget::insert(float width, vec2 boundary, std::string start, std
     text->string = start;
     text->wrap = true;
     text->alignment = axiom::text_alignment::LEFT;
-    text->font = &ui_system.fonts[0];
+    text->font = &ui_system.font_handler.fonts["test"];
     text->selectable = true;
     text->editable = true;
 

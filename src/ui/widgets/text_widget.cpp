@@ -92,7 +92,7 @@ uint64_t text_widget::insert(std::string str, axiom::text_alignment alg, bool wr
     text->string = str;
     text->wrap = wrap;
     text->alignment = alg;
-    text->font = &ui_system.fonts[0];
+    text->font = &ui_system.font_handler.fonts["test"];
 
     widget.text = {text};
 

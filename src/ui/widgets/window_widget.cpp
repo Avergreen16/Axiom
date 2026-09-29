@@ -26,7 +26,7 @@ ulong window_widget::insert(std::string label, ivec2 size, ivec2 position, vec3 
     std::shared_ptr<axiom::text> label_text(new axiom::text);
     
     label_text->string = label;
-    label_text->font = &ui_system.fonts[0];
+    label_text->font = &ui_system.font_handler.fonts["test"];
     label_text->position = position + ivec2(0.0f, size.y) + int((float(widget.header) - label_text->font->line_height * (float(label_text->text_size) / label_text->font->base_unit)) * 0.5f);
 
     widget.text.push_back(label_text);

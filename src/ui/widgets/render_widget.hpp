@@ -9,6 +9,7 @@ struct render_target;
 struct render_widget : widget {
     axiom::render_target* target;
     std::function<void(axiom::render_widget*)> callback = [](axiom::render_widget*) {};
+    uint target_id;
     uint texture;
 
     void mesh();

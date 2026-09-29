@@ -1325,17 +1325,15 @@ void physics_system2d::physics_loop() {
 }
 
 void physics_system2d::integrate() {
-    float dt = 1.0f / (fps * substeps);
-
     for(uint entity : collectors[0].entities) {
         transform2d& ta = axiom::ecs.get_component<transform2d>(entity);
         collider2d& ca = axiom::ecs.get_component<collider2d>(entity);
 
         if(!ca.is_static) {
-            ta.position += ca.velocity * dt;
+            ta.position += ca.velocity * sub_dt;
 
             if(ca.allow_rotation) {
-                glm::mat2 rotation = rotate(ca.angular_velocity * dt, vec3(0, 0, 1));
+                glm::mat2 rotation = rotate(ca.angular_velocity * sub_dt, vec3(0, 0, 1));
                 ta.orientation = rotation * ta.orientation;
             }
         }
@@ -1344,7 +1342,7 @@ void physics_system2d::integrate() {
             if(ca.allow_gravity) {
                 vec2 g = get_gravity(ta.position) * -20.0f;
 
-                ca.velocity += g * dt;
+                ca.velocity += g * sub_dt;
             }
         }
     }
@@ -1358,13 +1356,13 @@ void physics_system2d::call() {
 
         uint frames = 0;
 
-        while(physics_time >= (1.0f / fps)) {
+        while(physics_time >= physics_step) {
             physics_loop();
-            physics_time -= (1.0f / fps);
+            physics_time -= physics_step;
             ++frames;
 
             if(frames >= max_frames) {
-                physics_time = glm::min(physics_time, (1.0f / fps));
+                physics_time = glm::min(physics_time, physics_step);
                 break;
             }
         }
@@ -1406,13 +1404,13 @@ void constraint_distance::get_values() {
 }
 
 void physics_system2d::velocity_solve() {
-    float spring = 0.25f;
-    float softness = 0.01f;
+    float spring = 0.4f;
+    float softness = 0.015f;
 
-    float spring_constraint = 0.25f;
-    float softness_constraint = 0.01f;
-
-    float factor = fps;
+    float spring_constraint = 0.5f;
+    float softness_constraint = 0.025f;
+    float factor = 1.0f / physics_step;
+    float factor_constraint = 1.0f / physics_step;
 
     for(collision_constraint2d& data : collision_constraint2ds) {
         data.get_points();
@@ -1484,21 +1482,32 @@ void physics_system2d::velocity_solve() {
         }
     }
 
-    for(int i = 0; i < iterations; ++i) {
+    float distance_stiffness = 0.2f;
+    float shape_stiffness = 0.0f;
+
+    float target_length = 0.0f;
+    float current_length = 0.0f;
+
+    for(int i = 0; i < velocity_iterations; ++i) {
         for(collision_constraint2d& data : collision_constraint2ds) {
             for(col_constraint& cc : data.constraints) {
-                //data.refresh(cc);
+                data.refresh(cc);
 
                 vec2 velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position);
 
-                float diff = (cc.baumgarteN) * spring * factor;
+                float diff = cc.baumgarteN;
 
                 if(cc.d->b == NULL_ENTITY) {
                     float inertia = cc.inertiaNa;
+                    float n_inertia = inertia;
 
                     float v = glm::dot(velocity, cc.d->normal);
 
-                    float L = -v - diff;
+                    float d = diff;
+                    if(d > 0.0f) d = -d * factor;
+                    else d = 0.0;
+
+                    float L = -v + d;
                     L /= inertia;
 
                     vec2 limits = vec2(0.0f, FLT_MAX);
@@ -1511,17 +1520,6 @@ void physics_system2d::velocity_solve() {
                     vec2 impulse = cc.d->normal * L;
 
                     apply_impulse(data.ca, impulse, cc.pa - data.ta->position);
-                    
-                    //
-
-                    /*
-                    vec2 position_correction = cc.normal * glm::max(-cc.baumgarteN, 0.0f) / inertia * 0.5f;
-
-                    data.ta->position += position_correction / data.ca->mass;
-
-                    float rot_vel = cross(vec3(cc.pa - data.ta->position, 0.0f), vec3(position_correction, 0.0f)).z / data.ca->inertia;
-                    data.ta->orientation = mat2(glm::rotate(glm::identity<mat3>(), rot_vel)) * data.ta->orientation;
-                    */
 
                     // friction
 
@@ -1548,14 +1546,28 @@ void physics_system2d::velocity_solve() {
                     vec2 friction_impulse = tangent_vector * Pt;
 
                     apply_impulse(data.ca, friction_impulse, cc.pa - data.ta->position);
+
+                    //
+
+                    vec2 position_correction = cc.normal * glm::max(-(diff), 0.0f) / n_inertia;
+
+                    data.ta->position += position_correction / data.ca->mass;
+                    
+                    float rot_vel = cross(vec3(cc.pa - data.ta->position, 0.0f), vec3(position_correction, 0.0f)).z * data.ca->inertia;
+                    data.ta->orientation = mat2(glm::rotate(glm::identity<mat3>(), rot_vel)) * data.ta->orientation;
                 } else {
                     float inertia = cc.inertiaNa + cc.inertiaNb;
+                    float n_inertia = inertia;
 
                     velocity -= calculate_point_velocity(data.cb, cc.pb - data.tb->position);
 
                     float v = glm::dot(velocity, cc.normal);
 
-                    float L = -v - diff;
+                    float d = diff;
+                    if(d > 0.0f) d = -d * factor;
+                    else d = 0.0;
+
+                    float L = -v + d;
                     L /= inertia;
                     L -= softness * cc.lambdaN;
 
@@ -1570,21 +1582,6 @@ void physics_system2d::velocity_solve() {
 
                     apply_impulse(data.ca, impulse, cc.pa - data.ta->position);
                     apply_impulse(data.cb, -impulse, cc.pb - data.tb->position);
-
-                    //
-                    
-                    /*
-                    vec2 position_correction = cc.normal * glm::max(-cc.baumgarteN, 0.0f) / inertia * 0.5f;
-
-                    data.ta->position += position_correction / data.ca->mass;
-                    data.tb->position += -position_correction / data.cb->mass;
-
-                    float rot_vel = cross(vec3(cc.pa - data.ta->position, 0.0f), vec3(position_correction, 0.0f)).z / data.ca->inertia;
-                    data.ta->orientation = mat2(glm::rotate(glm::identity<mat3>(), rot_vel)) * data.ta->orientation;
-                    
-                    rot_vel = cross(vec3(cc.pb - data.tb->position, 0.0f), vec3(-position_correction, 0.0f)).z / data.cb->inertia;
-                    data.tb->orientation = mat2(glm::rotate(glm::identity<mat3>(), rot_vel)) * data.tb->orientation;
-                    */
 
                     // friction
 
@@ -1612,12 +1609,26 @@ void physics_system2d::velocity_solve() {
 
                     apply_impulse(data.ca, friction_impulse, cc.pa - data.ta->position);
                     apply_impulse(data.cb, -friction_impulse, cc.pb - data.tb->position);
+
+                    //
+                    
+                    vec2 position_correction = cc.normal * glm::max(-(diff), 0.0f) / n_inertia;
+
+                    data.ta->position += position_correction / data.ca->mass;
+                    data.tb->position += -position_correction / data.cb->mass;
+
+                    float rot_vel = cross(vec3(cc.pa - data.ta->position, 0.0f), vec3(position_correction, 0.0f)).z / data.ca->inertia;
+                    data.ta->orientation = mat2(glm::rotate(glm::identity<mat3>(), rot_vel)) * data.ta->orientation;
+                    
+                    rot_vel = cross(vec3(cc.pb - data.tb->position, 0.0f), vec3(-position_correction, 0.0f)).z / data.cb->inertia;
+                    data.tb->orientation = mat2(glm::rotate(glm::identity<mat3>(), rot_vel)) * data.tb->orientation;
                 }
             }
         }
 
         for(int j = 0; j < constraints.size(); ++j) { 
-            int start = 0;
+        //for(collision_constraint2d& data : collision_constraint2ds) {
+            int start = 0;//core.random.next() % collision_constraint2ds.size();
             int dir = 1;
 
             if(i % 2 == 1) {
@@ -1630,13 +1641,12 @@ void physics_system2d::velocity_solve() {
             float max_grab = FLT_MAX;
 
             for(pos_constraint& c : data.pos) {
+                data.refresh(c);
                 //max_grab = c.limit;
 
                 uint i = 0;
                 for(vec2 v : c.vs) {
-                    //data.refresh(c);
-
-                    float bg = -c.baumgarte[i] * spring_constraint * factor;
+                    float bg = -c.baumgarte[i] * spring_constraint * factor_constraint;
 
                     float inertia = c.inertia_a[i];
 
@@ -1650,7 +1660,7 @@ void physics_system2d::velocity_solve() {
                         vec2 vel = velocity;
                         //if(c.tolerance != 0.0f) vel = vv * glm::dot(vel, vv);
 
-                        float L = -dot(vel, v) + bg;
+                        float L = -dot(vel, v);
                         L /= inertia;
                         L -= softness_constraint * c.lambda[i];
 
@@ -1663,17 +1673,15 @@ void physics_system2d::velocity_solve() {
                         vec2 impulse = v * L;
 
                         apply_impulse(data.ca, impulse, c.pa - data.ta->position);
-                        
+
                         //
                         
-                        /*
                         vec2 position_correction = v * -c.baumgarte[i] / inertia;
 
                         data.ta->position += position_correction / data.ca->mass;
 
                         float rot_vel = cross(vec3(c.pa - data.ta->position, 0.0f), vec3(position_correction, 0.0f)).z / data.ca->inertia;
                         data.ta->orientation = mat2(glm::rotate(glm::identity<mat3>(), rot_vel)) * data.ta->orientation;
-                        */
                     } else {
                         inertia += c.inertia_b[i];
 
@@ -1682,7 +1690,7 @@ void physics_system2d::velocity_solve() {
                         vec2 vel = velocity;       
                         //if(c.tolerance != 0.0f) vel = vv * glm::dot(vel, vv);
 
-                        float L = -dot(vel, v) + bg;
+                        float L = -dot(vel, v);
                         L /= inertia;
                         L -= softness_constraint * c.lambda[i];
 
@@ -1699,10 +1707,9 @@ void physics_system2d::velocity_solve() {
 
                         apply_impulse(data.ca, impulse, c.pa - data.ta->position);
                         apply_impulse(data.cb, -impulse, c.pb - data.tb->position);
-                        
+
                         //
                         
-                        /*
                         vec2 position_correction = v * -c.baumgarte[i] / inertia;
 
                         data.ta->position += position_correction / data.ca->mass;
@@ -1713,7 +1720,6 @@ void physics_system2d::velocity_solve() {
                         
                         rot_vel = cross(vec3(c.pb - data.tb->position, 0.0f), vec3(-position_correction, 0.0f)).z / data.cb->inertia;
                         data.tb->orientation = mat2(glm::rotate(glm::identity<mat3>(), rot_vel)) * data.tb->orientation;
-                        */
                     }
 
                     ++i;
@@ -1725,7 +1731,7 @@ void physics_system2d::velocity_solve() {
                 float inertia = c.inertia;
 
                 if(data.b == NULL_ENTITY) {
-                    float bg = angular_delta * spring_constraint * factor;
+                    float bg = angular_delta * spring_constraint * factor_constraint;
 
                     float angular_velocity = data.ca->angular_velocity;
 
@@ -1740,7 +1746,7 @@ void physics_system2d::velocity_solve() {
 
                     data.ca->angular_velocity += L / data.ca->inertia;
                 } else {
-                    float bg = angular_delta * spring_constraint * factor;
+                    float bg = angular_delta * spring_constraint * factor_constraint;
 
                     float angular_velocity = data.ca->angular_velocity - data.cb->angular_velocity;
 
@@ -1872,13 +1878,9 @@ vec2 physics_system2d::calculate_point_velocity(collider2d* c, vec2 point) {
     vec2 velocity;
     float angular_velocity;
 
-    float m = length(point);
-
     velocity = c->velocity;
     angular_velocity = c->angular_velocity;
-    vec2 a_velocity = vec2(cross(vec3(0.0f, 0.0f, angular_velocity), vec3(point, 0.0f)));
-    //if(length(a_velocity)) a_velocity = normalize(a_velocity) * glm::min(length(a_velocity), m);
-    velocity += a_velocity;
+    velocity += vec2(cross(vec3(0.0f, 0.0f, angular_velocity), vec3(point, 0.0f)));;
 
     return velocity;
 }
@@ -1887,6 +1889,18 @@ float physics_system2d::calculate_inverse_mass(collider2d* c, transform2d* t, ve
     float inverse_mass = 1.0f / c->mass;
 
     if(c->allow_rotation) {
+        //d = cross(constraint.pos_a, constraint.normal);
+        //constraint.inertiaNa = inv_mass + glm::dot(d, inverse_tensor_a * d);
+        /*
+        float torque_per_unit = length(cross(vec3(point, 0.0f), vec3(impulse_dir, 0.0f)));
+
+        float angular_velocity = torque_per_unit / c->inertia;
+
+        vec2 linear_velocity = vec2(cross(vec3(0.0f, 0.0f, angular_velocity), vec3(point, 0.0f)));
+
+        float angular_inertia = glm::dot(linear_velocity, impulse_dir);
+        */
+
         float d = cross(vec3(point, 0.0f), vec3(impulse_dir, 0.0f)).z;
         float i = d * (d / c->inertia);
         

@@ -1,12 +1,48 @@
 #include <ui/font/ttf.hpp>
+#include <hb-ot.h>
 
 namespace axiom {
 
-ttf_font process_ttf(std::string filepath) {
-    axiom::binary_asset bin = axiom::binary_asset::load(filepath);
-    uint cursor = 0;
+bool operator==(const glyph_key& a, const glyph_key& b) {
+    return a.glyph == b.glyph && a.size == b.size && a.phase_x == b.phase_x && a.phase_y == b.phase_y;
+}
 
-    ttf_font font;
+bool glyph_key_less::operator()(const glyph_key& a, const glyph_key& b) const {
+    return a.glyph < b.glyph || a.glyph == b.glyph && (a.size < b.size || a.size == b.size && (a.phase_x < b.phase_x || a.phase_x == b.phase_x && a.phase_y < b.phase_y));
+}
+
+//
+
+void font_handler::process_ttf(std::string filepath, std::string label) {
+    axiom::font font;
+
+    axiom::binary_asset bin = axiom::binary_asset::load(filepath);
+
+    //
+
+    hb_blob_t* blob = hb_blob_create(
+        reinterpret_cast<char*>(bin.data.data()),
+        bin.data.size(),
+        HB_MEMORY_MODE_DUPLICATE,
+        nullptr,
+        nullptr
+    );
+
+    auto face = hb_face_create(blob, 0);
+    hb_blob_destroy(blob);
+    
+    printf("upem = %u\n", hb_face_get_upem(face));
+    printf("glyphs = %u\n", hb_face_get_glyph_count(face));
+
+    hb_font_t* hb_font = hb_font_create(face);
+    hb_ot_font_set_funcs(hb_font);
+    font.hb_font = hb_font; 
+    
+    hb_face_destroy(face);
+
+    //
+
+    uint cursor = 0;
     
     auto read_byte = [&bin, &cursor]() {
         byte ret = bin.data[cursor];
@@ -303,7 +339,7 @@ ttf_font process_ttf(std::string filepath) {
                         }
                         glyph_id &= 0xFFFF;
                         
-                        ttf_glyph glyph;
+                        axiom::glyph glyph;
                         glyph.glyph_id = glyph_id;
                         glyph.codepoint = j;
 
@@ -317,11 +353,11 @@ ttf_font process_ttf(std::string filepath) {
 
     std::vector<uint> compound_glyphs;
 
-    std::function<std::vector<ttf_contour>(uint index)> process_compound;
+    std::function<std::vector<axiom::contour>(uint index)> process_compound;
 
     process_compound = [&](uint index) {
         ttf_table& table = tables["glyf"];
-        ttf_glyph& glyph = font.glyphs[index];
+        axiom::glyph& glyph = font.glyphs[index];
 
         cursor = table.offset + glyph.glyph_address + 10;
 
@@ -351,7 +387,7 @@ ttf_font process_ttf(std::string filepath) {
 
                 uint current_cursor = cursor;
                 auto& child_glyph = font.glyphs[glyph_index];
-                std::vector<ttf_contour> new_contours = process_compound(glyph_index);
+                std::vector<axiom::contour> new_contours = process_compound(glyph_index);
 
                 cursor = current_cursor;
 
@@ -384,13 +420,13 @@ ttf_font process_ttf(std::string filepath) {
                 if(scale.size() == 1) {
                     float factor = scale[0];
 
-                    for(ttf_contour& contour : new_contours) {
+                    for(axiom::contour& contour : new_contours) {
                         for(auto& pt : contour.points) pt.point *= factor;
                     }
                 } else if(scale.size() == 2) {
                     vec2 factors = {scale[0], scale[1]};
 
-                    for(ttf_contour& contour : new_contours) {
+                    for(axiom::contour& contour : new_contours) {
                         for(auto& pt : contour.points) pt.point *= factors;
                     }
                 } else if(scale.size() == 4) {
@@ -398,7 +434,7 @@ ttf_font process_ttf(std::string filepath) {
                         scale[0], scale[1], scale[2], scale[3]
                     };
 
-                    for(ttf_contour& contour : new_contours) {
+                    for(axiom::contour& contour : new_contours) {
                         for(auto& pt : contour.points) pt.point = m * pt.point;
                     }
                 }
@@ -481,11 +517,11 @@ ttf_font process_ttf(std::string filepath) {
 
                     //
 
-                    ttf_point p0;
-                    ttf_point p1;
+                    axiom::contour_point p0;
+                    axiom::contour_point p1;
 
                     uint c = 0;
-                    for(ttf_contour& contour : glyph.contours) {
+                    for(axiom::contour& contour : glyph.contours) {
                         uint new_c = contour.points.size();
                         if(c + new_c > arg_a) {
                             p0 = contour.points[arg_a - c];
@@ -493,7 +529,7 @@ ttf_font process_ttf(std::string filepath) {
                     }
 
                     c = 0;
-                    for(ttf_contour& contour : new_contours) {
+                    for(axiom::contour& contour : new_contours) {
                         uint new_c = contour.points.size();
                         if(c + new_c > arg_b) {
                             p1 = contour.points[arg_b - c];
@@ -507,11 +543,11 @@ ttf_font process_ttf(std::string filepath) {
 
                     //
 
-                    ttf_point p0;
-                    ttf_point p1;
+                    axiom::contour_point p0;
+                    axiom::contour_point p1;
 
                     uint c = 0;
-                    for(ttf_contour& contour : glyph.contours) {
+                    for(axiom::contour& contour : glyph.contours) {
                         uint new_c = contour.points.size();
                         if(c + new_c > arg_a) {
                             p0 = contour.points[arg_a - c];
@@ -519,7 +555,7 @@ ttf_font process_ttf(std::string filepath) {
                     }
 
                     c = 0;
-                    for(ttf_contour& contour : new_contours) {
+                    for(axiom::contour& contour : new_contours) {
                         uint new_c = contour.points.size();
                         if(c + new_c > arg_b) {
                             p1 = contour.points[arg_b - c];
@@ -569,7 +605,7 @@ ttf_font process_ttf(std::string filepath) {
         if(loca_format == 0) {
             for(int i = 0; i < num_glyphs; ++i) {
                 if(!font.glyphs.contains(i)) {
-                    font.glyphs.emplace(i, ttf_glyph());
+                    font.glyphs.emplace(i, axiom::glyph());
                 }
 
                 uint16_t offset = read_ushort_be();
@@ -583,7 +619,7 @@ ttf_font process_ttf(std::string filepath) {
         } else if(loca_format == 1) {
             for(int i = 0; i < num_glyphs; ++i) {
                 if(!font.glyphs.contains(i)) {
-                    font.glyphs.emplace(i, ttf_glyph());
+                    font.glyphs.emplace(i, axiom::glyph());
                 }
 
                 uint32_t offset = read_uint_be();
@@ -615,7 +651,7 @@ ttf_font process_ttf(std::string filepath) {
 
             glyph.bounding_box = {xmin, ymin, xmax, ymax};
 
-            std::vector<ttf_point> points;
+            std::vector<axiom::contour_point> points;
 
             if(num_contours > 0) {
                 uint start_cursor = cursor;
@@ -742,18 +778,18 @@ ttf_font process_ttf(std::string filepath) {
                 for(int i = 0; i < num_contours; ++i) {
                     uint16_t end_index = read_ushort_be();
 
-                    ttf_contour contour;
-                    contour.points = std::vector<ttf_point>(points.begin() + start_index, points.begin() + (end_index + 1));
+                    axiom::contour contour;
+                    contour.points = std::vector<axiom::contour_point>(points.begin() + start_index, points.begin() + (end_index + 1));
 
                     for(int i = 0; i < contour.points.size(); ++i) {
                         int ia = i;
                         int ib = (i + 1) % contour.points.size();
 
-                        ttf_point& point_a = contour.points[ia];
-                        ttf_point& point_b = contour.points[ib];
+                        axiom::contour_point& point_a = contour.points[ia];
+                        axiom::contour_point& point_b = contour.points[ib];
 
                         if(!point_a.curve && !point_b.curve) {
-                            ttf_point new_point;
+                            axiom::contour_point new_point;
                             new_point.curve = true;
                             new_point.point = (point_a.point + point_b.point) * 0.5f;
 
@@ -767,12 +803,12 @@ ttf_font process_ttf(std::string filepath) {
                         int ib = (i + 1) % contour.points.size();
                         int ic = (i + 2) % contour.points.size();
                         
-                        ttf_point& point_a = contour.points[ia];
-                        ttf_point& point_b = contour.points[ib];
-                        ttf_point& point_c = contour.points[ic];
+                        axiom::contour_point& point_a = contour.points[ia];
+                        axiom::contour_point& point_b = contour.points[ib];
+                        axiom::contour_point& point_c = contour.points[ic];
 
                         if(point_a.curve && !point_b.curve && point_c.curve) {
-                            ttf_bezier bezier;
+                            axiom::contour_bezier bezier;
                             bezier.a = ia;
                             bezier.b = ib;
                             bezier.c = ic;
@@ -809,11 +845,11 @@ ttf_font process_ttf(std::string filepath) {
                     if(bezier.b < 2) pb = bezier.b;
                     if(bezier.c < 2) pc = bezier.c;
 
-                    ttf_point& point_a = contour.points[pa];
-                    ttf_point& point_b = contour.points[pb];
-                    ttf_point& point_c = contour.points[pc];
+                    axiom::contour_point& point_a = contour.points[pa];
+                    axiom::contour_point& point_b = contour.points[pb];
+                    axiom::contour_point& point_c = contour.points[pc];
 
-                    std::vector<ttf_point> new_points;
+                    std::vector<axiom::contour_point> new_points;
                     int num_points = 3;
 
                     for(int i = 0; i < num_points; ++i) {
@@ -824,7 +860,7 @@ ttf_font process_ttf(std::string filepath) {
 
                         vec2 point = pa * (1.0f - frac) + pb * frac;
 
-                        new_points.push_back(ttf_point(point, true));
+                        new_points.push_back(axiom::contour_point(point, true));
                     }
 
                     contour.points.erase(contour.points.begin() + pb);
@@ -867,7 +903,37 @@ ttf_font process_ttf(std::string filepath) {
 
     //
 
-    auto create_glyph = [&font](ttf_glyph& glyph, int units, float frac) -> axiom::texture_asset {
+    /*
+    uint frac = 4;
+    for(auto& [id, glyph] : font.glyphs) {
+        for(int j = 0; j < frac; ++j) {
+            float f = float(j) / frac;
+
+            axiom::glyph_key key;
+            key.glyph = id;
+            key.phase_x = j;
+            key.phase_y = 0;
+            key.size = 12;
+
+            axiom::glyph_phase phase;
+            auto bitmap = font.get_bitmap(key);
+            phase.bitmap = bitmap;
+
+            font.phases.emplace(key, phase);
+        }
+    }
+    */
+
+    fonts.emplace(label, font);
+}
+
+axiom::texture_asset font::get_bitmap(glyph_key key) {
+    auto create_glyph = [this](axiom::glyph& glyph, int units, vec2 frac) -> axiom::texture_asset {
+        if(glyph.contours.size() == 0) {
+            std::vector<byte> b = {0};
+            return axiom::texture_asset::load(b, ivec2(0), 4);
+        }
+
         auto intersect = [](vec2 a0, vec2 a1, vec2 p0, vec2& p1) {
             vec2 dir_p = vec2(1.0f, 0.0f);
 
@@ -882,45 +948,68 @@ ttf_font process_ttf(std::string filepath) {
 
             return (glm::isnan(a) && p0.y == a0.y) || (!glm::isnan(a) && a >= 0.0f && a <= 1.0f); //!(a0.x == a1.x) && 
         };
+
+        auto capture = [&](float v) {
+            std::vector<uint> lines;
+            uint j = 0;
+            for(auto& contour : glyph.contours) {
+                for(int i = 0; i < contour.points.size(); ++i) {
+                    int i0 = i;
+                    int i1 = (i + 1) % contour.points.size();
+                    bool i0_above = contour.points[i0].point.y > v;
+                    bool i1_above = contour.points[i1].point.y > v;
+
+                    if(i0_above != i1_above) {
+                        lines.push_back(j);
+                        lines.push_back(i);
+                    }
+                }
+                ++j;
+            }
+
+            return lines;
+        };
         
 
         //
 
-        float descender = font.descender;
+        float descender = descender;
 
         vec2 pmin = glyph.bounding_box.xy();
-        float y_offset = pmin.y - descender;
-        y_offset = y_offset / float(font.base_unit) * float(units);
-        float offset = y_offset - floor(y_offset);
-        offset = offset * float(font.base_unit) / float(units);
-        pmin.y -= offset;
-
-        //vec2 pmin2 = glm::floor(pmin / float(font.base_unit) * float(units));
-        //pmin2 = pmin2 / float(units) * float(font.base_unit);
-        //pmin.y += pmin2.y - pmin.y;
-
         vec2 psize = vec2(glyph.bounding_box.zw()) - pmin;
-        ivec2 size = glm::ceil(psize / float(font.base_unit) * float(units) + vec2(frac, 0.0f));
-        psize = (vec2(size) / float(units)) * float(font.base_unit);
+        ivec2 size = glm::ceil(psize / float(base_unit) * float(units) + frac);
+        psize = (vec2(size) / float(units)) * float(base_unit);
         
         std::vector<byte> colors(size.x * size.y * 4);
         for(int k = 0; k < size.x * size.y; ++k) {
-            vec2 pt = vec2(k % size.x - frac, k / size.x);
+            vec2 pt = vec2(k % size.x - frac.x, k / size.x - frac.y);
             //float w = glm::max(glyph.bounding_box.z - glyph.bounding_box.x, glyph.bounding_box.w - glyph.bounding_box.y) * 0.25f;
 
             float min_width = glm::min(size.x, size.y);
 
-            ivec2 supersample = {2, 6};
-            bool subpixel = true;
+            ivec2 supersample = {6, 6};
+            bool subpixel = false;
+
+            std::vector<std::vector<uint>> ls(supersample.y);
+
+            for(int i = 0; i < supersample.y; ++i) {
+                float offset = (i + 0.5f) / supersample.y;
+                float pt_o = pt.y + offset;
+                pt_o = (pt_o / size.y) * psize.y + pmin.y;
+                    
+                ls[i] = capture(pt_o);
+            }
 
             if(subpixel) {
 
                 for(int c = 0; c < 3; ++c) {
-                    float frac = 0.0f;
+                    float f = 0.0f;
 
                     float cfrac = float(c) / 3;
 
                     for(int ii = 0; ii < supersample.x * supersample.y; ++ii) {
+                        uint y_index = ii / supersample.x;
+
                         vec2 offset = vec2(ii % supersample.x + 0.5f, ii / supersample.x + 0.5f) / vec2(supersample);
                         offset.x /= 3;
                         offset.x += cfrac;
@@ -931,45 +1020,43 @@ ttf_font process_ttf(std::string filepath) {
 
                         int count = 0;
                         float min_dist = axiom::max_float;
-                        
-                        for(int i = 0; i < glyph.contours.size(); ++i) {
-                            auto& contour = glyph.contours[i];
 
-                            for(int j = 0; j < contour.points.size(); ++j) {
-                                int a = j;
-                                int b = (j + 1) % contour.points.size();
+                        for(int i = 0; i < ls[y_index].size(); i += 2) {
+                            auto& contour = glyph.contours[ls[y_index][i]];
 
-                                auto& point_a = contour.points[a];
-                                auto& point_b = contour.points[b];
+                            int a = ls[y_index][i + 1];
+                            int b = (a + 1) % contour.points.size();
 
-                                vec2 pt_s;
+                            auto& point_a = contour.points[a];
+                            auto& point_b = contour.points[b];
 
-                                bool did_intersect = intersect(point_a.point, point_b.point, pt_o, pt_s);
+                            vec2 pt_s;
 
-                                if(pt_s.x < pt_o.x) did_intersect = false;
+                            bool did_intersect = intersect(point_a.point, point_b.point, pt_o, pt_s);
 
-                                if(did_intersect) {
-                                    if(point_a.point.y < point_b.point.y || (point_a.point.y == point_b.point.y && point_a.point.x < point_b.point.x)) {
-                                        ++count;
-                                    } else {
-                                        --count;
-                                    }
+                            if(pt_s.x < pt_o.x) did_intersect = false;
+
+                            if(did_intersect) {
+                                if(point_a.point.y < point_b.point.y || (point_a.point.y == point_b.point.y && point_a.point.x < point_b.point.x)) {
+                                    ++count;
+                                } else {
+                                    --count;
                                 }
                             }
                         }
                         
                         if(count != 0) {
-                            frac += 1.0f;
+                            f += 1.0f;
                         }
                     }
 
-                    frac = (frac / (supersample.x * supersample.y)) * 0xFF;
+                    f = (f / (supersample.x * supersample.y)) * 0xFF;
 
-                    colors[k * 4 + c] = frac;
+                    colors[k * 4 + c] = f;
                 }
                 colors[k * 4 + 3] = 0xFF;
             } else {
-                float frac = 0.0f;
+                float f = 0.0f;
 
                 for(int ii = 0; ii < supersample.x * supersample.y; ++ii) {
                     vec2 offset = vec2(ii % supersample.x + 0.5f, ii / supersample.x + 0.5f) / vec2(supersample);
@@ -1007,15 +1094,15 @@ ttf_font process_ttf(std::string filepath) {
                     }
                     
                     if(count != 0) {
-                        frac += 1.0f;
+                        f += 1.0f;
                     }
                 }
 
-                frac = (frac / (supersample.x * supersample.y)) * 0xFF;
+                f = (f / (supersample.x * supersample.y)) * 0xFF;
 
-                colors[k * 4] = frac;
-                colors[k * 4 + 1] = frac;
-                colors[k * 4 + 2] = frac;
+                colors[k * 4] = f;
+                colors[k * 4 + 1] = f;
+                colors[k * 4 + 2] = f;
                 colors[k * 4 + 3] = 0xFF;
             }
         }
@@ -1025,26 +1112,49 @@ ttf_font process_ttf(std::string filepath) {
         return asset;
     };
 
-    //
+    return create_glyph(glyphs[key.glyph], key.size, {key.phase_x * 0.25f + 0.125f, key.phase_y * 0.25f + 0.125f});
+}
 
-    std::vector<byte> bytes;
-    ivec2 img_size = ivec2(0);
+void font_handler::touch_phase(glyph_key key) {
+    if(!fonts["test"].phases.contains(key)) {
+        std::cout << "x";
+        axiom::glyph_phase phase;
+        auto bitmap = fonts["test"].get_bitmap(key);
+        phase.bitmap = bitmap;
 
-    uint em_size = 12;
+        fonts["test"].phases.emplace(key, phase);
+    }
 
-    uint width = 1024;
-    std::vector<uint> heights(1024, 0);
-    cursor = 0;
+    fonts["test"].active_phases.emplace(key);
+}
 
-    uint frac = 4;
+void font_handler::touch_texture() {
+    static std::set<glyph_key, glyph_key_less> prev_phases;
 
-    uint ctr = 0;
-    for(auto& [id, glyph] : font.glyphs) {
-        if(glyph.contours.size()) {
-            for(int j = 0; j < frac; ++j) {
-                float f = float(j) / frac;
+    if(prev_phases != fonts["test"].active_phases) {
+        std::vector<glyph_key> to_erase;
+        for(const glyph_key& prev_key : prev_phases) {
+            if(!fonts["test"].active_phases.contains(prev_key)) to_erase.push_back(prev_key);
+        }
+        for(glyph_key key : to_erase) fonts["test"].phases.erase(key);
 
-                axiom::texture_asset asset = create_glyph(glyph, em_size, f);
+        prev_phases = fonts["test"].active_phases;
+
+        //
+            
+        std::vector<byte> bytes;
+        ivec2 img_size = ivec2(0);
+
+        uint width = 1024;
+        std::vector<uint> heights(1024, 0);
+        uint cursor = 0;
+
+        uint ctr = 0;
+        for(auto& key : prev_phases) {
+            auto& phase = fonts["test"].phases[key];
+            
+            if(phase.bitmap.size.x) {
+                axiom::texture_asset& asset = phase.bitmap;
 
                 if(cursor + asset.size.x > width) cursor = 0;
 
@@ -1065,8 +1175,7 @@ ttf_font process_ttf(std::string filepath) {
                 vec2 dst_pos = vec2(cursor, height);
 
                 ivec4 atlas = ivec4(dst_pos, dst_pos + vec2(asset.size));
-                glyph.atlas.push_back(atlas);
-                glyph.frac.push_back(f);
+                phase.texture = atlas;
 
                 for(int j = 0; j < asset.size.x * asset.size.y; ++j) {
                     ivec2 src_pos = {j % asset.size.x, j / asset.size.x};
@@ -1085,20 +1194,15 @@ ttf_font process_ttf(std::string filepath) {
 
                 img_size.x = glm::max(img_size.x, (int)cursor);
                 img_size.y = glm::max(img_size.y, (int)new_height);
-            }
+            } else phase.texture.z = 0.0;
         }
+        
+        axiom::texture_asset asset = axiom::texture_asset::load(bytes, {width, img_size.y}, 4);
 
-        //++ctr;
-        //if(ctr > 10) break;
+        texture.load(asset, axiom::texture_format::RGBA8, 0);
     }
 
-    axiom::texture_asset asset = axiom::texture_asset::load(bytes, {width, img_size.y}, 4);
-
-    asset.save("output/font-test.png");
-
-    font.texture.load(asset, axiom::texture_format::RGBA8, 0);
-
-    return font;
+    fonts["test"].active_phases.clear();
 }
 
 }

@@ -64,40 +64,45 @@ extern std::vector<uint> text_start;
 extern std::vector<uint> text_line_indices;
 extern std::vector<text_line_data> line_data;
 
-std::vector<ui_vertex> create_char(ttf_font& font, ttf_glyph& glyph, uint size);
-std::vector<ui_vertex> mesh_text(ttf_font& f, uint size, std::string text, text_data& data, uint width = 0xFFFFFFFF, axiom::text_alignment alignment = axiom::text_alignment::LEFT, bool show_debug = false, std::vector<text_line_data>* lines = nullptr);
-std::vector<ui_vertex> mesh_text_select(ttf_font& f, uint size, ivec2 selection, std::string text, text_data& data, uint width = 0xFFFFFFFF, axiom::text_alignment alignment = axiom::text_alignment::LEFT, bool show_debug = false, std::vector<text_line_data>* lines = nullptr);
+//std::vector<float> compute_text_bounds(axiom::font& f, std::string text, uint text_size, uint width, bool wrap, ALIGNMENT alignment);
 
-//std::vector<float> compute_text_bounds(ttf_font& f, std::string text, uint text_size, uint width, bool wrap, ALIGNMENT alignment);
+struct text_glyph {
+    glyph_key key;
+    ivec2 position;
+};
 
-class text {
-    public:
+struct text {
+    axiom::font* font;
+
+    //
     
-    double time = 0.0;
     uint clip = 0xFFFFFFFF;
-    ///vec4 range = vec4(-FLT_MAX, -FLT_MAX, FLT_MAX, FLT_MAX);
+    ulong parent = NULL_WIDGET;
 
-    ttf_font* font;
     uint text_size = 14;
-    
     std::string string;
     axiom::text_alignment alignment = axiom::text_alignment::LEFT;
-
-    bool wrap = false;
-    uint32_t width = 0xFFFFFFFF;
-    vec2 wrap_limits;
-    float max_width;
+    
+    std::vector<float> line_heights;
+    std::vector<text_line_data> lines;
+    std::vector<shaped_glyph> sglyphs;
+    std::vector<text_glyph> tglyphs;
+    vec2 position = vec2(0.0f);
+    vec2 size = vec2(0.0f);
     float z = 0.0f;
+    float time = 0.0f;
 
-    ulong parent = NULL_WIDGET;
+    //
 
     bool selectable = true;
     bool editable = false;
+    bool wrap = false;
 
-    vec2 position = vec2(0.0f);
-    vec2 size = vec2(0.0f);
+    uint32_t width = 0xFFFFFFFF;
+    vec2 wrap_limits;
+    float max_width;
 
-    std::vector<text_line_data> lines;
+    //
 
     int offset = 0;
     int select_line = 0;
@@ -120,11 +125,12 @@ class text {
 
     //
 
-    std::vector<ui_vertex> v_select;
+    void shape();
+    void measure();
+    void touch();
     
     std::vector<ui_vertex> mesh();
     std::vector<ui_vertex> mesh_select();
-    void measure();
 
     void select(vec4 cursor_range, bool anchor = false);
     ivec2 select(vec2 cursor, uint wrap_mode);
@@ -133,16 +139,14 @@ class text {
     void call();
 
     std::string retrieve();
-
-    private:
 };
 
-std::pair<int, bool> compute_cursor_index(axiom::ttf_font& font, axiom::text& text, vec2 cursor_pos, bool cl0 = true, bool cl1 = true, bool cl2 = true);
-vec2 compute_cursor_pos(axiom::ttf_font& font, axiom::text& text, uint32_t index);
+std::pair<int, bool> compute_cursor_index(axiom::font& font, axiom::text& text, vec2 cursor_pos, bool cl0 = true, bool cl1 = true, bool cl2 = true);
+vec2 compute_cursor_pos(axiom::font& font, axiom::text& text, uint32_t index);
 
 /*
 struct text {
-    ttf_font* font;
+    axiom::font* font;
 
     std::string string;
     ALIGNMENT alignment = ALIGNMENT_LEFT;
@@ -176,7 +180,7 @@ struct text {
 
     std::vector<ui_vertex> get_vertices();
     void refresh();
-    void mesh(ttf_font& font);
+    void mesh(axiom::font& font);
     //void select(vec4 cursor_range);
     std::string retrieve();
 

@@ -118,7 +118,7 @@ uint64_t button_widget::insert(vec2 size, vec3 color, std::string str, std::func
     std::shared_ptr<axiom::text> text(new axiom::text);
     text->string = str;
     text->wrap = false;
-    text->font = &ui_system.fonts[0];
+    text->font = &ui_system.font_handler.fonts["test"];
 
     widget.text = {text};
     

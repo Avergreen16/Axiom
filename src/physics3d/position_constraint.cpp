@@ -20,6 +20,9 @@ void position_constraint::before() {
 
     ra = ta->orientation * va;
     wa = ra + ta->position;
+
+    mat3 inverse_tensor_a = ta->orientation * ca->inverse_inertia_tensor * transpose(ta->orientation);
+    ca->iit_rot = inverse_tensor_a;
     
 
     for(int i = 0; i < vs.size(); ++i) {
@@ -30,12 +33,15 @@ void position_constraint::before() {
     }
 
     if(b != NULL_ENTITY) {
+        mat3 inverse_tensor_b = tb->orientation * cb->inverse_inertia_tensor * transpose(tb->orientation);
+        cb->iit_rot = inverse_tensor_b;
+        
         rb = tb->orientation * vec3(vb);
         wb = rb + tb->position;
 
         for(int i = 0; i < vs.size(); ++i) {
             vec3 v = vs[i];
-            vec3 d = cross(ra, v); 
+            vec3 d = cross(rb, v); 
             
             inertia_b[i] = 1.0f / cb->mass + dot(d, (tb->orientation * cb->inverse_inertia_tensor * transpose(tb->orientation)) * d);
         }
@@ -84,7 +90,6 @@ void position_constraint::solve(float delta_time) {
             lambda[i] = new_lambda;
             
             vec3 impulse = v * L;
-            //std::cout << impulse << " " << a << "\n";
             
             ca->apply_impulse(impulse, ra);
 
@@ -98,7 +103,6 @@ void position_constraint::solve(float delta_time) {
             velocity -= cb->get_velocity(rb);
 
             float bg = -baumgarte[i] * spring / delta_time;
-            std::cout << baumgarte[i] << " ";
             
             float L = bg - dot(v, velocity);
 
@@ -113,6 +117,7 @@ void position_constraint::solve(float delta_time) {
             
             vec3 impulse = v * L;
             
+
             ca->apply_impulse(impulse, ra);
             cb->apply_impulse(-impulse, rb);
 
@@ -126,3 +131,26 @@ void position_constraint::after() {
 }
 
 }
+
+/*
+0 0 9.53674e-07 
+0 0 9.53674e-07 
+0 0 9.53674e-07 
+0 0 0 
+4.76837e-07 0 9.53674e-07 
+-4.76837e-07 -2.38419e-07 9.53674e-07 
+0 -2.38419e-07 9.53674e-07 
+0 4.76837e-07 9.53674e-07 
+4.76837e-07 4.76837e-07 9.53674e-07 
+0 0 9.53674e-07 
+0 0 9.53674e-07 
+0 0 9.53674e-07 
+0 0 0 
+4.76837e-07 0 9.53674e-07 
+-4.76837e-07 -2.38419e-07 9.53674e-07 
+0 -2.38419e-07 9.53674e-07 
+0 4.76837e-07 9.53674e-07 
+4.76837e-07 4.76837e-07 9.53674e-07 
+..
+nan nan nan nan 
+*/

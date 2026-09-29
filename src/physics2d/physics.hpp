@@ -185,21 +185,16 @@ extern transform2d null_transform;
 struct physics_system2d : axiom::system {
     bool sim_active = true;
 
-    // parameters
+    uint iterations = 3;
+    uint substeps = 8;
     float fps = 60.0f;
-    uint velocity_iterations = 8;
-    uint position_iterations = 0;
-    uint substeps = 1;
+
+    // parameters
+    float physics_time = 0.0f;
+    uint max_frames = 1;
+
     float contact_sep = 0.02f;
     float static_dist = 0.0625f;
-    float penetration_threshold = FLT_MAX;
-    uint iteration_threshold = 3;
-    float softness_duration = 1.0f;
-
-    float physics_step = 1.0f / fps;
-    float sub_dt = physics_step / substeps;
-    uint max_frames = 1;
-    float physics_time = 0.0f;
 
     //
 
@@ -208,8 +203,6 @@ struct physics_system2d : axiom::system {
     std::vector<constraint2d> constraints;
     std::vector<constraint_distance> constraints_distance;
     std::vector<collision_constraint2d> collision_constraint2ds;
-
-    vec2 gravity_aspect = vec2(1.0f, 1.0f);
 
     std::unordered_set<uint> inserted_sap;
     std::vector<sap_point> sap_points;
