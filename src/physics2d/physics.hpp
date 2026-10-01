@@ -183,7 +183,7 @@ struct return_tag2d {
 extern transform2d null_transform;
 
 struct physics_system2d : axiom::system {
-    bool sim_active = true;
+    bool sim_active = false;//true;
 
     uint iterations = 3;
     uint substeps = 8;
@@ -240,7 +240,7 @@ struct physics_system2d : axiom::system {
 
     std::vector<uint64_t> broad_phase(std::vector<input_data>& input);
 
-    static vec2 calculate_point_velocity(collider2d *c, vec2 point);
+    static vec2 calculate_point_velocity(collider2d *c, vec2 point, float dist);
 
     static float calculate_inverse_mass(collider2d *c, transform2d *t, vec2 impulse_dir, vec2 point);
 

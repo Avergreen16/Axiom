@@ -21,14 +21,14 @@ void text_box_widget::handle_inputs() {
 
     if(ui_system.window->char_delta.size()) {
         bool insert = false;
-        if(text[0]->select_range == ivec2(-1)) text[0]->string += ui_system.window->char_delta;
-        text[0]->time = get_time();
-        text[0]->select_range = ivec2(text[0]->string.size());
+        //if(text[0]->select_range == ivec2(-1)) text[0]->string += ui_system.window->char_delta;
+        //text[0]->time = get_time();
+        //text[0]->select_range = ivec2(text[0]->string.size());
     }
     
     text[0]->z = z;
 
-    bool inputting = text[0]->select_range.x != -1 && text[0]->select_range.y != -1;
+    //bool inputting = text[0]->select_range.x != -1 && text[0]->select_range.y != -1;
 
     text[0]->mesh();
     
@@ -78,19 +78,22 @@ void text_box_widget::handle_inputs() {
                 axiom::menu_node("COPY", {},
                     [this]() {
                         axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
-
+                        
+                        /*
                         if(text[0]->select_range.x == text[0]->select_range.y) {
                             glfwSetClipboardString(ui_system.window->window_handle, text[0]->string.c_str());
                         } else {
                             std::string str = text[0]->retrieve();
                             glfwSetClipboardString(ui_system.window->window_handle, str.c_str());
                         }
+                        */
                     }
                 ),
                 axiom::menu_node("PASTE", {},
                     [this]() {
                         axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
                         
+                        /*
                         if(text[0]->select_range.x == -1) {
                             text[0]->string = glfwGetClipboardString(ui_system.window->window_handle);
                             update = true;
@@ -100,6 +103,7 @@ void text_box_widget::handle_inputs() {
                         } else {
                             //paste = true;
                         }
+                        */
                     }
                 ),
             }

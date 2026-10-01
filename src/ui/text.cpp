@@ -62,10 +62,10 @@ void text::measure() {
     std::vector<text_glyph> word;
 
     vec2 word_cursor = vec2(0.0f);
-    vec2 cursor = vec2(0.0f, -(font->ascender) * (float(text_size) / font->base_unit));
+    vec2 cursor = vec2(0.0f, round(-(font->ascender) * (float(text_size) / font->base_unit)));
     vec2 total_cursor = vec2(0.0f);
 
-    line_heights.push_back((font->line_height - font->line_gap) * (float(text_size) / font->base_unit));
+    line_heights.push_back(round((font->line_height - font->line_gap) * (float(text_size) / font->base_unit)));
 
     vec2 range = vec2(-axiom::max_float, axiom::max_float);
 
@@ -87,15 +87,15 @@ void text::measure() {
 
             //
 
-            if(cursor.x + word_cursor.x > width && wrap) {
+            if(cursor.x + word_cursor.x > width && wrap && cursor.x != 0.0f) {
                 range.y = glm::min(range.y, cursor.x + word_cursor.x);
 
                 total_cursor.x += cursor.x;
 
                 cursor.x = 0;
-                cursor.y -= font->line_height * (float(text_size) / font->base_unit);
+                cursor.y -= round(font->line_height * (float(text_size) / font->base_unit));
 
-                line_heights.push_back(font->line_height * (float(text_size) / font->base_unit));
+                line_heights.push_back(round(font->line_height * (float(text_size) / font->base_unit)));
 
                 tglyphs.insert(tglyphs.end(), line.begin(), line.end());
                 line.clear();
@@ -134,12 +134,12 @@ void text::measure() {
         range.y = glm::min(range.y, cursor.x + word_cursor.x);
 
         cursor.x = 0;
-        cursor.y -= font->line_height * (float(text_size) / font->base_unit);
+        cursor.y -= round(font->line_height * (float(text_size) / font->base_unit));
 
         tglyphs.insert(tglyphs.end(), line.begin(), line.end());
         line.clear();
         
-        line_heights.push_back(font->line_height * (float(text_size) / font->base_unit));
+        line_heights.push_back(round(font->line_height * (float(text_size) / font->base_unit)));
     } else {
         range.x = glm::max(range.x, cursor.x + word_cursor.x);
     }
@@ -180,6 +180,8 @@ void text::touch() {
 
         axiom::ecs.get_system<axiom::ui_system>().font_handler.touch_phase(tglyph.key);
     }
+
+    //if(line_heights.size() > 1) std::cout << size << "\n";
 }
     
 void measure_text(axiom::font& f, uint text_size, std::string str, text_data& data, uint width, axiom::text_alignment alignment, bool show_debug, std::vector<text_line_data>* lines) {
@@ -1358,7 +1360,7 @@ void text::call() {
 
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
-    text_size = 12;
+    text_size = 13;
 
     if(collide(ui_system.window->cursor_pos) && ui_system.cursor_clip(clip, ui_system.window->cursor_pos)) {
         ulong current = parent;
@@ -1374,6 +1376,7 @@ void text::call() {
         if(hover) ui_system.cursor.cursor_mode = axiom::cursor_mode::TEXT;
     }
 
+    /*
     if(editable) {
         ivec3 prev = ivec3{select_range, select_line};
 
@@ -1571,6 +1574,7 @@ void text::call() {
             if(ui_system.window->pressed_buttons.contains(axiom::input_code::KEY_ENTER)) select_range = ivec2(-1);
         }
     }
+    */
 }
 
 }

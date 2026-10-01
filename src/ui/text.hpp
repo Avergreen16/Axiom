@@ -68,60 +68,40 @@ extern std::vector<text_line_data> line_data;
 
 struct text_glyph {
     glyph_key key;
-    ivec2 position;
+    vec2 position;
 };
 
 struct text {
     axiom::font* font;
+    uint text_size = 14;
+
+    std::string string;
+    axiom::text_alignment alignment = axiom::text_alignment::LEFT;
+    std::vector<float> line_heights;
+    std::vector<shaped_glyph> sglyphs;
+    std::vector<text_glyph> tglyphs;
+    vec2 position = vec2(0.0f);
+    vec2 size = vec2(0.0f);
+    float z = 0.0f;
+
+    //
+
+    uint32_t width = 0xFFFFFFFF;
+    vec2 wrap_limits;
+    float max_width;
+    bool selectable = true;
+    bool editable = false;
+    bool wrap = false;
 
     //
     
     uint clip = 0xFFFFFFFF;
     ulong parent = NULL_WIDGET;
 
-    uint text_size = 14;
-    std::string string;
-    axiom::text_alignment alignment = axiom::text_alignment::LEFT;
-    
-    std::vector<float> line_heights;
-    std::vector<text_line_data> lines;
-    std::vector<shaped_glyph> sglyphs;
-    std::vector<text_glyph> tglyphs;
-    vec2 position = vec2(0.0f);
-    vec2 size = vec2(0.0f);
-    float z = 0.0f;
-    float time = 0.0f;
-
     //
 
-    bool selectable = true;
-    bool editable = false;
-    bool wrap = false;
-
-    uint32_t width = 0xFFFFFFFF;
-    vec2 wrap_limits;
-    float max_width;
-
-    //
-
-    int offset = 0;
-    int select_line = 0;
-    ivec2 select_range = ivec2(-1);
-
-    // vertices
-    std::vector<ui_vertex> glyph_vertices;
-    std::vector<ui_vertex> select_vertices;
-
-    // state
-
+    std::vector<ui_vertex> vertices;
     bool dirty = false;
-    bool glyph_dirty = false;
-    bool select_dirty = false;
-    
-    float state_width = 0.0f;
-    std::string state_string = "";
-    int state_select_line = 0;
-    ivec2 state_select_range = ivec2(-1);
 
     //
 

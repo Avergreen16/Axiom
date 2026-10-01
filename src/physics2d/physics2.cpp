@@ -1880,7 +1880,16 @@ vec2 physics_system2d::calculate_point_velocity(collider2d* c, vec2 point) {
 
     velocity = c->velocity;
     angular_velocity = c->angular_velocity;
-    velocity += vec2(cross(vec3(0.0f, 0.0f, angular_velocity), vec3(point, 0.0f)));;
+
+    vec2 linear_velocity = vec2(cross(vec3(0.0f, 0.0f, angular_velocity), vec3(point, 0.0f)));
+    float max_dist = length(point);
+    if(length(linear_velocity) > max_dist / (1.0f / 60.0f)) {
+        linear_velocity /= length(linear_velocity);
+
+        linear_velocity *= max_dist / (1.0f / 60.0f);
+    }
+    
+    velocity += linear_velocity;
 
     return velocity;
 }

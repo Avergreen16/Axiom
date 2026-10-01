@@ -1406,10 +1406,10 @@ void constraint_distance::get_values() {
 }
 
 void physics_system2d::velocity_solve() {
-    float spring = 0.25f;
+    float spring = 0.35f;
     float softness = 0.01f;
 
-    float spring_constraint = 0.25f;
+    float spring_constraint = 0.35f;
     float softness_constraint = 0.01f;
 
     float factor = fps;
@@ -1489,7 +1489,7 @@ void physics_system2d::velocity_solve() {
             for(col_constraint& cc : data.constraints) {
                 //data.refresh(cc);
 
-                vec2 velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position);
+                vec2 velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position, length(cc.pb - data.ta->position));
 
                 float diff = (cc.baumgarteN) * spring * factor;
 
@@ -1527,7 +1527,7 @@ void physics_system2d::velocity_solve() {
 
                     float normal_magnitude = length(impulse);
 
-                    velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position);
+                    velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position, axiom::max_float);
 
                     vec2 tangent_vector = vec2(cc.d->normal.y, -cc.d->normal.x);
                     float tangent_velocity = glm::dot(velocity, tangent_vector);
@@ -1551,7 +1551,7 @@ void physics_system2d::velocity_solve() {
                 } else {
                     float inertia = cc.inertiaNa + cc.inertiaNb;
 
-                    velocity -= calculate_point_velocity(data.cb, cc.pb - data.tb->position);
+                    velocity -= calculate_point_velocity(data.cb, cc.pb - data.tb->position, length(cc.pa - data.tb->position));
 
                     float v = glm::dot(velocity, cc.normal);
 
@@ -1590,8 +1590,8 @@ void physics_system2d::velocity_solve() {
 
                     float normal_magnitude = length(impulse);
 
-                    velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position);
-                    velocity -= calculate_point_velocity(data.cb, cc.pb - data.tb->position);
+                    velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position, axiom::max_float);
+                    velocity -= calculate_point_velocity(data.cb, cc.pb - data.tb->position, axiom::max_float);
 
                     float tangent_velocity = glm::dot(velocity, cc.tangent);
 
@@ -1640,7 +1640,7 @@ void physics_system2d::velocity_solve() {
 
                     float inertia = c.inertia_a[i];
 
-                    vec2 velocity = calculate_point_velocity(data.ca, c.pa - data.ta->position);
+                    vec2 velocity = calculate_point_velocity(data.ca, c.pa - data.ta->position, length(c.pb - data.ta->position));
 
                     vec2 diff = c.pa - c.pb;
                     float len = length(diff);
@@ -1677,7 +1677,7 @@ void physics_system2d::velocity_solve() {
                     } else {
                         inertia += c.inertia_b[i];
 
-                        velocity -= calculate_point_velocity(data.cb, c.pb - data.tb->position);
+                        velocity -= calculate_point_velocity(data.cb, c.pb - data.tb->position, length(c.pa - data.tb->position));
 
                         vec2 vel = velocity;       
                         //if(c.tolerance != 0.0f) vel = vv * glm::dot(vel, vv);
@@ -1868,7 +1868,7 @@ vec2 physics_system2d::calculate_inertia(collider2d& c) {
     return center;
 }
 
-vec2 physics_system2d::calculate_point_velocity(collider2d* c, vec2 point) {
+vec2 physics_system2d::calculate_point_velocity(collider2d* c, vec2 point, float dist) {
     vec2 velocity;
     float angular_velocity;
 
@@ -1876,9 +1876,10 @@ vec2 physics_system2d::calculate_point_velocity(collider2d* c, vec2 point) {
 
     velocity = c->velocity;
     angular_velocity = c->angular_velocity;
-    vec2 a_velocity = vec2(cross(vec3(0.0f, 0.0f, angular_velocity), vec3(point, 0.0f)));
-    //if(length(a_velocity)) a_velocity = normalize(a_velocity) * glm::min(length(a_velocity), m);
-    velocity += a_velocity;
+    
+    vec2 linear_velocity = vec2(cross(vec3(0.0f, 0.0f, angular_velocity), vec3(point, 0.0f)));
+
+    velocity += linear_velocity;
 
     return velocity;
 }

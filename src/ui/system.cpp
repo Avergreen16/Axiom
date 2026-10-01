@@ -286,9 +286,9 @@ void ui_system::call() {
                 for(auto& text : widget->text) {
                     text->select(vec4(cursor_anchor, cursor_pos), window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT));
 
-                    if(text->select_range.x != -1) {
-                        text_cursor = true;
-                    }
+                    //if(text->select_range.x != -1) {
+                    //    text_cursor = true;
+                    //}
                     //if(text->focused) ++n_focused;
                 }
             } else {

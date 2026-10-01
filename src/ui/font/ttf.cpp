@@ -248,6 +248,8 @@ void font_handler::process_ttf(std::string filepath, std::string label) {
             uint16_t max_component_depth = read_ushort_be();
         }
     }
+    
+    std::cout << num_glyphs << " NUM GLYPHS\n";
 
     {
         ttf_table table = tables["cmap"];
@@ -256,6 +258,8 @@ void font_handler::process_ttf(std::string filepath, std::string label) {
 
         uint16_t version = read_ushort_be(); // always 0
         uint16_t num_tables = read_ushort_be();
+
+        std::cout << num_tables << " TABLES\n";
 
         uint prev_offset = cursor;
         for(int i = 0; i < num_tables; ++i) {
@@ -270,81 +274,109 @@ void font_handler::process_ttf(std::string filepath, std::string label) {
                 cursor = table.offset + offset;
 
                 uint16_t format = read_ushort_be();
-                uint16_t length = read_ushort_be();
-                uint16_t language = read_ushort_be();
-                uint16_t seg_count_x2 = read_ushort_be();
-                uint16_t search_range = read_ushort_be();
-                uint16_t entry_selector = read_ushort_be();
-                uint16_t range_shift = read_ushort_be();
 
-                //
+                if(format == 4) {
+                    uint16_t length = read_ushort_be();
+                    uint16_t language = read_ushort_be();
+                    uint16_t seg_count_x2 = read_ushort_be();
+                    uint16_t search_range = read_ushort_be();
+                    uint16_t entry_selector = read_ushort_be();
+                    uint16_t range_shift = read_ushort_be();
 
-                uint seg_count = seg_count_x2 / 2.0f;
+                    //
 
-                // end code is an array of seg_count of uint16_t
-                
-                std::vector<uint16_t> end_code;
-                std::vector<uint16_t> start_code;
-                std::vector<int16_t> id_delta;
-                std::vector<uint16_t> id_range_offset;
-                std::vector<uint32_t> addresses;
+                    uint seg_count = seg_count_x2 / 2.0f;
 
-                end_code.reserve(seg_count);
-                start_code.reserve(seg_count);
-                id_delta.reserve(seg_count);
-                id_range_offset.reserve(seg_count);
+                    // end code is an array of seg_count of uint16_t
+                    
+                    std::vector<uint16_t> end_code;
+                    std::vector<uint16_t> start_code;
+                    std::vector<int16_t> id_delta;
+                    std::vector<uint16_t> id_range_offset;
+                    std::vector<uint32_t> addresses;
 
-                for(int i = 0; i < seg_count; ++i) {
-                    end_code.push_back(read_ushort_be());
-                }
+                    end_code.reserve(seg_count);
+                    start_code.reserve(seg_count);
+                    id_delta.reserve(seg_count);
+                    id_range_offset.reserve(seg_count);
 
-                read_ushort_be(); // pad
-                
-                for(int i = 0; i < seg_count; ++i) {
-                    start_code.push_back(read_ushort_be());
-                }
-                for(int i = 0; i < seg_count; ++i) {
-                    id_delta.push_back(read_short_be());
-                }
-                for(int i = 0; i < seg_count; ++i) {
-                    addresses.push_back(cursor);
-                    id_range_offset.push_back(read_ushort_be());
-                }
+                    for(int i = 0; i < seg_count; ++i) {
+                        end_code.push_back(read_ushort_be());
+                    }
 
-                //std::cout << seg_count << " SEGS\n";
+                    read_ushort_be(); // pad
+                    
+                    for(int i = 0; i < seg_count; ++i) {
+                        start_code.push_back(read_ushort_be());
+                    }
+                    for(int i = 0; i < seg_count; ++i) {
+                        id_delta.push_back(read_short_be());
+                    }
+                    for(int i = 0; i < seg_count; ++i) {
+                        addresses.push_back(cursor);
+                        id_range_offset.push_back(read_ushort_be());
+                    }
 
-                //
+                    //std::cout << seg_count << " SEGS\n";
 
-                uint start_cursor = cursor;
+                    //
 
-                for(int i = 0; i < seg_count; ++i) {
-                    uint16_t start = start_code[i];
-                    uint16_t end = end_code[i];
+                    uint start_cursor = cursor;
 
-                    //std::cout << start << " " << end << "\n";
+                    for(int i = 0; i < seg_count; ++i) {
+                        uint16_t start = start_code[i];
+                        uint16_t end = end_code[i];
 
-                    for(int j = start; j <= end; ++j) {
-                        uint glyph_id;
+                        //std::cout << start << " " << end << "\n";
 
-                        if(id_range_offset[i] == 0) {
-                            glyph_id = j + id_delta[i];
-                        } else {
-                            uint address = addresses[i];
-                            address += int(id_range_offset[i]) + (j - int(start)) * 2;
-                            cursor = address;
+                        for(int j = start; j <= end; ++j) {
+                            uint glyph_id;
 
-                            glyph_id = read_ushort_be();
+                            if(id_range_offset[i] == 0) {
+                                glyph_id = j + id_delta[i];
+                            } else {
+                                uint address = addresses[i];
+                                address += int(id_range_offset[i]) + (j - int(start)) * 2;
+                                cursor = address;
 
-                            if(glyph_id != 0) glyph_id += id_delta[i];
+                                glyph_id = read_ushort_be();
+
+                                if(glyph_id != 0) glyph_id += id_delta[i];
+                            }
+                            glyph_id &= 0xFFFF;
+                            
+                            axiom::glyph glyph;
+                            glyph.glyph_id = glyph_id;
+                            glyph.codepoint = j;
+
+                            font.glyph_map.emplace(j, glyph_id);
+                            font.glyphs.emplace(glyph_id, glyph);
                         }
-                        glyph_id &= 0xFFFF;
-                        
-                        axiom::glyph glyph;
-                        glyph.glyph_id = glyph_id;
-                        glyph.codepoint = j;
+                    }
+                } else if(format == 12) {
+                    uint16_t reserved = read_ushort_be();
+                    uint32_t length = read_uint_be();
+                    uint32_t language = read_uint_be();
+                    uint32_t num_groups = read_uint_be();
 
-                        font.glyph_map.emplace(j, glyph_id);
-                        font.glyphs.emplace(glyph_id, glyph);
+                    for(uint i = 0; i < num_groups; ++i) {
+                        uint32_t start_char = read_uint_be();
+                        uint32_t end_char = read_uint_be();
+                        uint32_t start_glyph = read_uint_be();
+
+                        for(int j = 0; j < end_char - start_char; ++j) {
+                            uint32_t char_id = start_char + j;
+                            uint32_t glyph_id = start_glyph + j;
+
+                            //
+                            
+                            axiom::glyph glyph;
+                            glyph.glyph_id = glyph_id;
+                            glyph.codepoint = char_id;
+
+                            font.glyph_map.emplace(char_id, glyph_id);
+                            font.glyphs.emplace(glyph_id, glyph);
+                        }
                     }
                 }
             }
@@ -925,6 +957,39 @@ void font_handler::process_ttf(std::string filepath, std::string label) {
     */
 
     fonts.emplace(label, font);
+    /*
+    
+    double start_time = axiom::get_time();
+    uint num_phases = 0;
+
+    std::cout << "NUMBER OF GLYPHS: " << font.glyphs.size() << std::endl;
+    
+    for(auto& [id, glyph] : font.glyphs) {
+        for(int y = 0; y < 4; ++y) {
+            for(int x = 0; x < 4; ++x) {
+                axiom::glyph_key key;
+                key.glyph = id;
+                key.phase_x = x;
+                key.phase_y = y;
+                key.size = 24;
+
+                axiom::glyph_phase phase;
+                auto bitmap = fonts["test"].get_bitmap(key);
+                phase.bitmap = bitmap;
+                
+                fonts["test"].phases.emplace(key, phase);
+
+                ++num_phases;
+            }
+        }
+    } 
+
+    double end_time = axiom::get_time();
+
+    std::cout << "TIME TAKEN: " << end_time - start_time << std::endl;
+    std::cout << "NUMBER OF PHASES: " << num_phases << std::endl;
+    std::cout << "TIME PER PHASE: " << (end_time - start_time) / num_phases << std::endl;
+    */
 }
 
 axiom::texture_asset font::get_bitmap(glyph_key key) {
@@ -972,6 +1037,10 @@ axiom::texture_asset font::get_bitmap(glyph_key key) {
         
 
         //
+        ivec2 supersample = {6, 6};
+        bool subpixel = false;
+
+        //
 
         float descender = descender;
 
@@ -981,66 +1050,114 @@ axiom::texture_asset font::get_bitmap(glyph_key key) {
         psize = (vec2(size) / float(units)) * float(base_unit);
         
         std::vector<byte> colors(size.x * size.y * 4);
-        for(int k = 0; k < size.x * size.y; ++k) {
-            vec2 pt = vec2(k % size.x - frac.x, k / size.x - frac.y);
-            //float w = glm::max(glyph.bounding_box.z - glyph.bounding_box.x, glyph.bounding_box.w - glyph.bounding_box.y) * 0.25f;
-
-            float min_width = glm::min(size.x, size.y);
-
-            ivec2 supersample = {6, 6};
-            bool subpixel = false;
+        for(int y = 0; y < size.y; ++y) {
+            float pt_y = y - frac.y;
 
             std::vector<std::vector<uint>> ls(supersample.y);
 
             for(int i = 0; i < supersample.y; ++i) {
                 float offset = (i + 0.5f) / supersample.y;
-                float pt_o = pt.y + offset;
+                float pt_o = pt_y + offset;
                 pt_o = (pt_o / size.y) * psize.y + pmin.y;
                     
                 ls[i] = capture(pt_o);
             }
 
-            if(subpixel) {
+            for(int x = 0; x < size.x; ++x) {
+                vec2 pt = vec2(x - frac.x, pt_y);
 
-                for(int c = 0; c < 3; ++c) {
+                uint k = x + y * size.x;
+
+                float min_width = glm::min(size.x, size.y);
+
+                if(subpixel) {
+                    for(int c = 0; c < 3; ++c) {
+                        float f = 0.0f;
+
+                        float cfrac = float(c) / 3;
+
+                        for(int ii = 0; ii < supersample.x * supersample.y; ++ii) {
+                            uint y_index = ii / supersample.x;
+
+                            vec2 offset = vec2(ii % supersample.x + 0.5f, ii / supersample.x + 0.5f) / vec2(supersample);
+                            offset.x /= 3;
+                            offset.x += cfrac;
+                            
+                            vec2 pt_o = pt + offset;
+
+                            pt_o = (pt_o / vec2(size)) * psize + pmin;
+
+                            int count = 0;
+                            float min_dist = axiom::max_float;
+
+                            for(int i = 0; i < ls[y_index].size(); i += 2) {
+                                auto& contour = glyph.contours[ls[y_index][i]];
+
+                                int a = ls[y_index][i + 1];
+                                int b = (a + 1) % contour.points.size();
+
+                                auto& point_a = contour.points[a];
+                                auto& point_b = contour.points[b];
+
+                                vec2 pt_s;
+
+                                bool did_intersect = intersect(point_a.point, point_b.point, pt_o, pt_s);
+
+                                if(pt_s.x < pt_o.x) did_intersect = false;
+
+                                if(did_intersect) {
+                                    if(point_a.point.y < point_b.point.y || (point_a.point.y == point_b.point.y && point_a.point.x < point_b.point.x)) {
+                                        ++count;
+                                    } else {
+                                        --count;
+                                    }
+                                }
+                            }
+                            
+                            if(count != 0) {
+                                f += 1.0f;
+                            }
+                        }
+
+                        f = (f / (supersample.x * supersample.y)) * 0xFF;
+
+                        colors[k * 4 + c] = f;
+                    }
+                    colors[k * 4 + 3] = 0xFF;
+                } else {
                     float f = 0.0f;
 
-                    float cfrac = float(c) / 3;
-
                     for(int ii = 0; ii < supersample.x * supersample.y; ++ii) {
-                        uint y_index = ii / supersample.x;
-
                         vec2 offset = vec2(ii % supersample.x + 0.5f, ii / supersample.x + 0.5f) / vec2(supersample);
-                        offset.x /= 3;
-                        offset.x += cfrac;
-                        
                         vec2 pt_o = pt + offset;
 
                         pt_o = (pt_o / vec2(size)) * psize + pmin;
 
                         int count = 0;
                         float min_dist = axiom::max_float;
+                        
+                        for(int i = 0; i < glyph.contours.size(); ++i) {
+                            auto& contour = glyph.contours[i];
 
-                        for(int i = 0; i < ls[y_index].size(); i += 2) {
-                            auto& contour = glyph.contours[ls[y_index][i]];
+                            for(int j = 0; j < contour.points.size(); ++j) {
+                                int a = j;
+                                int b = (j + 1) % contour.points.size();
 
-                            int a = ls[y_index][i + 1];
-                            int b = (a + 1) % contour.points.size();
+                                auto& point_a = contour.points[a];
+                                auto& point_b = contour.points[b];
 
-                            auto& point_a = contour.points[a];
-                            auto& point_b = contour.points[b];
+                                vec2 pt_s;
 
-                            vec2 pt_s;
+                                bool did_intersect = intersect(point_a.point, point_b.point, pt_o, pt_s);
 
-                            bool did_intersect = intersect(point_a.point, point_b.point, pt_o, pt_s);
+                                if(pt_s.x < pt_o.x) did_intersect = false;
 
-                            if(pt_s.x < pt_o.x) did_intersect = false;
-
-                            if(did_intersect) {
-                                if(point_a.point.y < point_b.point.y || (point_a.point.y == point_b.point.y && point_a.point.x < point_b.point.x)) {
-                                    ++count;
-                                } else {
-                                    --count;
+                                if(did_intersect) {
+                                    if(point_a.point.y < point_b.point.y || (point_a.point.y == point_b.point.y && point_a.point.x < point_b.point.x)) {
+                                        ++count;
+                                    } else {
+                                        --count;
+                                    }
                                 }
                             }
                         }
@@ -1052,58 +1169,11 @@ axiom::texture_asset font::get_bitmap(glyph_key key) {
 
                     f = (f / (supersample.x * supersample.y)) * 0xFF;
 
-                    colors[k * 4 + c] = f;
+                    colors[k * 4] = f;
+                    colors[k * 4 + 1] = f;
+                    colors[k * 4 + 2] = f;
+                    colors[k * 4 + 3] = 0xFF;
                 }
-                colors[k * 4 + 3] = 0xFF;
-            } else {
-                float f = 0.0f;
-
-                for(int ii = 0; ii < supersample.x * supersample.y; ++ii) {
-                    vec2 offset = vec2(ii % supersample.x + 0.5f, ii / supersample.x + 0.5f) / vec2(supersample);
-                    vec2 pt_o = pt + offset;
-
-                    pt_o = (pt_o / vec2(size)) * psize + pmin;
-
-                    int count = 0;
-                    float min_dist = axiom::max_float;
-                    
-                    for(int i = 0; i < glyph.contours.size(); ++i) {
-                        auto& contour = glyph.contours[i];
-
-                        for(int j = 0; j < contour.points.size(); ++j) {
-                            int a = j;
-                            int b = (j + 1) % contour.points.size();
-
-                            auto& point_a = contour.points[a];
-                            auto& point_b = contour.points[b];
-
-                            vec2 pt_s;
-
-                            bool did_intersect = intersect(point_a.point, point_b.point, pt_o, pt_s);
-
-                            if(pt_s.x < pt_o.x) did_intersect = false;
-
-                            if(did_intersect) {
-                                if(point_a.point.y < point_b.point.y || (point_a.point.y == point_b.point.y && point_a.point.x < point_b.point.x)) {
-                                    ++count;
-                                } else {
-                                    --count;
-                                }
-                            }
-                        }
-                    }
-                    
-                    if(count != 0) {
-                        f += 1.0f;
-                    }
-                }
-
-                f = (f / (supersample.x * supersample.y)) * 0xFF;
-
-                colors[k * 4] = f;
-                colors[k * 4 + 1] = f;
-                colors[k * 4 + 2] = f;
-                colors[k * 4 + 3] = 0xFF;
             }
         }
 
@@ -1117,7 +1187,6 @@ axiom::texture_asset font::get_bitmap(glyph_key key) {
 
 void font_handler::touch_phase(glyph_key key) {
     if(!fonts["test"].phases.contains(key)) {
-        std::cout << "x";
         axiom::glyph_phase phase;
         auto bitmap = fonts["test"].get_bitmap(key);
         phase.bitmap = bitmap;
