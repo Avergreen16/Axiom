@@ -313,6 +313,20 @@ mat3 z_norm = mat3(
     vec3(0, 0, 1)
 );
 
+vec4 background_color(vec3 ray) {
+    float d = ray.z;
+    float horiz = length(ray.xy);
+
+    vec3 floor_color = vec3(0.1);
+    vec3 low_sky = hex_color(0x4882c8);
+    vec3 high_sky = hex_color(0x2556b5);
+
+    return vec4(floor_color, 1.0);
+
+    if(d < 0.0) return vec4(mix(floor_color, low_sky, (d + 1.0) / 1.0), 1.0);
+    else return vec4(mix(low_sky, high_sky, (d - 0.1) / 0.9), 1.0);
+}
+
 void main() {
     vec4 cc = vec4(cs, 0.5, 1.0);
     cc = inv_proj * cc;
@@ -363,10 +377,11 @@ void main() {
 
     if(lcolor.w != 0.0) fcolor = blend(fcolor, lcolor);
 
-    //if(depth == 0.0) frag_color = vec4(base_color, 1.0);
+    // frag_color = vec4(base_color, 1.0);
     frag_color = vec4(0.0, 0.0, 0.0, 0.0);
+    if(depth == 0.0) frag_color = background_color(ray);
 
-    frag_color = vec4(frag_color.xyz * (1.0 - fcolor.w), frag_color.w) + vec4(fcolor.xyz, fcolor.w);
+    frag_color = vec4(frag_color.xyz * (1.0 - fcolor.w), frag_color.w) + vec4(fcolor.xyz * fcolor.w, fcolor.w);
 
     //frag_normal = vec4(0.0);
 

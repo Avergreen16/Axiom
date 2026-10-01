@@ -1360,7 +1360,7 @@ void text::call() {
 
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
-    text_size = 13;
+    text_size = 12;
 
     if(collide(ui_system.window->cursor_pos) && ui_system.cursor_clip(clip, ui_system.window->cursor_pos)) {
         ulong current = parent;

@@ -12,8 +12,8 @@ void physics_system3d::call() {
         physics_time += axiom::ecs.delta_time;
 
         uint count = 0;
-        while(physics_time >= physics_step) {
-            physics_time -= physics_step;
+        while(physics_time >= (1.0f / fps)) {
+            physics_time -= (1.0f / fps);
             physics_loop();
             count += 1;
 
@@ -738,6 +738,8 @@ void physics_system3d::integrate() {
         transform3d& c_transform = axiom::ecs.get_component<transform3d>(c);
         collider3d& c_collider = axiom::ecs.get_component<collider3d>(c);
 
+        float sub_dt = 1.0f / fps / substeps;
+
         if(!c_collider.is_static) {
             c_transform.position += c_collider.velocity * sub_dt;
 
@@ -893,7 +895,7 @@ void physics_system3d::velocity_solve() {
         */
 
         for(auto& constraint : constraints) {
-            constraint->solve(physics_step);
+            constraint->solve((1.0f / fps));
         }
 
         /*

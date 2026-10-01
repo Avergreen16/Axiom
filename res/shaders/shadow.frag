@@ -87,7 +87,7 @@ mat4 get_transform(mat4 m) {
 }
 
 const int num_blocker = 1;//49;
-const int num_samples = 1;//;
+const int num_samples = 24;//;
 
 void create_offsets(out vec2[num_samples] v, ivec2 pos, float rad) {
     for(int i = 0; i < num_samples; ++i) {
@@ -251,12 +251,12 @@ void main() {
     if(farthest == 10000.0) farthest = 0.0;
     */
     
-    float penumbra_rad = 0.0;//abs(farthest) * tan(4.0 / 180.0 * 3.14159265358979);
+    float penumbra_rad = 0.0625;//abs(farthest) * tan(4.0 / 180.0 * 3.14159265358979);
     
     create_offsets(offsets, ptexel, penumbra_rad);
 
     //for(int i = 4; i >= 0; --i) {
-    for(int i = 0; i < 5; ++i) {
+    for(int i = 0; i < 3; ++i) {
         float texel_size = pixel_size * pow(texture_growth, i);
         pos = save_pos;
         vec4 spos = pos;
@@ -347,7 +347,7 @@ void main() {
                         
                         float bias = 0.0;//texel_size * length(vec2(nslope_x, nslope_y));
 
-                        sd += (min(slope_x * nt.x, 0.0) + min(slope_y * nt.y, 0.0) - 0.25) * texel_size;
+                        sd += (min(min(nslope_x * nt.x, slope_x * nt.x), 0.0) + min(min(nslope_y * nt.y, slope_y * nt.y), 0.0) - 0.25) * texel_size;
 
                         if(target_depth + bias < sd) ++frac;
                     }

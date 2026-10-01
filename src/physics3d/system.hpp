@@ -17,14 +17,13 @@ struct physics_system3d : system {
 
     // parameters
     float fps = 60.0f;
-    float physics_step = 1.0f / fps;
+    uint iterations = 3;
+    uint substeps = 12;
+    
     int max_frames = 1;
     float physics_time = 0.0f;
 
     float contact_sep = 0.0625f;
-    uint iterations = 3;
-    uint substeps = 12;
-    float sub_dt = physics_step / substeps;
 
     //
 

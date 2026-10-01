@@ -95,6 +95,19 @@ void tab_widget::mesh() {
             std::vector<vec4> colors = {
                 base_color,
             };
+            
+            //
+
+            vec2 corner = position + vec2(pos, size.y - tab_height);
+            clip_space space;
+            space.range = vec4(corner - vec2(0.0f, 10.0f) + ranges[0].xy(), corner + ranges[0].zw());
+            space.radius = 6.0f;
+            space.parent = clip;
+            
+            uint new_clip = ui_system.clip_spaces.size();
+            ui_system.clip_spaces.push_back(space);
+
+            //
 
             std::vector<ui_vertex> ui_vertices = text[i]->mesh();
             vec2 text_pos = position + vec2(pos, size.y - tab_height) + (vec2(tab.width, tab_height) - text[i]->size) * 0.5f;
@@ -110,7 +123,7 @@ void tab_widget::mesh() {
                     v.color = color;
                     v.data = 0x1;
 
-                    v.clip_space = clip;
+                    v.clip_space = new_clip;
                 }
                 vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
             }
