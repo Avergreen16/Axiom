@@ -26,12 +26,7 @@ void match_widget::mesh() {
     if(dirty) {
         axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
-        auto& parent_widget = ui_system.widgets[parent];
-
-        vec4 range = vec4(parent_widget->position, parent_widget->size);
-
-        if(border) range += vec4(-parent_widget->buffer.x, -parent_widget->buffer.y, parent_widget->buffer.x + parent_widget->buffer.z, parent_widget->buffer.y + parent_widget->buffer.w);
-        else range += vec4(-buf.x, -buf.y, buf.x, buf.y);
+        vec4 range = vec4(position, size);
 
         vertices_before.clear();
         
@@ -59,7 +54,15 @@ void match_widget::init() {
 
     widget_constraint c;
     c.func = [this, ui_system]() {
-        //
+        auto& parent_widget = ui_system->widgets[parent];
+
+        vec4 range;
+
+        if(border) range += vec4(-parent_widget->buffer.x, -parent_widget->buffer.y, parent_widget->buffer.x + parent_widget->buffer.z, parent_widget->buffer.y + parent_widget->buffer.w);
+        else range += vec4(-buf.x, -buf.y, buf.x, buf.y);
+
+        position = range.xy();
+        size = range.zw() - range.xy();
     };
     before.push_back(c);
 }
@@ -67,8 +70,8 @@ void match_widget::init() {
 capture_data match_widget::handle_capture() {
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
-    auto& parent_widget = ui_system.widgets[parent];
-    vec4 range = vec4(parent_widget->position, parent_widget->size);
+    //auto& parent_widget = ui_system.widgets[parent];
+    vec4 range = vec4(position, size);
 
     std::vector<vec4> ranges = {
         vec4(range.xy(), range.xy() + range.zw())

@@ -69,6 +69,7 @@ extern std::vector<text_line_data> line_data;
 struct text_glyph {
     glyph_key key;
     vec2 position;
+    vec4 selection;
 };
 
 struct text {
@@ -77,7 +78,7 @@ struct text {
 
     std::string string;
     axiom::text_alignment alignment = axiom::text_alignment::LEFT;
-    std::vector<float> line_heights;
+    std::vector<std::tuple<float, int>> lines;
     std::vector<shaped_glyph> sglyphs;
     std::vector<text_glyph> tglyphs;
     vec2 position = vec2(0.0f);
@@ -101,6 +102,7 @@ struct text {
     //
 
     std::vector<ui_vertex> vertices;
+    std::vector<ui_vertex> select_vertices;
     bool dirty = false;
 
     //
@@ -110,10 +112,6 @@ struct text {
     void touch();
     
     std::vector<ui_vertex> mesh();
-    std::vector<ui_vertex> mesh_select();
-
-    void select(vec4 cursor_range, bool anchor = false);
-    ivec2 select(vec2 cursor, uint wrap_mode);
 
     bool collide(vec2 pos);
     void call();
@@ -121,8 +119,10 @@ struct text {
     std::string retrieve();
 };
 
-std::pair<int, bool> compute_cursor_index(axiom::font& font, axiom::text& text, vec2 cursor_pos, bool cl0 = true, bool cl1 = true, bool cl2 = true);
-vec2 compute_cursor_pos(axiom::font& font, axiom::text& text, uint32_t index);
+bool select(axiom::text& text, vec2 anchor, vec2 pos, ivec2& range);
+int cursor_index(axiom::text& text, vec2 pos);
+vec2 cursor_pos(axiom::text& text, uint index);
+std::vector<ui_vertex> mesh_selection(axiom::text& text, ivec2 range);
 
 /*
 struct text {

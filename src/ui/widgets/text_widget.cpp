@@ -22,8 +22,6 @@ void text_widget::mesh() {
 
         //text[0]->width = size.x;
         std::vector<ui_vertex> text_vertices = text[0]->mesh();
-        std::vector<ui_vertex> select_vertices = text[0]->mesh_select();
-        text_vertices.insert(text_vertices.end(), select_vertices.begin(), select_vertices.end());
 
         //std::cout << select_vertices.size() << "\n";
 
@@ -155,6 +153,16 @@ void text_widget::init() {
         text[0]->position = position;
     };
     after.push_back(c);
+}
+
+axiom::capture_data text_widget::handle_capture() {
+    axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
+
+    if(ui_system.cursor_clip(clip, ui_system.window->cursor_pos) && includes(ui_system.window->cursor_pos, ivec4(position, position + size))) {
+        return {parent, z, true, true};
+    }
+
+    return {self, z, false};
 }
 
 }

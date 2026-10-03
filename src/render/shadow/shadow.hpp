@@ -15,7 +15,7 @@ struct shadow_renderer {
     float altitude = 12.5f;
     float azimuth = 35.0f;
     float contrast = 0.75f;
-    float blend_radius = 1.0;
+    float blend_radius = 0.0625f;
 
     uint camera_entity;
     render_target* target;

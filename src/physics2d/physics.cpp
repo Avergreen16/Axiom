@@ -1407,10 +1407,10 @@ void constraint_distance::get_values() {
 
 void physics_system2d::velocity_solve() {
     float spring = 0.35f;
-    float softness = 0.01f;
+    float softness = 0.025f;
 
     float spring_constraint = 0.35f;
-    float softness_constraint = 0.01f;
+    float softness_constraint = 0.025f;
 
     float factor = fps;
 

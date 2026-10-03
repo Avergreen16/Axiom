@@ -12,6 +12,8 @@ struct text_widget : widget {
     void get_y();
     void set_str(std::string str);
     void init();
+    
+    axiom::capture_data handle_capture();
 
     static ulong insert(std::string str, axiom::text_alignment alg, bool wrap = true, std::function<std::string(std::string)> callback = [](std::string str) {return str;});
 };

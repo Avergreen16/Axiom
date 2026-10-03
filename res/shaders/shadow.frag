@@ -86,8 +86,8 @@ mat4 get_transform(mat4 m) {
     );
 }
 
-const int num_blocker = 1;//49;
-const int num_samples = 24;//;
+const int num_blocker = 25;//49;
+const int num_samples = 16;//;
 
 void create_offsets(out vec2[num_samples] v, ivec2 pos, float rad) {
     for(int i = 0; i < num_samples; ++i) {
@@ -103,10 +103,15 @@ void create_offsets(out vec2[num_samples] v, ivec2 pos, float rad) {
 }
 
 void create_blocker(out vec2[num_blocker] v, ivec2 pos, float rad) {
-    for(int i = 0; i < num_blocker; ++i) {
-        vec2 ii = vec2(i % 7, i / 7) - 3.5;
+    for(int i = 0; i < num_samples; ++i) {
+        vec2 vv = vec2(1.0);
+        uint ctr = 0;
 
-        v[i] = vec2(ii);
+        while(length(vv) > 1.0 && ctr < 5) {
+            vv = vec2(to_float(hash(uvec2((pos.x * 257) ^ i ^ ctr, (pos.y * 257) ^ i ^ ctr))), to_float(hash(uvec2((pos.y * 257) ^ i ^ ctr, (pos.x * 257) ^ i ^ ctr))));
+            ++ctr;
+        }
+        v[i] = vv * rad;
     }
 }
 
@@ -251,12 +256,12 @@ void main() {
     if(farthest == 10000.0) farthest = 0.0;
     */
     
-    float penumbra_rad = 0.0625;//abs(farthest) * tan(4.0 / 180.0 * 3.14159265358979);
+    float penumbra_rad = blend_rad;//abs(farthest) * tan(4.0 / 180.0 * 3.14159265358979);
     
     create_offsets(offsets, ptexel, penumbra_rad);
 
     //for(int i = 4; i >= 0; --i) {
-    for(int i = 0; i < 3; ++i) {
+    for(int i = 0; i < 5; ++i) {
         float texel_size = pixel_size * pow(texture_growth, i);
         pos = save_pos;
         vec4 spos = pos;
@@ -324,7 +329,7 @@ void main() {
                     screen_pos += offset;
 
                     ivec2 ntexel = ivec2(floor(screen_pos));
-                    vec2 nt = (vec2(ntexel) + 0.5) - texel_f;
+                    vec2 nt = (vec2(ntexel) + 0.5) - (texel_f);
 
                     if(ntexel.x < 0 || ntexel.y < 0 || ntexel.x >= size.x || ntexel.y >= size.y) ++null_pixels;
                     else {

@@ -29,6 +29,13 @@ struct widget_input_state {
     int depth = 0;
 };
 
+struct text_selection {
+    std::shared_ptr<axiom::text> text;
+    int start;
+    int end;
+    vec2 origin;
+};
+
 struct ui_system : system {
     //////////////
     
@@ -39,6 +46,7 @@ struct ui_system : system {
 
     axiom::window* window;
     axiom::cursor cursor;
+    std::vector<text_selection> selections;
 
     std::vector<ui_vertex> vertices;
     bool hex_mode = true;

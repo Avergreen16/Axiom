@@ -15,7 +15,7 @@ void text_box_widget::handle_inputs() {
 
             ui_system.cursor_anchor = clamped_cursor;
 
-            text[0]->select(vec4(clamped_cursor, clamped_cursor), true);
+            //text[0]->select(vec4(clamped_cursor, clamped_cursor), true);
         //}
     }
 
@@ -168,8 +168,6 @@ void text_box_widget::mesh() {
         
         //
         std::vector<axiom::ui_vertex> text_vs = text[0]->mesh();
-        std::vector<axiom::ui_vertex> text_select = text[0]->mesh_select();
-        text_vs.insert(text_vs.end(), text_select.begin(), text_select.end());
 
         for(axiom::ui_vertex& v : text_vs) {
             v.pos = vec3(v.pos.xy() + text[0]->position, z);

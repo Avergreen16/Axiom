@@ -119,8 +119,6 @@ void message_widget::mesh() {
 
         //text[0]->width = size.x;
         std::vector<ui_vertex> text_vertices = text[0]->mesh();
-        std::vector<ui_vertex> select_vertices = text[0]->mesh_select();
-        text_vertices.insert(text_vertices.end(), select_vertices.begin(), select_vertices.end());
 
         for(ui_vertex& v : text_vertices) {
             v.pos.x += text[0]->position.x;
