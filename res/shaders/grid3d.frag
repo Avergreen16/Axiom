@@ -321,7 +321,7 @@ vec4 background_color(vec3 ray) {
     vec3 low_sky = hex_color(0x4882c8);
     vec3 high_sky = hex_color(0x2556b5);
 
-    return vec4(floor_color, 1.0);
+    return vec4(base_color, 1.0);
 
     if(d < 0.0) return vec4(mix(floor_color, low_sky, (d + 1.0) / 1.0), 1.0);
     else return vec4(mix(low_sky, high_sky, (d - 0.1) / 0.9), 1.0);

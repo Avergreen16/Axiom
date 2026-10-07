@@ -47,9 +47,9 @@ namespace axiom {
 
 struct random {
     ulong seed;
-    ulong value;
-    
-    random(ulong init_seed);
+    ulong state;
+
+    random(ulong seed);
 
     random(const random& r) = default;
     random& operator=(const random& r) = default;
@@ -68,9 +68,9 @@ struct random {
 
 struct random32 {
     uint seed;
-    uint value;
+    uint state;
 
-    random32(uint init_seed);
+    random32(uint seed);
 
     random32(const random32& r) = default;
     random32& operator=(const random32& r) = default;

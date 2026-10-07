@@ -150,7 +150,7 @@ uint64_t slider_widget::insert(vec2 size, float slider_width, vec3 color, vec2 r
 capture_data slider_widget::handle_capture() {
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
-    bool clip_cursor = ui_system.cursor_clip(clip, ui_system.cursor_pos);
+    bool clip_cursor = ui_system.cursor_clip(clip, ui_system.window->cursor_pos);
 
     if(clip_cursor) {
         std::vector<vec4> ranges = {

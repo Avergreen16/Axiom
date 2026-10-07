@@ -738,28 +738,41 @@ void physics_system3d::integrate() {
         transform3d& c_transform = axiom::ecs.get_component<transform3d>(c);
         collider3d& c_collider = axiom::ecs.get_component<collider3d>(c);
 
-        float sub_dt = 1.0f / fps / substeps;
+        float dt = 1.0f / (fps * substeps);
 
         if(!c_collider.is_static) {
-            c_transform.position += c_collider.velocity * sub_dt;
+            if(c_collider.allow_gravity) {
+                vec3 gravity_acceleration = get_gravity(c_transform.position);
+
+                c_collider.acceleration += gravity_acceleration;
+            }
+
+            c_collider.velocity += c_collider.acceleration * (dt * 0.5f);
+            c_collider.angular_momentum += c_collider.angular_force * (dt * 0.5f);
+
+            //
+
+            c_transform.position += c_collider.velocity * dt;
 
             if(c_collider.allow_rotation && glm::length(c_collider.angular_momentum)) {
                 glm::vec3 angular_velocity = (c_transform.orientation * c_collider.inverse_inertia_tensor * transpose(c_transform.orientation)) * c_collider.angular_momentum;
                 
                 float len_av = length(angular_velocity);
                 vec3 norm_av = angular_velocity / len_av;
-                if(len_av * sub_dt != 0.0f) {
-                    glm::mat3 rotation = glm::rotate(len_av * sub_dt, norm_av);
+                if(len_av * dt != 0.0f) {
+                    glm::mat3 rotation = glm::rotate(len_av * dt, norm_av);
         
                     c_transform.orientation = rotation * c_transform.orientation;
                 }
             }
-            
-            if(c_collider.allow_gravity) {
-                vec3 gravity_acceleration = get_gravity(c_transform.position);
 
-                c_collider.velocity += gravity_acceleration * sub_dt;
-            }
+            //
+            
+            c_collider.velocity += c_collider.acceleration * (dt * 0.5f);
+            c_collider.angular_momentum += c_collider.angular_force * (dt * 0.5f);
+
+            c_collider.acceleration = vec3(0.0f);
+            c_collider.angular_force = vec3(0.0f);
         }
     }
 }

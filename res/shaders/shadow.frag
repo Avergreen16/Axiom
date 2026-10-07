@@ -87,18 +87,20 @@ mat4 get_transform(mat4 m) {
 }
 
 const int num_blocker = 25;//49;
-const int num_samples = 16;//;
+const int num_samples = 64;//;
 
 void create_offsets(out vec2[num_samples] v, ivec2 pos, float rad) {
     for(int i = 0; i < num_samples; ++i) {
-        vec2 vv = vec2(1.0);
-        uint ctr = 0;
+        float frac = float(i) / num_samples;
+        float angle = 3.14159265358979 * (3.0 - sqrt(5.0));
 
-        while(length(vv) > 1.0 && ctr < 5) {
-            vv = vec2(to_float(hash(uvec2((pos.x * 257) ^ i ^ ctr, (pos.y * 257) ^ i ^ ctr))), to_float(hash(uvec2((pos.y * 257) ^ i ^ ctr, (pos.x * 257) ^ i ^ ctr))));
-            ++ctr;
-        }
-        v[i] = vv * rad;
+        float theta = i * angle + to_float(hash(uvec2(pos)));
+
+        float radius = sqrt(frac);
+
+        //vec2 rand = vec2(to_float(hash(uvec2((pos.x * 257) ^ i, (pos.y * 257) ^ i))), to_float(hash(uvec2((pos.y * 31) ^ i, (pos.x * 31) ^ i))));
+
+        v[i] = vec2(radius * cos(theta), radius * sin(theta)) * rad;// + rand * rad * 0.25;
     }
 }
 
@@ -358,7 +360,7 @@ void main() {
                     }
                 }
                 
-                frag_color = vec4(0.0, 0.0, 0.0, (frac) / (num_samples - null_pixels)); 
+                frag_color = vec4(0.0, 0.0, 0.0, max(0.0, (frac) / (num_samples - null_pixels) * 2.0 - 1.0)); 
 
                 x = true;
             }

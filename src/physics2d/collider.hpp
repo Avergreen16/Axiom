@@ -66,6 +66,9 @@ struct collider2d {
     vec2 velocity = vec2(0.0f);
     float angular_velocity = 0.0f;
 
+    vec2 acceleration = vec2(0.0f);
+    float angular_acceleration = 0.0f;
+
     //
 
     std::set<uint> non_colliding;

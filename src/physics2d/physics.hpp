@@ -37,6 +37,9 @@ struct col_constraint {
     vec2 normal;
     vec2 tangent;
 
+    vec2 pos_delta_a;
+    vec2 pos_delta_b;
+
     float lambdaN = 0.0f;
     float lambdaT = 0.0f;
 
@@ -102,6 +105,9 @@ struct pos_constraint {
 
     vec2 pa;
     vec2 pb;
+
+    vec2 a0a;
+    vec2 a0b;
 
     std::vector<vec2> vs;
     std::vector<float> inertia_a;
@@ -185,7 +191,7 @@ extern transform2d null_transform;
 struct physics_system2d : axiom::system {
     bool sim_active = false;//true;
 
-    uint iterations = 3;
+    uint iterations = 8;
     uint substeps = 8;
     float fps = 60.0f;
 
@@ -240,11 +246,13 @@ struct physics_system2d : axiom::system {
 
     std::vector<uint64_t> broad_phase(std::vector<input_data>& input);
 
-    static vec2 calculate_point_velocity(collider2d *c, vec2 point, float dist);
+    static vec2 calculate_point_velocity(collider2d *c, vec2 point);
+    static vec2 calculate_point_acceleration(collider2d *c, vec2 point);
 
     static float calculate_inverse_mass(collider2d *c, transform2d *t, vec2 impulse_dir, vec2 point);
 
     static void apply_impulse(collider2d *c, vec2 impulse, vec2 point);
+    static void apply_force(collider2d *c, vec2 impulse, vec2 point);
 
     void integrate();
 

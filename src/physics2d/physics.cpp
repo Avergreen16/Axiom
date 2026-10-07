@@ -1332,20 +1332,30 @@ void physics_system2d::integrate() {
         collider2d& ca = axiom::ecs.get_component<collider2d>(entity);
 
         if(!ca.is_static) {
+            
+            if(ca.allow_gravity) {
+                vec2 g = get_gravity(ta.position) * -9.81f;
+
+                ca.acceleration += g;
+            }
+
+            ca.velocity += ca.acceleration * dt * 0.5f;
+            ca.angular_velocity += ca.angular_acceleration * dt * 0.5f;
+            
+            //
+
             ta.position += ca.velocity * dt;
 
             if(ca.allow_rotation) {
                 glm::mat2 rotation = rotate(ca.angular_velocity * dt, vec3(0, 0, 1));
                 ta.orientation = rotation * ta.orientation;
             }
-        }
+            
+            ca.velocity += ca.acceleration * dt * 0.5f;
+            ca.angular_velocity += ca.angular_acceleration * dt * 0.5f;
 
-        if(!ca.is_static) {
-            if(ca.allow_gravity) {
-                vec2 g = get_gravity(ta.position) * -20.0f;
-
-                ca.velocity += g * dt;
-            }
+            ca.acceleration = vec2(0.0f);
+            ca.angular_acceleration = 0.0f;
         }
     }
 }
@@ -1377,6 +1387,11 @@ void physics_system2d::apply_impulse(collider2d* c, vec2 impulse, vec2 point) {
     if(c->allow_rotation) c->angular_velocity += cross(vec3(point, 0.0f), vec3(impulse, 0.0f)).z / c->inertia;
 }
 
+void physics_system2d::apply_force(collider2d* c, vec2 force, vec2 point) {
+    c->acceleration += force / c->mass;
+    if(c->allow_rotation) c->angular_acceleration += cross(vec3(point, 0.0f), vec3(force, 0.0f)).z / c->inertia;
+}
+
 void constraint_distance::get_points() {
     pos_a = ta->orientation * pa + ta->position;
 
@@ -1406,13 +1421,50 @@ void constraint_distance::get_values() {
 }
 
 void physics_system2d::velocity_solve() {
+    static std::vector<std::string> log;
+    static bool output = true;
+
     float spring = 0.35f;
-    float softness = 0.025f;
+    float softness = 0.06f;
 
     float spring_constraint = 0.35f;
     float softness_constraint = 0.025f;
+    float dt = 1.0f / (fps * substeps);
 
-    float factor = fps;
+    for(constraint2d& data : constraints) {
+        data.ca = &axiom::ecs.get_component<collider2d>(data.a);
+        data.ta = &axiom::ecs.get_component<transform2d>(data.a);
+        if(data.b != NULL_ENTITY) {
+            data.cb = &axiom::ecs.get_component<collider2d>(data.b);
+            data.tb = &axiom::ecs.get_component<transform2d>(data.b);
+        }
+
+        data.get_points();
+        data.get_values();
+
+        for(pos_constraint& c : data.pos) {
+            uint i = 0;
+            for(vec2 v : c.vs) {
+                vec2 impulse = v * c.lambda[i];
+
+                if(data.b == NULL_ENTITY) {
+                    apply_force(data.ca, impulse, c.pa - data.ta->position);
+                } else {
+                    apply_force(data.ca, impulse, c.pa - data.ta->position);
+                    apply_force(data.cb, -impulse, c.pb - data.tb->position);
+                }
+
+                ++i;
+            }
+        }
+
+        for(rot_constraint& c : data.rot) {
+            float twirl = c.lambda;
+
+            data.ca->angular_velocity += twirl / data.ca->inertia;
+            if(data.b != NULL_ENTITY) data.cb->angular_velocity -= twirl / data.cb->inertia;
+        }
+    }
 
     for(collision_constraint2d& data : collision_constraint2ds) {
         data.get_points();
@@ -1448,50 +1500,14 @@ void physics_system2d::velocity_solve() {
         }
     }
 
-    for(constraint2d& data : constraints) {
-        data.ca = &axiom::ecs.get_component<collider2d>(data.a);
-        data.ta = &axiom::ecs.get_component<transform2d>(data.a);
-        if(data.b != NULL_ENTITY) {
-            data.cb = &axiom::ecs.get_component<collider2d>(data.b);
-            data.tb = &axiom::ecs.get_component<transform2d>(data.b);
-        }
-
-        data.get_points();
-        data.get_values();
-
-
-        for(pos_constraint& c : data.pos) {
-            uint i = 0;
-            for(vec2 v : c.vs) {
-                vec2 impulse = v * c.lambda[i];
-
-                if(data.b == NULL_ENTITY) {
-                    apply_impulse(data.ca, impulse, c.pa - data.ta->position);
-                } else {
-                    apply_impulse(data.ca, impulse, c.pa - data.ta->position);
-                    apply_impulse(data.cb, -impulse, c.pb - data.tb->position);
-                }
-
-                ++i;
-            }
-        }
-
-        for(rot_constraint& c : data.rot) {
-            float twirl = c.lambda;
-
-            data.ca->angular_velocity += twirl / data.ca->inertia;
-            if(data.b != NULL_ENTITY) data.cb->angular_velocity -= twirl / data.cb->inertia;
-        }
-    }
-
     for(int i = 0; i < iterations; ++i) {
         for(collision_constraint2d& data : collision_constraint2ds) {
             for(col_constraint& cc : data.constraints) {
                 //data.refresh(cc);
 
-                vec2 velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position, length(cc.pb - data.ta->position));
+                vec2 velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position);
 
-                float diff = (cc.baumgarteN) * spring * factor;
+                float diff = (cc.baumgarteN) * spring * fps;
 
                 if(cc.d->b == NULL_ENTITY) {
                     float inertia = cc.inertiaNa;
@@ -1527,7 +1543,7 @@ void physics_system2d::velocity_solve() {
 
                     float normal_magnitude = length(impulse);
 
-                    velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position, axiom::max_float);
+                    velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position);
 
                     vec2 tangent_vector = vec2(cc.d->normal.y, -cc.d->normal.x);
                     float tangent_velocity = glm::dot(velocity, tangent_vector);
@@ -1551,7 +1567,7 @@ void physics_system2d::velocity_solve() {
                 } else {
                     float inertia = cc.inertiaNa + cc.inertiaNb;
 
-                    velocity -= calculate_point_velocity(data.cb, cc.pb - data.tb->position, length(cc.pa - data.tb->position));
+                    velocity -= calculate_point_velocity(data.cb, cc.pb - data.tb->position);
 
                     float v = glm::dot(velocity, cc.normal);
 
@@ -1590,8 +1606,8 @@ void physics_system2d::velocity_solve() {
 
                     float normal_magnitude = length(impulse);
 
-                    velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position, axiom::max_float);
-                    velocity -= calculate_point_velocity(data.cb, cc.pb - data.tb->position, axiom::max_float);
+                    velocity = calculate_point_velocity(data.ca, cc.pa - data.ta->position);
+                    velocity -= calculate_point_velocity(data.cb, cc.pb - data.tb->position);
 
                     float tangent_velocity = glm::dot(velocity, cc.tangent);
 
@@ -1617,106 +1633,118 @@ void physics_system2d::velocity_solve() {
         }
 
         for(int j = 0; j < constraints.size(); ++j) { 
-            int start = 0;
-            int dir = 1;
-
-            if(i % 2 == 1) {
-                start = constraints.size() - 1;
-                dir = -1;
-            }
-
-            constraint2d& data = constraints[start + j * dir];
+            constraint2d& data = constraints[j];
 
             float max_grab = FLT_MAX;
 
             for(pos_constraint& c : data.pos) {
                 //max_grab = c.limit;
 
-                uint i = 0;
+                uint k = 0;
                 for(vec2 v : c.vs) {
-                    //data.refresh(c);
-
-                    float bg = -c.baumgarte[i] * spring_constraint * factor;
-
-                    float inertia = c.inertia_a[i];
-
-                    vec2 velocity = calculate_point_velocity(data.ca, c.pa - data.ta->position, length(c.pb - data.ta->position));
-
-                    vec2 diff = c.pa - c.pb;
-                    float len = length(diff);
-                    vec2 vv = diff / len;
-
                     if(data.b == NULL_ENTITY) {
-                        vec2 vel = velocity;
-                        //if(c.tolerance != 0.0f) vel = vv * glm::dot(vel, vv);
+                        vec2 vel = calculate_point_velocity(data.ca, c.pa - data.ta->position);
+                        vec2 acca = calculate_point_acceleration(data.ca, c.pa - data.ta->position);
 
-                        float L = -dot(vel, v) + bg;
-                        L /= inertia;
-                        L -= softness_constraint * c.lambda[i];
-
-                        float new_lambda = c.lambda[i] + L;
-
-                        //new_lambda = glm::clamp(new_lambda, -max_grab / inertia, max_grab / inertia);
-                        L = new_lambda - c.lambda[i];
-                        c.lambda[i] = new_lambda;
-
-                        vec2 impulse = v * L;
-
-                        apply_impulse(data.ca, impulse, c.pa - data.ta->position);
-                        
                         //
+                        float inertia = c.inertia_a[k];
+
+                        vec2 jacobian = v;
+
+                        vec2 r = c.pa - data.ta->position;
+                        float jdotvel = -data.ca->angular_velocity * data.ca->angular_velocity * dot(r, jacobian);
+
+                        float xdot = dot(jacobian, vel);
+                        float x = c.baumgarte[k];
+                        float zeta = 1.25f;
+                        float omega = 2.0f * axiom::pi * 24.0f;
+
+                        float geometric = -jdotvel;
+                        float damping = -2.0f * zeta * omega * xdot;
+                        float spring = -omega * omega * x;
+
+                        float b = geometric + damping + spring;
+                        float Ja = dot(jacobian, acca);
+
+                        float residual = b - Ja;
+
+                        float L = residual;
+                        L /= inertia;
+                        L -= c.lambda[k] * softness;
+                        c.lambda[k] += L;
                         
-                        /*
-                        vec2 position_correction = v * -c.baumgarte[i] / inertia;
-
-                        data.ta->position += position_correction / data.ca->mass;
-
-                        float rot_vel = cross(vec3(c.pa - data.ta->position, 0.0f), vec3(position_correction, 0.0f)).z / data.ca->inertia;
-                        data.ta->orientation = mat2(glm::rotate(glm::identity<mat3>(), rot_vel)) * data.ta->orientation;
-                        */
+                        vec2 force = v * L;
+                        apply_force(data.ca, force, c.pa - data.ta->position);
                     } else {
-                        inertia += c.inertia_b[i];
-
-                        velocity -= calculate_point_velocity(data.cb, c.pb - data.tb->position, length(c.pa - data.tb->position));
-
-                        vec2 vel = velocity;       
-                        //if(c.tolerance != 0.0f) vel = vv * glm::dot(vel, vv);
-
-                        float L = -dot(vel, v) + bg;
-                        L /= inertia;
-                        L -= softness_constraint * c.lambda[i];
-
-                        float new_lambda = c.lambda[i] + L;
-
-                        //new_lambda = glm::clamp(new_lambda, -max_grab / inertia, max_grab / inertia);
-                        L = new_lambda - c.lambda[i];
-                        c.lambda[i] = new_lambda;
-
-                        //c.lambda[i] = 0.0f;
-                        //L = 0.0f;
-
-                        vec2 impulse = v * L;
-
-                        apply_impulse(data.ca, impulse, c.pa - data.ta->position);
-                        apply_impulse(data.cb, -impulse, c.pb - data.tb->position);
+                        vec2 vela = calculate_point_velocity(data.ca, c.pa - data.ta->position);
+                        vec2 velb = calculate_point_velocity(data.cb, c.pb - data.tb->position);
                         
+                        vec2 acca = calculate_point_acceleration(data.ca, c.pa - data.ta->position);
+                        vec2 accb = calculate_point_acceleration(data.cb, c.pb - data.tb->position);
+
                         //
-                        
-                        /*
-                        vec2 position_correction = v * -c.baumgarte[i] / inertia;
 
-                        data.ta->position += position_correction / data.ca->mass;
-                        data.tb->position += -position_correction / data.cb->mass;
+                        float inertia = c.inertia_a[k] + c.inertia_b[k];
 
-                        float rot_vel = cross(vec3(c.pa - data.ta->position, 0.0f), vec3(position_correction, 0.0f)).z / data.ca->inertia;
-                        data.ta->orientation = mat2(glm::rotate(glm::identity<mat3>(), rot_vel)) * data.ta->orientation;
-                        
-                        rot_vel = cross(vec3(c.pb - data.tb->position, 0.0f), vec3(-position_correction, 0.0f)).z / data.cb->inertia;
-                        data.tb->orientation = mat2(glm::rotate(glm::identity<mat3>(), rot_vel)) * data.tb->orientation;
-                        */
+
+                        vec2 jacobian = v;
+
+                        vec2 ra = c.pa - data.ta->position;
+                        vec2 rb = c.pb - data.tb->position;
+
+                        float jdota = -data.ca->angular_velocity * data.ca->angular_velocity * dot(ra, jacobian);
+                        float jdotb = -data.cb->angular_velocity * data.cb->angular_velocity * dot(rb, jacobian);
+
+                        float jdotvel = jdota - jdotb;
+
+                        float xdot = dot(jacobian, vela - velb);
+                        float x = c.baumgarte[k];
+                        float zeta = 1.25f;
+                        float omega = 2.0f * axiom::pi * 24.0f;
+
+                        float geometric = -jdotvel;
+                        float damping = -2.0f * zeta * omega * xdot;
+                        float spring = -omega * omega * x;
+
+                        // i -> iteration
+                        // j -> constraint id
+                        // k -> direction
+                        if(j == 0 && i == 0 && k == 0) {
+                            if(!(std::isnan(geometric) || std::isnan(damping) || std::isnan(spring))) {
+                                std::stringstream ss;
+                                ss //<< "omegaA = " << data.ca->angular_velocity
+                                //<< " omegaB = " << data.cb->angular_velocity
+                                << " geometric = " << geometric
+                                << " damping = " << damping
+                                << " spring = " << spring
+                                //<< " position a = " << data.ta->position
+                                //<< " position b = " << data.tb->position
+                                << '\n';
+
+                                log.push_back(ss.str());
+                                if(log.size() > 512) log.erase(log.begin());
+                            } else if(output) {
+                                for(std::string l : log) std::cout << l;
+                                output = false;
+                            }
+                        }
+
+                        float b = geometric + damping + spring;
+                        float Ja = dot(jacobian, acca - accb);
+
+                        float residual = b - Ja;
+
+                        float L = residual;
+                        L /= inertia;
+                        L -= c.lambda[k] * softness;
+                        c.lambda[k] += L;
+
+                        vec2 force = v * L;
+                        apply_force(data.ca, force, c.pa - data.ta->position);
+                        apply_force(data.cb, -force, c.pb - data.tb->position);
                     }
 
-                    ++i;
+                    ++k;
                 }
             }
 
@@ -1725,7 +1753,7 @@ void physics_system2d::velocity_solve() {
                 float inertia = c.inertia;
 
                 if(data.b == NULL_ENTITY) {
-                    float bg = angular_delta * spring_constraint * factor;
+                    float bg = angular_delta * spring_constraint * fps;
 
                     float angular_velocity = data.ca->angular_velocity;
 
@@ -1740,7 +1768,7 @@ void physics_system2d::velocity_solve() {
 
                     data.ca->angular_velocity += L / data.ca->inertia;
                 } else {
-                    float bg = angular_delta * spring_constraint * factor;
+                    float bg = angular_delta * spring_constraint * fps;
 
                     float angular_velocity = data.ca->angular_velocity - data.cb->angular_velocity;
 
@@ -1868,11 +1896,9 @@ vec2 physics_system2d::calculate_inertia(collider2d& c) {
     return center;
 }
 
-vec2 physics_system2d::calculate_point_velocity(collider2d* c, vec2 point, float dist) {
+vec2 physics_system2d::calculate_point_velocity(collider2d* c, vec2 point) {
     vec2 velocity;
     float angular_velocity;
-
-    float m = length(point);
 
     velocity = c->velocity;
     angular_velocity = c->angular_velocity;
@@ -1882,6 +1908,20 @@ vec2 physics_system2d::calculate_point_velocity(collider2d* c, vec2 point, float
     velocity += linear_velocity;
 
     return velocity;
+}
+
+vec2 physics_system2d::calculate_point_acceleration(collider2d* c, vec2 point) {
+    vec2 acceleration;
+    float angular_acceleration;
+
+    acceleration = c->acceleration;
+    angular_acceleration = c->angular_acceleration;
+    
+    vec2 linear_acceleration = vec2(cross(vec3(0.0f, 0.0f, angular_acceleration), vec3(point, 0.0f)));
+
+    acceleration += linear_acceleration;
+
+    return acceleration;
 }
 
 float physics_system2d::calculate_inverse_mass(collider2d* c, transform2d* t, vec2 impulse_dir, vec2 point) {

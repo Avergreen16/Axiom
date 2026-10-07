@@ -13,12 +13,12 @@ bool filter(axiom::collision_event& event);
 struct physics_system3d : system {
     int step = 0;
     
-    bool sim_active = true;//false;
+    bool sim_active = true;//false;w
 
     // parameters
     float fps = 60.0f;
-    uint iterations = 3;
-    uint substeps = 12;
+    uint iterations = 8;
+    uint substeps = 8;
     
     int max_frames = 1;
     float physics_time = 0.0f;

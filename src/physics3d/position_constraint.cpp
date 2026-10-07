@@ -1,5 +1,6 @@
 #include <physics3d/position_constraint.hpp>
 #include <include/core.hpp>
+#include <physics3d/system.hpp>
 
 namespace axiom {
 
@@ -71,55 +72,83 @@ void position_constraint::before() {
 }
 
 void position_constraint::solve(float delta_time) {
+    axiom::physics_system3d& physics_system3d = axiom::ecs.get_system<axiom::physics_system3d>();
+
     if(b == NULL_ENTITY) {
         //std::cout << "CALLED!\n";
         uint32_t i = 0;
         for(vec3 v : vs) {
-            vec3 velocity = ca->get_velocity(ra);
+            vec3 vela = ca->get_velocity(ra);
+            vec3 acca = ca->get_acceleration(ra);
+            vec3 angvela = ca->get_angular_velocity();
 
-            float bg = -baumgarte[i] * spring / delta_time;
+            //
+
+            float inertia = inertia_a[i];
+
+            vec3 jacobian = v;
+
+            float jdotvel = dot(v, cross(angvela, cross(angvela, ra)));
             
-            float L = bg - dot(v, velocity);
-            L /= inertia_a[i];
+            float xdot = dot(jacobian, vela);
+            float x = baumgarte[i];
+            float zeta = 1.25f;
+            float omega = 2.0f * axiom::pi * 20.0f;
+
+            float geometric = -jdotvel;
+            float damping = -2.0f * zeta * omega * xdot;
+            float spring = -omega * omega * x;
+
+            float b = geometric + damping + spring;
+            float Ja = dot(jacobian, acca);
+
+            float L = b - Ja;
+            L /= inertia;
             
-            L -= softness * lambda[i];
-            float new_lambda = lambda[i] + L;
-            new_lambda = glm::clamp(new_lambda, -max_impulse, max_impulse);
-            
-            L = new_lambda - lambda[i];
-            lambda[i] = new_lambda;
-            
-            vec3 impulse = v * L;
-            
-            ca->apply_impulse(impulse, ra);
+            vec3 force = v * L;
+            ca->apply_force(force, ra);
 
             ++i;
         }
     } else {
         uint32_t i = 0;
         for(vec3 v : vs) {
-            vec3 velocity = ca->get_velocity(ra);
+            vec3 vela = ca->get_velocity(ra);
+            vec3 velb = cb->get_velocity(rb);
+            vec3 acca = ca->get_acceleration(ra);
+            vec3 accb = cb->get_acceleration(rb);
 
-            velocity -= cb->get_velocity(rb);
+            vec3 angvela = ca->get_angular_velocity();
+            vec3 angvelb = cb->get_angular_velocity();
 
-            float bg = -baumgarte[i] * spring / delta_time;
+            //
+
+            float inertia = inertia_a[i] + inertia_b[i];
+
+            vec3 jacobian = v;
+
+            float jdotvela = dot(v, cross(angvela, cross(angvela, ra)));
+            float jdotvelb = dot(v, cross(angvelb, cross(angvelb, rb)));
+            float jdotvel = jdotvela - jdotvelb;
             
-            float L = bg - dot(v, velocity);
+            float xdot = dot(jacobian, vela - velb);
+            float x = baumgarte[i];
+            float zeta = 1.25f;
+            float omega = 2.0f * axiom::pi * 20.0f;
 
-            L /= inertia_a[i] + inertia_b[i];
+            float geometric = -jdotvel;
+            float damping = -2.0f * zeta * omega * xdot;
+            float spring = -omega * omega * x;
 
-            L -= softness * lambda[i];
-            float new_lambda = lambda[i] + L;
-            new_lambda = glm::clamp(new_lambda, -max_impulse, max_impulse);
+            float b = geometric + damping + spring;
+            float Ja = dot(jacobian, acca - accb);
 
-            L = new_lambda - lambda[i];
-            lambda[i] = new_lambda;
+            float L = b - Ja;
+            L /= inertia;
             
-            vec3 impulse = v * L;
-            
-
-            ca->apply_impulse(impulse, ra);
-            cb->apply_impulse(-impulse, rb);
+            vec3 force = v * L;
+            ca->apply_force(force, ra);
+            cb->apply_force(-force, rb);
 
             ++i;
         }

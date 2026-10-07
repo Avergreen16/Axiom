@@ -54,6 +54,8 @@ void text::shape() {
 }
 
 void text::measure() {
+    std::u32string codepoints = axiom::convert_string(string);
+
     lines.clear();
 
     tglyphs.clear();
@@ -75,7 +77,49 @@ void text::measure() {
     for(shaped_glyph& sglyph : sglyphs) {
         auto& glyph_struct = font->glyphs[sglyph.glyph];
 
-        if(glyph_struct.contours.size() == 0) {
+        if(codepoints[sglyph.cluster] == '\n') {
+            if(cursor.x + word_cursor.x > width && wrap) {
+                range.y = glm::min(range.y, cursor.x + word_cursor.x);
+
+                cursor.x = 0;
+                cursor.y -= round(font->line_height * (float(text_size) / font->base_unit));
+
+                tglyphs.insert(tglyphs.end(), line.begin(), line.end());
+                line.clear();
+
+                lines.push_back({line_height, line_start});
+
+                line_height = round(font->line_height * (float(text_size) / font->base_unit));
+                line_start = tglyphs.size();
+            } else {
+                range.x = glm::max(range.x, cursor.x + word_cursor.x);
+            }
+            
+            for(text_glyph& g : word) {
+                g.position += cursor;
+                g.selection.x += cursor.x;
+                g.selection.y += cursor.y;
+            }
+
+            line.insert(line.end(), word.begin(), word.end());
+            word.clear();
+
+            cursor += word_cursor;
+            word_cursor = vec2(0.0f);
+
+            //
+
+            tglyphs.insert(tglyphs.end(), line.begin(), line.end());
+            line.clear();
+
+            lines.push_back({line_height, line_start});
+
+            cursor.x = 0;
+            cursor.y -= round(font->line_height * (float(text_size) / font->base_unit));
+
+            line_height = round(font->line_height * (float(text_size) / font->base_unit));
+            line_start = tglyphs.size();
+        } else if(glyph_struct.contours.size() == 0) {
             text_glyph tglyph;
             tglyph.position = position;
             tglyph.selection = vec4(word_cursor + vec2(0.0f, round(font->descender * (float(text_size) / font->base_unit))), sglyph.advance.x, line_height + sglyph.advance.y);
@@ -386,7 +430,7 @@ std::vector<ui_vertex> mesh_selection(axiom::text& text, ivec2 range) {
             axiom::ui_vertex{
                 vec3(quad.xy(), text.z),
                 vec2(1.0f, 63.0f),
-                vec4(0.35f, 0.35f, 1.0f, 0.5f),
+                vec4(0.15f, 0.15f, 1.0f, 0.5f),
                 0x1,
                 clip
             },
@@ -394,7 +438,7 @@ std::vector<ui_vertex> mesh_selection(axiom::text& text, ivec2 range) {
             axiom::ui_vertex{
                 vec3(quad.xy() + vec2(1.0f, 0.0f) * quad.zw(), text.z),
                 vec2(1.0f, 63.0f),
-                vec4(0.35f, 0.35f, 1.0f, 0.5f),
+                vec4(0.15f, 0.15f, 1.0f, 0.5f),
                 0x1,
                 clip
             },
@@ -402,7 +446,7 @@ std::vector<ui_vertex> mesh_selection(axiom::text& text, ivec2 range) {
             axiom::ui_vertex{
                 vec3(quad.xy() + vec2(0.0f, 1.0f) * quad.zw(), text.z),
                 vec2(1.0f, 63.0f),
-                vec4(0.35f, 0.35f, 1.0f, 0.5f),
+                vec4(0.15f, 0.15f, 1.0f, 0.5f),
                 0x1,
                 clip
             },
@@ -410,7 +454,7 @@ std::vector<ui_vertex> mesh_selection(axiom::text& text, ivec2 range) {
             axiom::ui_vertex{
                 vec3(quad.xy() + vec2(1.0f, 1.0f) * quad.zw(), text.z),
                 vec2(1.0f, 63.0f),
-                vec4(0.35f, 0.35f, 1.0f, 0.5f),
+                vec4(0.15f, 0.15f, 1.0f, 0.5f),
                 0x1,
                 clip
             }

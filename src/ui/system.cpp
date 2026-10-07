@@ -236,8 +236,9 @@ void ui_system::call() {
 
         sizes = new_sizes;
     }
-    
+
     if(text_capture != NULL_WIDGET && widgets.contains(text_capture)) {
+        /*
         if(window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
             std::vector<std::shared_ptr<axiom::text>> child_texts;
             //
@@ -282,9 +283,18 @@ void ui_system::call() {
                 }
             }
         }
+        */
 
         if(window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT) && !window->input_map[axiom::input_code::KEY_LEFT_SHIFT]) {
             cursor_anchor = window->cursor_pos;
+            
+            for(int i = 0; i < selections.size(); ++i) {
+                auto& sel = selections[i];
+
+                sel.text->select_vertices.clear();
+                selections.erase(selections.begin() + i);
+                --i;
+            }
         }
 
         if(window->input_map[axiom::input_code::MOUSE_LEFT]) {

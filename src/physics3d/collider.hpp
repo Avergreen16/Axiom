@@ -78,6 +78,9 @@ struct collider3d {
     glm::vec3 velocity = glm::vec3(0.0f);
     glm::vec3 angular_momentum = glm::vec3(0.0f);
 
+    glm::vec3 acceleration = vec3(0.0f);
+    glm::vec3 angular_force = vec3(0.0f);
+
     float friction_coefficient = 0.5;
     float bounce_coefficient = 0.0f;
     bool allow_rotation = false;
@@ -102,10 +105,13 @@ struct collider3d {
     std::unordered_set<uint> collision_mask;
 
     void apply_impulse(vec3 impulse, vec3 position);
+    void apply_force(vec3 force, vec3 position);
 
     vec3 get_velocity(vec3 position);
+    vec3 get_acceleration(vec3 position);
     
     vec3 get_angular_velocity();
+    vec3 get_angular_acceleration();
 };
 
 mat3 calculate_inertia_tensor(std::vector<vertex_element3d>& elements, vec3& center, float mass);

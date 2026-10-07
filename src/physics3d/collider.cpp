@@ -85,7 +85,17 @@ void collider3d::apply_impulse(vec3 impulse, vec3 position) {
     bool b1 = glm::isnan(velocity.x) || glm::isnan(velocity.y) || glm::isnan(velocity.z) || glm::isnan(angular_momentum.x) || glm::isnan(angular_momentum.y) || glm::isnan(angular_momentum.z);
 }
 
-bool ff = false;
+void collider3d::apply_force(vec3 force, vec3 position) {
+    if(allow_rotation) {
+        acceleration += force / mass;
+
+        vec3 ftorque = cross(position, force);
+        angular_force += ftorque;
+    } else {
+        acceleration += force / mass;
+    }
+}
+
 vec3 collider3d::get_velocity(vec3 position) {
     vec3 linear_velocity = velocity;
     
@@ -96,15 +106,32 @@ vec3 collider3d::get_velocity(vec3 position) {
         linear_velocity += vel;
     }
 
-    ff = false;
-
     return linear_velocity;
+}
+
+vec3 collider3d::get_acceleration(vec3 position) {
+    vec3 linear_acceleration = acceleration;
+    
+    if(allow_rotation) {
+        vec3 angular_acceleration = get_angular_acceleration();
+        vec3 vel = cross(angular_acceleration, position);
+        
+        linear_acceleration += vel;
+    }
+
+    return linear_acceleration;
 }
 
 vec3 collider3d::get_angular_velocity() {
     vec3 angular_velocity = (iit_rot) * angular_momentum;
     return angular_velocity;
 }
+
+vec3 collider3d::get_angular_acceleration() {
+    vec3 angular_acceleration = (iit_rot) * angular_force;
+    return angular_acceleration;
+}
+
 
 // inertia tensor
 
