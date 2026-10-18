@@ -86,8 +86,8 @@ mat4 get_transform(mat4 m) {
     );
 }
 
-const int num_blocker = 25;//49;
-const int num_samples = 64;//;
+const int num_blocker = 1;//49;
+const int num_samples = 1;//;
 
 void create_offsets(out vec2[num_samples] v, ivec2 pos, float rad) {
     for(int i = 0; i < num_samples; ++i) {
@@ -98,9 +98,9 @@ void create_offsets(out vec2[num_samples] v, ivec2 pos, float rad) {
 
         float radius = sqrt(frac);
 
-        //vec2 rand = vec2(to_float(hash(uvec2((pos.x * 257) ^ i, (pos.y * 257) ^ i))), to_float(hash(uvec2((pos.y * 31) ^ i, (pos.x * 31) ^ i))));
+        vec2 rand = vec2(to_float(hash(uvec2((pos.x * 257) ^ i, (pos.y * 257) ^ i))), to_float(hash(uvec2((pos.y * 31) ^ i, (pos.x * 31) ^ i))));
 
-        v[i] = vec2(radius * cos(theta), radius * sin(theta)) * rad;// + rand * rad * 0.25;
+        v[i] = vec2(radius * cos(theta), radius * sin(theta)) * rad + rand * rad * sqrt(1.0 / float(num_samples)) * 0.5;
     }
 }
 
@@ -354,7 +354,7 @@ void main() {
                         
                         float bias = 0.0;//texel_size * length(vec2(nslope_x, nslope_y));
 
-                        sd += (min(min(nslope_x * nt.x, slope_x * nt.x), 0.0) + min(min(nslope_y * nt.y, slope_y * nt.y), 0.0) - 0.25) * texel_size;
+                        sd += (clamp(min(nslope_x * nt.x, slope_x * nt.x), -8.0, 0.0) + clamp(min(nslope_y * nt.y, slope_y * nt.y), -8.0, 0.0) - 0.25) * texel_size;
 
                         if(target_depth + bias < sd) ++frac;
                     }

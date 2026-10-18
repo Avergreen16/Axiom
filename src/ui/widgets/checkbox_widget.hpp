@@ -6,6 +6,7 @@ namespace axiom {
     
 struct checkbox_widget : widget {
     bool hovered = false;
+    bool clicked = false;
     bool checked = false;
 
     std::function<void(checkbox_widget&)> callback;

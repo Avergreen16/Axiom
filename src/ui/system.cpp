@@ -238,53 +238,6 @@ void ui_system::call() {
     }
 
     if(text_capture != NULL_WIDGET && widgets.contains(text_capture)) {
-        /*
-        if(window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
-            std::vector<std::shared_ptr<axiom::text>> child_texts;
-            //
-
-            std::vector<uint64_t> path = {click_capture};
-            std::vector<uint64_t> child_ids = {0};
-            
-            while(true) {
-                if(path.size() == 0) break;
-
-                auto& widget = widgets[path.back()];
-
-                if(child_ids.back() == 0) {
-                    for(auto text : widget->text) {
-                        child_texts.push_back(text);
-                    }
-                }
-
-                if(widget->children.size() <= child_ids.back()) {
-                    // go up
-                    path.pop_back();
-                    child_ids.pop_back();
-                } else {
-                    path.push_back(widget->children[child_ids.back()]);
-
-                    ++child_ids.back();
-                    child_ids.push_back(0);
-                }
-            }
-
-            for(auto& t : child_texts) {
-                if(t->select_vertices.size()) {
-                    for(int i = 0; i < selections.size(); ++i) {
-                        auto& sel = selections[i];
-                        if(sel.text == t) {
-                            t->select_vertices.clear();
-
-                            selections.erase(selections.begin() + i);
-                            --i;
-                        }
-                    }
-                }
-            }
-        }
-        */
-
         if(window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT) && !window->input_map[axiom::input_code::KEY_LEFT_SHIFT]) {
             cursor_anchor = window->cursor_pos;
             
@@ -604,12 +557,7 @@ void ui_system::handle_capture() {
                 if(data.capture) {
                     if(capture_global.z <= data.z) {
                         capture_global = data;
-                    }
-
-                    if(data.text_capture || data.overwrite) {
-                        if(capture_text.z <= data.z) {
-                            capture_text = data;
-                        }
+                        capture_text = data;
                     }
                 }
             }

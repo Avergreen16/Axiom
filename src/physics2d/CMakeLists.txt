@@ -27,7 +27,7 @@ if(WIN32)
         ws2_32
         wsock32
         mingw32
-        mingwex 
+        mingwex
         atomic
     )
 elseif(UNIX)

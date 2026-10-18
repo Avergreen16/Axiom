@@ -1425,10 +1425,7 @@ void physics_system2d::velocity_solve() {
     static bool output = true;
 
     float spring = 0.35f;
-    float softness = 0.06f;
-
-    float spring_constraint = 0.35f;
-    float softness_constraint = 0.025f;
+    float softness = solver_softness;
     float dt = 1.0f / (fps * substeps);
 
     for(constraint2d& data : constraints) {
@@ -1445,6 +1442,8 @@ void physics_system2d::velocity_solve() {
         for(pos_constraint& c : data.pos) {
             uint i = 0;
             for(vec2 v : c.vs) {
+                if(!warm_start) c.lambda[i] = 0.0f;
+
                 vec2 impulse = v * c.lambda[i];
 
                 if(data.b == NULL_ENTITY) {
@@ -1656,8 +1655,8 @@ void physics_system2d::velocity_solve() {
 
                         float xdot = dot(jacobian, vel);
                         float x = c.baumgarte[k];
-                        float zeta = 1.25f;
-                        float omega = 2.0f * axiom::pi * 24.0f;
+                        float zeta = 1.0f;
+                        float omega = 2.0f * axiom::pi * 16.0f;
 
                         float geometric = -jdotvel;
                         float damping = -2.0f * zeta * omega * xdot;
@@ -1699,8 +1698,8 @@ void physics_system2d::velocity_solve() {
 
                         float xdot = dot(jacobian, vela - velb);
                         float x = c.baumgarte[k];
-                        float zeta = 1.25f;
-                        float omega = 2.0f * axiom::pi * 24.0f;
+                        float zeta = 1.0f;
+                        float omega = 2.0f * axiom::pi * 16.0f;
 
                         float geometric = -jdotvel;
                         float damping = -2.0f * zeta * omega * xdot;
@@ -1753,13 +1752,13 @@ void physics_system2d::velocity_solve() {
                 float inertia = c.inertia;
 
                 if(data.b == NULL_ENTITY) {
-                    float bg = angular_delta * spring_constraint * fps;
+                    float bg = angular_delta * spring * fps;
 
                     float angular_velocity = data.ca->angular_velocity;
 
                     float L = -angular_velocity + bg;
                     L /= inertia;
-                    L -= softness_constraint * c.lambda;
+                    L -= softness * c.lambda;
                     float new_lambda = c.lambda + L;
 
                     //new_lambda = glm::clamp(new_lambda, -max_grab / c.inertia, max_grab / c.inertia);
@@ -1768,13 +1767,13 @@ void physics_system2d::velocity_solve() {
 
                     data.ca->angular_velocity += L / data.ca->inertia;
                 } else {
-                    float bg = angular_delta * spring_constraint * fps;
+                    float bg = angular_delta * spring * fps;
 
                     float angular_velocity = data.ca->angular_velocity - data.cb->angular_velocity;
 
                     float L = -angular_velocity + bg;
                     L /= inertia;
-                    L -= softness_constraint * c.lambda;
+                    L -= softness * c.lambda;
                     float new_lambda = c.lambda + L;
 
                     //new_lambda = glm::clamp(new_lambda, -max_grab / c.inertia, max_grab / c.inertia);

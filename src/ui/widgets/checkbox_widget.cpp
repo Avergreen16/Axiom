@@ -6,10 +6,13 @@ namespace axiom {
 void checkbox_widget::handle_inputs() {
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
+    clicked = false;
+
     if(includes(ui_system.window->cursor_pos, vec4(position, position + size)) && ui_system.hover_capture == self && (ui_system.click_capture == NULL_WIDGET || ui_system.click_capture == self)) {
         hovered = true;
         if(ui_system.window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
-           checked = !checked;
+            clicked = true;
+            checked = !checked;
         }
     } else {
         hovered = false;

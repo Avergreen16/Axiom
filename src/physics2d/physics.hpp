@@ -202,6 +202,9 @@ struct physics_system2d : axiom::system {
     float contact_sep = 0.02f;
     float static_dist = 0.0625f;
 
+    bool warm_start = true;
+    float solver_softness = 0.025f;
+
     //
 
     std::unordered_map<uint64_t, std::vector<collision_data2d>> collision_table;
