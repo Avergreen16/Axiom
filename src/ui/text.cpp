@@ -11,46 +11,7 @@ std::vector<uint> text_line_indices;
 std::vector<text_line_data> line_data;
 
 void text::shape() {
-    sglyphs.clear();
-
-    hb_buffer_t* buffer = hb_buffer_create();
-
-    hb_buffer_add_utf8(
-        buffer,
-        string.c_str(),
-        -1,
-        0,
-        -1
-    );
-
-    hb_font_set_scale(font->hb_font, text_size * 64, text_size * 64);
-
-    hb_buffer_guess_segment_properties(buffer);
-
-    hb_shape(font->hb_font, buffer, nullptr, 0);
-
-    unsigned int count;
-
-    hb_glyph_info_t* infos = hb_buffer_get_glyph_infos(buffer, &count);
-    hb_glyph_position_t* positions = hb_buffer_get_glyph_positions(buffer, &count);
-
-    for (unsigned int i = 0; i < count; ++i) {
-        uint32_t glyph_id = infos[i].codepoint;
-
-        float x_advance = positions[i].x_advance / 64.0f;
-        float y_advance = positions[i].y_advance / 64.0f;
-
-        float x_offset = positions[i].x_offset / 64.0f;
-        float y_offset = positions[i].y_offset / 64.0f;
-
-        shaped_glyph sglyph;
-        sglyph.glyph = glyph_id;
-        sglyph.cluster = infos[i].cluster;
-        sglyph.advance = {x_advance, y_advance};
-        sglyph.offset = {x_offset, y_offset};
-
-        sglyphs.push_back(sglyph);
-    }
+    sglyphs = font->shape(string, text_size);
 }
 
 void text::measure() {
@@ -75,7 +36,7 @@ void text::measure() {
     vec2 range = vec2(-axiom::max_float, axiom::max_float);
 
     for(shaped_glyph& sglyph : sglyphs) {
-        auto& glyph_struct = font->glyphs[sglyph.glyph];
+        glyph glyph_struct = font->glyphs[sglyph.glyph];
 
         if(codepoints[sglyph.cluster] == '\n') {
             if(cursor.x + word_cursor.x > width && wrap) {
@@ -119,7 +80,7 @@ void text::measure() {
 
             line_height = round(font->line_height * (float(text_size) / font->base_unit));
             line_start = tglyphs.size();
-        } else if(glyph_struct.contours.size() == 0) {
+        } else if(glyph_struct.bounding_box.w == 0 || !glyph_struct.visible) {
             text_glyph tglyph;
             tglyph.position = position;
             tglyph.selection = vec4(word_cursor + vec2(0.0f, round(font->descender * (float(text_size) / font->base_unit))), sglyph.advance.x, line_height + sglyph.advance.y);
@@ -243,8 +204,8 @@ void text::touch() {
 
         //
 
-        tglyph.key.phase_x = glm::floor((position.x - tglyph.position.x) * 4);
-        tglyph.key.phase_y = glm::floor((position.y - tglyph.position.y) * 4);
+        tglyph.key.phase_x = glm::floor((position.x - tglyph.position.x) * 16);
+        tglyph.key.phase_y = glm::floor((position.y - tglyph.position.y) * 16);
 
         axiom::ecs.get_system<axiom::ui_system>().font_handler.touch_phase(tglyph.key);
     }
@@ -275,7 +236,8 @@ std::vector<ui_vertex> create_char(axiom::font& font, axiom::text_glyph& glyph) 
 
         ivec2 size = phase.texture.zw() - phase.texture.xy();
 
-        v.pos = vec3(v.pos.xy() * vec2(size) + vec2(pos), 0.0f);
+        // right here
+        v.pos = vec3(v.pos.xy() * vec2(size) + vec2(pos) + vec2(phase.offset), 0.0f);
         v.tex_pos = vec2(phase.texture.xy()) + v.tex_pos * vec2(phase.texture.zw() - phase.texture.xy());
     }
 
@@ -325,7 +287,7 @@ void text::call() {
 
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
-    text_size = 12;
+    text_size = 1;
 
     if(collide(ui_system.window->cursor_pos) && ui_system.cursor_clip(clip, ui_system.window->cursor_pos)) {
         ulong current = parent;

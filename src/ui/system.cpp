@@ -12,7 +12,10 @@ ui_system::ui_system(axiom::window* window_) {
 }
     
 void ui_system::init() {
-    font_handler.process_ttf("res/JetBrainsMono-Regular.ttf", "test");
+    font_handler.init();
+
+    font_handler.process("external/axiom/res/fonts/cozette.bdf", "test");
+    //font_handler.process("res/JetBrainsMono-Regular.ttf", "test");
 }
 
 void ui_system::input_root(int delta) {

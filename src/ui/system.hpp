@@ -5,7 +5,7 @@
 #include <ui/cursor.hpp>
 #include <include/core.hpp>
 #include <include/render.hpp>
-#include <ui/font/ttf.hpp>
+#include <ui/font/font.hpp>
 
 namespace axiom {
 

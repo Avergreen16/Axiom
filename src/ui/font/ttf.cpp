@@ -1,1277 +1,139 @@
 #include <ui/font/ttf.hpp>
+#include <ui/font/font.hpp>
 #include <hb-ot.h>
+
+#include <ui/font/font_base.hpp>
 
 namespace axiom {
 
-bool operator==(const glyph_key& a, const glyph_key& b) {
-    return a.glyph == b.glyph && a.size == b.size && a.phase_x == b.phase_x && a.phase_y == b.phase_y;
+void ttf_font::process(std::string filepath, font_handler* handler) {
+    phase_range = {4, 4};
+
+    auto error = FT_New_Face(handler->library, filepath.c_str(), 0, &ft_font);
+    if (error == FT_Err_Unknown_File_Format) {
+        std::cout << "ERROR: font file is of an unknown format\n" << "font filepath: " << filepath << std::endl;
+    }
+
+    hb_font = hb_ft_font_create_referenced(ft_font);
+
+    ascender = ft_font->ascender;
+    descender = ft_font->descender;
+
+    line_height = ft_font->height;
+    base_unit = ft_font->units_per_EM;
+    
+    line_gap = line_height - (ascender - descender);
+
+    for(uint id = 0; id < ft_font->num_glyphs; ++id) {
+        FT_Load_Glyph(ft_font, id, FT_LOAD_NO_SCALE);
+
+        const FT_Glyph_Metrics& metrics = ft_font->glyph->metrics;
+
+        axiom::glyph g;
+        g.bounding_box = {metrics.horiBearingX, metrics.horiBearingY - metrics.height, metrics.width, metrics.height};
+        g.h_advance = metrics.horiAdvance;
+        g.glyph_id = id;
+
+        glyphs.emplace(id, g);
+    }
 }
 
-bool glyph_key_less::operator()(const glyph_key& a, const glyph_key& b) const {
-    return a.glyph < b.glyph || a.glyph == b.glyph && (a.size < b.size || a.size == b.size && (a.phase_x < b.phase_x || a.phase_x == b.phase_x && a.phase_y < b.phase_y));
-}
+axiom::texture_asset ttf_font::get_bitmap(glyph_key key) {
+    FT_Set_Pixel_Sizes(ft_font, 0, key.size);
+    auto& glyph = glyphs[key.glyph];
+    auto& phase = phases[key];
 
-//
+    FT_Vector delta = {(-glyph.bounding_box.x * (float(key.size) / base_unit) * 64 + key.phase_x * round(64.0f / phase_range.x)), -glyph.bounding_box.y * (float(key.size) / base_unit) * 64 + key.phase_y * round(64.0f / phase_range.y)}; // 0.25 pixels
+    FT_Set_Transform(ft_font, nullptr, &delta);
 
-void font_handler::process_ttf(std::string filepath, std::string label) {
-    axiom::font font;
-
-    axiom::binary_asset bin = axiom::binary_asset::load(filepath);
+    FT_Load_Glyph(ft_font, key.glyph, FT_LOAD_DEFAULT);
+    auto error = FT_Render_Glyph(ft_font->glyph, FT_RENDER_MODE_LCD);
+    if (error) {
+        printf("FT_Render_Glyph failed: %d\n", error);
+        return;
+    }
+    
+    int left = ft_font->glyph->bitmap_left;
+    int top  = ft_font->glyph->bitmap_top;
 
     //
 
-    hb_blob_t* blob = hb_blob_create(
-        reinterpret_cast<char*>(bin.data.data()),
-        bin.data.size(),
-        HB_MEMORY_MODE_DUPLICATE,
-        nullptr,
-        nullptr
+    const FT_Bitmap& bitmap = ft_font->glyph->bitmap;
+
+    unsigned int width = bitmap.width / 3;
+    unsigned int height = bitmap.rows;
+
+    const unsigned char* pixels = bitmap.buffer;
+
+    phase.offset = {left, top - (int)height};
+
+    //
+
+    std::vector<uint8_t> colors;
+    for(int y = 0; y < height; ++y) {
+        for(int x = 0; x < width; ++x) {
+            int i = x * 3 + (height - y - 1) * bitmap.pitch;
+
+            uint8_t color = pixels[i];
+
+            colors.push_back(pixels[i]);
+            colors.push_back(pixels[i + 1]);
+            colors.push_back(pixels[i + 2]);
+            colors.push_back(0xFF);
+        }
+    }
+
+    ivec2 size = {width, height};
+
+    return axiom::texture_asset::load(colors, size, 4);
+}
+
+std::vector<shaped_glyph> ttf_font::shape(std::string string, uint text_size) {
+    FT_Set_Pixel_Sizes(ft_font, 0, text_size);
+    hb_ft_font_changed(hb_font);
+
+    hb_buffer_t* buffer = hb_buffer_create();
+
+    hb_buffer_add_utf8(
+        buffer,
+        string.c_str(),
+        -1,
+        0,
+        -1
     );
 
-    auto face = hb_face_create(blob, 0);
-    hb_blob_destroy(blob);
-    
-    printf("upem = %u\n", hb_face_get_upem(face));
-    printf("glyphs = %u\n", hb_face_get_glyph_count(face));
-
-    hb_font_t* hb_font = hb_font_create(face);
-    hb_ot_font_set_funcs(hb_font);
-    font.hb_font = hb_font; 
-    
-    hb_face_destroy(face);
-
     //
 
-    uint cursor = 0;
-    
-    auto read_byte = [&bin, &cursor]() {
-        byte ret = bin.data[cursor];
-        ++cursor;
-        return ret;    
-    };
-    
-    auto read_short_be = [&bin, &cursor]() {
-        byte ret_a = bin.data[cursor];
-        byte ret_b = bin.data[cursor + 1];
-        cursor += 2;
+    hb_buffer_guess_segment_properties(buffer);
 
-        uint16_t ret = (uint16_t(ret_a) << 8) | uint16_t(ret_b);
-        int16_t r;
-        memcpy(&r, &ret, 2);
-        return r;    
-    };
+    hb_shape(hb_font, buffer, nullptr, 0);
 
-    auto read_ushort_be = [&bin, &cursor]() {
-        byte ret_a = bin.data[cursor];
-        byte ret_b = bin.data[cursor + 1];
-        cursor += 2;
+    unsigned int count;
 
-        return (uint16_t(ret_a) << 8) | uint16_t(ret_b);    
-    };
+    hb_glyph_info_t* infos = hb_buffer_get_glyph_infos(buffer, &count);
+    hb_glyph_position_t* positions = hb_buffer_get_glyph_positions(buffer, &count);
 
-    auto read_uint_be = [&bin, &cursor]() {
-        byte ret_a = bin.data[cursor];
-        byte ret_b = bin.data[cursor + 1];
-        byte ret_c = bin.data[cursor + 2];
-        byte ret_d = bin.data[cursor + 3];
-        cursor += 4;
+    std::vector<shaped_glyph> sglyphs;
 
-        return (uint32_t(ret_a) << 24) | (uint32_t(ret_b) << 16) | (uint32_t(ret_c) << 8) | uint32_t(ret_d);
-    };
-    
-    auto read_ulong_be = [&bin, &cursor]() {
-        byte ret_a = bin.data[cursor];
-        byte ret_b = bin.data[cursor + 1];
-        byte ret_c = bin.data[cursor + 2];
-        byte ret_d = bin.data[cursor + 3];
-        byte ret_e = bin.data[cursor + 4];
-        byte ret_f = bin.data[cursor + 5];
-        byte ret_g = bin.data[cursor + 6];
-        byte ret_h = bin.data[cursor + 7];
-        cursor += 8;
+    for (unsigned int i = 0; i < count; ++i) {
+        uint32_t glyph_id = infos[i].codepoint;
 
-        return (uint64_t(ret_a) << 56) | (uint64_t(ret_b) << 48) | (uint64_t(ret_c) << 40) | (uint64_t(ret_d) << 32) |
-            (uint64_t(ret_e) << 24) | (uint64_t(ret_f) << 16) | (uint64_t(ret_g) << 8) | uint64_t(ret_h);
-    };
+        float x_advance = positions[i].x_advance / 64.0f;
+        float y_advance = positions[i].y_advance / 64.0f;
 
-    //
+        float x_offset = positions[i].x_offset / 64.0f;
+        float y_offset = positions[i].y_offset / 64.0f;
 
-    uint32_t version = read_uint_be();
-    uint16_t num_tables = read_ushort_be();
+        shaped_glyph sglyph;
+        sglyph.glyph = glyph_id;
+        sglyph.cluster = infos[i].cluster;
+        sglyph.advance = {x_advance, y_advance};
+        sglyph.offset = {x_offset, y_offset};
 
-    struct ttf_table {
-        uint32_t checksum;
-        uint32_t offset;
-        uint32_t length;
-    };
-
-    std::unordered_map<std::string, ttf_table> tables;
-
-    for(int i = 0; i < num_tables; ++i) {
-        cursor = 12 + i * 16;
-
-        std::string tag;
-        
-        tag += read_byte();
-        tag += read_byte();
-        tag += read_byte();
-        tag += read_byte();
-
-        uint32_t checksum = read_uint_be();
-        uint32_t offset = read_uint_be();
-        uint32_t length = read_uint_be();
-
-        /*
-        std::cout << "tag: " << tag << " | " << 
-            "checksum: " << checksum << " | " <<
-            "offset: " << offset << " | " << 
-            "length: " << length << std::endl;
-        */
-
-        ttf_table table{
-            .checksum = checksum,
-            .offset = offset,
-            .length = length
-        };
-
-        tables.emplace(tag, table);
+        sglyphs.push_back(sglyph);
     }
 
-    //
-
-    int16_t loca_format;
-
-    {
-        ttf_table table = tables["head"];
-
-        cursor = table.offset;
-
-        uint16_t major_version = read_ushort_be();
-        uint16_t minor_version = read_ushort_be();
-        uint32_t revision = read_uint_be();
-
-        uint32_t checksum = read_uint_be();
-        uint32_t magic_number = read_uint_be();
-
-        uint16_t flags = read_ushort_be();
-        uint16_t units_per_em = read_ushort_be();
-
-        font.base_unit = units_per_em;
-        //std::cout << font.base_unit << "\n";
-
-        int64_t created_timestamp = read_ulong_be();
-        int64_t modified_timestamp = read_ulong_be();
-
-        int16_t xmin = read_short_be();
-        int16_t ymin = read_short_be();
-        int16_t xmax = read_short_be();
-        int16_t ymax = read_short_be();
-
-        font.bounding_box = {xmin, ymin, xmax, ymax};
-
-        //std::cout << "BOUNDING BOX " << font.bounding_box << "\n";
-        
-        uint16_t mac_style = read_ushort_be();
-
-        uint16_t smallest_readable_size = read_ushort_be();
-        //std::cout << "SMALLEST SIZE " << smallest_readable_size << "\n";
-        int16_t font_direction = read_short_be();
-        loca_format = read_short_be(); // <- what we want
-        int16_t glyph_format = read_short_be();
-    }
-
-    uint16_t num_metrics_hmtx;
-
-    {
-        ttf_table table = tables["hhea"];
-
-        cursor = table.offset;
-
-        uint16_t major_version = read_ushort_be();
-        uint16_t minor_version = read_ushort_be();
-
-        int16_t ascender = read_short_be();
-        int16_t descender = read_short_be();
-        int16_t line_gap = read_short_be();
-
-        uint16_t max_advance = read_ushort_be();
-        int16_t min_left_bearing = read_short_be();
-        int16_t min_right_bearing = read_short_be();
-        int16_t max_extent = read_short_be();
-        
-        int16_t caret_slope_rise = read_short_be();
-        int16_t caret_slope_run = read_short_be();
-        int16_t caret_offset = read_short_be();
-
-        //reserved
-        read_short_be();
-        read_short_be();
-        read_short_be();
-        read_short_be();
-        
-        int16_t metric_data_format = read_short_be();
-        num_metrics_hmtx = read_ushort_be();
-        
-        font.ascender = ascender;
-        font.descender = descender;
-        font.line_gap = line_gap;
-
-        font.line_height = ascender - descender + line_gap;
-    }
-
-    uint16_t num_glyphs;
-
-    {
-        ttf_table table = tables["maxp"];
-
-        cursor = table.offset;
-
-        uint32_t version = read_uint_be();
-
-        if(version = 0x00005000) {
-            num_glyphs = read_ushort_be();
-        } else if(version = 0x00010000) {
-            num_glyphs = read_ushort_be();
-
-            uint16_t max_points = read_ushort_be();
-            uint16_t max_contours = read_ushort_be();
-            uint16_t max_composite_points = read_ushort_be();
-            uint16_t max_composite_contours = read_ushort_be();
-            uint16_t max_zones = read_ushort_be();
-            uint16_t max_twilight_points = read_ushort_be();
-            uint16_t max_storage = read_ushort_be();
-            uint16_t max_function_defs = read_ushort_be();
-            uint16_t max_instruction_devs = read_ushort_be();
-            uint16_t max_stack_elements = read_ushort_be();
-            uint16_t max_size_of_instructions = read_ushort_be();
-            uint16_t max_component_elements = read_ushort_be();
-            uint16_t max_component_depth = read_ushort_be();
-        }
-    }
-    
-    std::cout << num_glyphs << " NUM GLYPHS\n";
-
-    {
-        ttf_table table = tables["cmap"];
-
-        cursor = table.offset;
-
-        uint16_t version = read_ushort_be(); // always 0
-        uint16_t num_tables = read_ushort_be();
-
-        std::cout << num_tables << " TABLES\n";
-
-        uint prev_offset = cursor;
-        for(int i = 0; i < num_tables; ++i) {
-            cursor = prev_offset;
-            uint16_t platform = read_ushort_be();
-            uint16_t encoding = read_ushort_be();
-            uint32_t offset = read_uint_be();
-
-            prev_offset = cursor;
-
-            if(platform == 0) {
-                cursor = table.offset + offset;
-
-                uint16_t format = read_ushort_be();
-
-                if(format == 4) {
-                    uint16_t length = read_ushort_be();
-                    uint16_t language = read_ushort_be();
-                    uint16_t seg_count_x2 = read_ushort_be();
-                    uint16_t search_range = read_ushort_be();
-                    uint16_t entry_selector = read_ushort_be();
-                    uint16_t range_shift = read_ushort_be();
-
-                    //
-
-                    uint seg_count = seg_count_x2 / 2.0f;
-
-                    // end code is an array of seg_count of uint16_t
-                    
-                    std::vector<uint16_t> end_code;
-                    std::vector<uint16_t> start_code;
-                    std::vector<int16_t> id_delta;
-                    std::vector<uint16_t> id_range_offset;
-                    std::vector<uint32_t> addresses;
-
-                    end_code.reserve(seg_count);
-                    start_code.reserve(seg_count);
-                    id_delta.reserve(seg_count);
-                    id_range_offset.reserve(seg_count);
-
-                    for(int i = 0; i < seg_count; ++i) {
-                        end_code.push_back(read_ushort_be());
-                    }
-
-                    read_ushort_be(); // pad
-                    
-                    for(int i = 0; i < seg_count; ++i) {
-                        start_code.push_back(read_ushort_be());
-                    }
-                    for(int i = 0; i < seg_count; ++i) {
-                        id_delta.push_back(read_short_be());
-                    }
-                    for(int i = 0; i < seg_count; ++i) {
-                        addresses.push_back(cursor);
-                        id_range_offset.push_back(read_ushort_be());
-                    }
-
-                    //std::cout << seg_count << " SEGS\n";
-
-                    //
-
-                    uint start_cursor = cursor;
-
-                    for(int i = 0; i < seg_count; ++i) {
-                        uint16_t start = start_code[i];
-                        uint16_t end = end_code[i];
-
-                        //std::cout << start << " " << end << "\n";
-
-                        for(int j = start; j <= end; ++j) {
-                            uint glyph_id;
-
-                            if(id_range_offset[i] == 0) {
-                                glyph_id = j + id_delta[i];
-                            } else {
-                                uint address = addresses[i];
-                                address += int(id_range_offset[i]) + (j - int(start)) * 2;
-                                cursor = address;
-
-                                glyph_id = read_ushort_be();
-
-                                if(glyph_id != 0) glyph_id += id_delta[i];
-                            }
-                            glyph_id &= 0xFFFF;
-                            
-                            axiom::glyph glyph;
-                            glyph.glyph_id = glyph_id;
-                            glyph.codepoint = j;
-
-                            font.glyph_map.emplace(j, glyph_id);
-                            font.glyphs.emplace(glyph_id, glyph);
-                        }
-                    }
-                } else if(format == 12) {
-                    uint16_t reserved = read_ushort_be();
-                    uint32_t length = read_uint_be();
-                    uint32_t language = read_uint_be();
-                    uint32_t num_groups = read_uint_be();
-
-                    for(uint i = 0; i < num_groups; ++i) {
-                        uint32_t start_char = read_uint_be();
-                        uint32_t end_char = read_uint_be();
-                        uint32_t start_glyph = read_uint_be();
-
-                        for(int j = 0; j < end_char - start_char; ++j) {
-                            uint32_t char_id = start_char + j;
-                            uint32_t glyph_id = start_glyph + j;
-
-                            //
-                            
-                            axiom::glyph glyph;
-                            glyph.glyph_id = glyph_id;
-                            glyph.codepoint = char_id;
-
-                            font.glyph_map.emplace(char_id, glyph_id);
-                            font.glyphs.emplace(glyph_id, glyph);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    std::vector<uint> compound_glyphs;
-
-    std::function<std::vector<axiom::contour>(uint index)> process_compound;
-
-    process_compound = [&](uint index) {
-        ttf_table& table = tables["glyf"];
-        axiom::glyph& glyph = font.glyphs[index];
-
-        cursor = table.offset + glyph.glyph_address + 10;
-
-        if(!glyph.contours.size()) {
-            while(true) {
-                uint16_t flags = read_ushort_be();
-                uint16_t glyph_index = read_ushort_be();
-
-                // flags:
-                // 0x0001 -> on: arguments are 16 bits, off: arguments are 8 bits
-                // 0x0002 -> on: arguments are signed coordinates, off: arguments are unsigned point indices 
-                // this means that point a on the composite glyph constructed so far, is aligned with point b on this component glyph
-
-                // 0x0004 -> if 0x0002 is set (so arguments are coordinates), then... on: the coordinate arguments are rounded to the nearest grid line,
-                // grid lines are used for rendering text at small sizes (so the SDF implementation will not use this)
-                // off: arguments are NOT rounded to the nearest grid line
-
-                // 0x0008 -> the component has a simple scale factor
-                // 0x0020 -> there is another component glyph after this one
-                // 0x0040 -> there are two scale factors, one for the x axis and another for the y axis
-                // 0x0080 -> there is a 2x2 matrix transformation factor that must be applied to the component glyph
-                // 0x0100 -> there are instructions following the end of the last glyph
-                // 0x0200 -> use the metrics (advance width, right/left side bearing) of this component glyph for the entire glyph
-                // 0x0400 -> the components of this compound glyph overlap (remember, each component glyph can itself be a composite glyph)... also this flag is not required to be set
-                // 0x0800 -> the component's offset is transformed by the component's transform (ignored if 0x0002 is not set)
-                // 0x1000 -> the component's offset is NOT transformed by the component's transform (ignored if 0x0002 is not set)
-
-                uint current_cursor = cursor;
-                auto& child_glyph = font.glyphs[glyph_index];
-                std::vector<axiom::contour> new_contours = process_compound(glyph_index);
-
-                cursor = current_cursor;
-
-                ivec2 offset;
-
-                std::vector<float> scale;
-
-                if(flags & 0x0008) { // simple scale factor
-                    int16_t scale_factor = read_ushort_be();
-
-                    scale.push_back(float(scale_factor) / 16384.0f);
-                } else if(flags & 0x0040) { // x and y scale factors
-                    int16_t scale_factor_x = read_short_be();
-                    int16_t scale_factor_y = read_short_be();
-
-                    scale.push_back(float(scale_factor_x) / 16384.0f);
-                    scale.push_back(float(scale_factor_y) / 16384.0f);
-                } else if(flags & 0x0080) { // 2x2 transformation
-                    int16_t nxx = read_short_be();
-                    int16_t nxy = read_short_be();
-                    int16_t nyx = read_short_be();
-                    int16_t nyy = read_short_be();
-                    
-                    scale.push_back(float(nxx) / 16384.0f);
-                    scale.push_back(float(nxy) / 16384.0f);
-                    scale.push_back(float(nyx) / 16384.0f);
-                    scale.push_back(float(nyy) / 16384.0f);
-                }
-
-                if(scale.size() == 1) {
-                    float factor = scale[0];
-
-                    for(axiom::contour& contour : new_contours) {
-                        for(auto& pt : contour.points) pt.point *= factor;
-                    }
-                } else if(scale.size() == 2) {
-                    vec2 factors = {scale[0], scale[1]};
-
-                    for(axiom::contour& contour : new_contours) {
-                        for(auto& pt : contour.points) pt.point *= factors;
-                    }
-                } else if(scale.size() == 4) {
-                    mat2 m = {
-                        scale[0], scale[1], scale[2], scale[3]
-                    };
-
-                    for(axiom::contour& contour : new_contours) {
-                        for(auto& pt : contour.points) pt.point = m * pt.point;
-                    }
-                }
-            
-                if((flags & 0x0001) && (flags & 0x0002)) { // arguments are signed 16 bit coords
-                    int16_t arg_a = read_short_be();
-                    int16_t arg_b = read_short_be();
-
-                    //
-
-                    offset = {arg_a, arg_b};
-
-                    if(flags & 0x0800) {
-                        vec2 offset2 = offset;
-                        
-                        if(scale.size() == 1) {
-                            float factor = scale[0];
-
-                            offset2 = factor * offset2;
-                            offset2 = round(offset2);
-
-                            offset = offset2;
-                        } else if(scale.size() == 2) {
-                            vec2 factors = {scale[0], scale[1]};
-
-                            offset2 = factors * offset2;
-                            offset2 = round(offset2);
-
-                            offset = offset2;
-                        } else if(scale.size() == 4) {
-                            mat2 m = {
-                                scale[0], scale[1], scale[2], scale[3]
-                            };
-
-                            offset2 = m * offset2;
-                            offset2 = round(offset2);
-
-                            offset = offset2;
-                        }
-                    }
-                } else if(!(flags & 0x0001) && (flags & 0x0002)) { // arguments are signed 8 bit coords
-                    int8_t arg_a = read_byte();
-                    int8_t arg_b = read_byte();
-
-                    //
-
-                    offset = {arg_a, arg_b};
-                    
-                    if(flags & 0x0800) {
-                        vec2 offset2 = offset;
-                        
-                        if(scale.size() == 1) {
-                            float factor = scale[0];
-
-                            offset2 = factor * offset2;
-                            offset2 = round(offset2);
-
-                            offset = offset2;
-                        } else if(scale.size() == 2) {
-                            vec2 factors = {scale[0], scale[1]};
-
-                            offset2 = factors * offset2;
-                            offset2 = round(offset2);
-
-                            offset = offset2;
-                        } else if(scale.size() == 4) {
-                            mat2 m = {
-                                scale[0], scale[1], scale[2], scale[3]
-                            };
-
-                            offset2 = m * offset2;
-                            offset2 = round(offset2);
-
-                            offset = offset2;
-                        }
-                    }
-                } else if((flags & 0x0001) && !(flags & 0x0002)) { // arguments are unsigned 16 bit indices
-                    uint16_t arg_a = read_ushort_be();
-                    uint16_t arg_b = read_ushort_be();
-
-                    //
-
-                    axiom::contour_point p0;
-                    axiom::contour_point p1;
-
-                    uint c = 0;
-                    for(axiom::contour& contour : glyph.contours) {
-                        uint new_c = contour.points.size();
-                        if(c + new_c > arg_a) {
-                            p0 = contour.points[arg_a - c];
-                        }
-                    }
-
-                    c = 0;
-                    for(axiom::contour& contour : new_contours) {
-                        uint new_c = contour.points.size();
-                        if(c + new_c > arg_b) {
-                            p1 = contour.points[arg_b - c];
-                        }
-                    }
-
-                    offset = p0.point - p1.point;
-                } else if(!(flags & 0x0001) && !(flags & 0x0002)) { // arguments are unsigned 8 bit indices
-                    byte arg_a = read_byte();
-                    byte arg_b = read_byte();
-
-                    //
-
-                    axiom::contour_point p0;
-                    axiom::contour_point p1;
-
-                    uint c = 0;
-                    for(axiom::contour& contour : glyph.contours) {
-                        uint new_c = contour.points.size();
-                        if(c + new_c > arg_a) {
-                            p0 = contour.points[arg_a - c];
-                        }
-                    }
-
-                    c = 0;
-                    for(axiom::contour& contour : new_contours) {
-                        uint new_c = contour.points.size();
-                        if(c + new_c > arg_b) {
-                            p1 = contour.points[arg_b - c];
-                        }
-                    }
-
-                    offset = p0.point - p1.point;
-                }
-
-                for(auto& contour : new_contours) {
-                    for(auto& pt : contour.points) pt.point += offset;
-                }
-
-                if(flags & 0x0200) {
-                    glyph.h_advance = child_glyph.h_advance;
-                    glyph.h_bearing = child_glyph.h_bearing;
-                }
-
-                glyph.contours.insert(glyph.contours.end(), new_contours.begin(), new_contours.end());
-
-                if(!(flags & 0x0020)) { // there is NOT another component glyph after this one
-                    if(flags & 0x0100) {
-                        uint16_t num_instructions = read_ushort_be();
-                        std::vector<byte> instructions;
-                        for(uint i = 0; i < num_instructions; ++i) {
-                            instructions.push_back(read_byte());
-                        }
-                    }
-
-                    //step = cursor - offset;
-                    break;
-                }
-            }
-        }
-
-        return glyph.contours;
-    };
-
-    {
-        ttf_table table = tables["loca"];
-
-        cursor = table.offset;
-
-        //std::cout << "FORMAT " << loca_format << "\n";
-
-        uint prev = 0;
-        if(loca_format == 0) {
-            for(int i = 0; i < num_glyphs; ++i) {
-                if(!font.glyphs.contains(i)) {
-                    font.glyphs.emplace(i, axiom::glyph());
-                }
-
-                uint16_t offset = read_ushort_be();
-
-                uint address = uint(offset) * 2;
-                font.glyphs[i].glyph_address = address;
-
-                if(address == prev) font.glyphs[i - 1].glyph_address = 0xFFFFFFFF;
-                prev = address;
-            }
-        } else if(loca_format == 1) {
-            for(int i = 0; i < num_glyphs; ++i) {
-                if(!font.glyphs.contains(i)) {
-                    font.glyphs.emplace(i, axiom::glyph());
-                }
-
-                uint32_t offset = read_uint_be();
-
-                uint address = uint(offset);
-                font.glyphs[i].glyph_address = address;
-
-                if(address == prev) font.glyphs[i - 1].glyph_address = 0xFFFFFFFF;
-                prev = address;
-            }
-        }
-    }    
-
-    {
-        ttf_table table = tables["glyf"];
-
-        for(auto& [k, glyph] : font.glyphs) {
-            if(glyph.glyph_address == 0xFFFFFFFF) continue;
-
-            cursor = table.offset + glyph.glyph_address;
-
-            // read header
-
-            int16_t num_contours = read_short_be();
-            int16_t xmin = read_short_be();
-            int16_t ymin = read_short_be();
-            int16_t xmax = read_short_be();
-            int16_t ymax = read_short_be();
-
-            glyph.bounding_box = {xmin, ymin, xmax, ymax};
-
-            std::vector<axiom::contour_point> points;
-
-            if(num_contours > 0) {
-                uint start_cursor = cursor;
-
-                cursor += num_contours * 2;
-                cursor -= 2;
-
-                uint16_t num_vertices = read_short_be() + 1;
-
-                uint16_t instruction_length = read_ushort_be();
-                glyph.bytecode_glyf.reserve(instruction_length);
-                for(int i = 0; i < instruction_length; ++i) {
-                    glyph.bytecode_glyf.push_back(read_byte());
-                }
-
-                std::vector<byte> flags;
-                flags.reserve(num_vertices);
-
-                for(int i = 0; i < num_vertices; ++i) {
-                    byte flag = read_byte();
-                    flags.push_back(flag);
-
-                    if((flag & 0x08) != 0x00) {
-                        byte repeat = read_byte();
-                        for(int i = 0; i < repeat; ++i) flags.push_back(flag);
-
-                        i += int(repeat);
-                    }
-                }
-
-                points.resize(num_vertices);
-
-                vec2 prev = vec2(0.0f);
-
-                for(int i = 0; i < num_vertices; ++i) {
-                    byte flag = flags[i];
-
-                    // if 0x02 is set, x coord is 1 byte long
-                    // and sign is determined by the 0x10 bit
-
-                    // else, 
-                    // if the 0x10 bit is set, the x coordinate is the SAME as the previous one,
-                    // and no element is added to the list (just copy it)
-                    // ... if the 0x10 bit is NOT set (meaning both the 0x02 and 0x10 bits are NOT set), then the x coord is a signed 2-byte integer
-
-                    // the number will be relative to the previous x coordinate
-                    
-                    if((flag & 0x02) != 0x00) { 
-                        if((flag & 0x10) != 0x00) { // x coord is 1 byte long and positive
-                            byte b = read_byte();
-                            int16_t offset = b;
-
-                            prev.x += offset;
-                        } else { // x coord is 1 byte long and negative
-                            byte b = read_byte();
-
-                            int16_t offset = b;
-                            offset = -offset;
-
-                            prev.x += offset;
-                        }
-                    } else {
-                        if((flag & 0x10) != 0x00) { // x coordinate is the same as previous, duplicate previous value
-                            
-                        } else { // x coordinate is a signed 2 byte integer
-                            int16_t offset = read_short_be();
-                            
-                            prev.x += offset;
-                        }
-                    }
-                    
-                    points[i].point.x = prev.x;
-                    if(flag & 0x01) points[i].curve = true;
-                }
-
-                //
-                
-                for(int i = 0; i < num_vertices; ++i) {
-                    byte flag = flags[i];
-
-                    // if 0x04 is set, y coord is 1 byte long
-                    // and sign is determined by the 0x20 bit
-
-                    // else, 
-                    // if the 0x20 bit is set, the y coordinate is the SAME as the previous one,
-                    // and no element is added to the list (just copy it)
-                    // ... if the 0x20 bit is NOT set (meaning both the 0x04 and 0x20 bits are NOT set), then the y coord is a signed 2-byte integer
-
-                    // the number will be relative to the previous y coordinate
-
-                    // if 0x01 is set, the point is ON the curve, else it is OFF the curve
-                    
-                    if((flag & 0x04) != 0x00) { 
-                        if((flag & 0x20) != 0x00) { // y coord is 1 byte long and positive
-                            byte b = read_byte();
-                            int16_t offset = b;
-
-                            prev.y += offset;
-                        } else { // y coord is 1 byte long and negative
-                            byte b = read_byte();
-
-                            int16_t offset = b;
-                            offset = -offset;
-
-                            prev.y += offset;
-                        }
-                    } else {
-                        if((flag & 0x20) != 0x00) { // y coordinate is the same as previous, duplicate previous value
-                            
-                        } else { // y coordinate is a signed 2 byte integer
-                            int16_t offset = read_short_be();
-                            
-                            prev.y += offset;
-                        }
-                    }
-                    
-                    points[i].point.y = prev.y;
-                    if(flag & 0x01) points[i].curve = true;
-                }
-
-                cursor = start_cursor;
-
-                uint16_t start_index = 0;
-                for(int i = 0; i < num_contours; ++i) {
-                    uint16_t end_index = read_ushort_be();
-
-                    axiom::contour contour;
-                    contour.points = std::vector<axiom::contour_point>(points.begin() + start_index, points.begin() + (end_index + 1));
-
-                    for(int i = 0; i < contour.points.size(); ++i) {
-                        int ia = i;
-                        int ib = (i + 1) % contour.points.size();
-
-                        axiom::contour_point& point_a = contour.points[ia];
-                        axiom::contour_point& point_b = contour.points[ib];
-
-                        if(!point_a.curve && !point_b.curve) {
-                            axiom::contour_point new_point;
-                            new_point.curve = true;
-                            new_point.point = (point_a.point + point_b.point) * 0.5f;
-
-                            contour.points.insert(contour.points.begin() + ib, new_point);
-                            ++i;
-                        }
-                    }
-
-                    for(int i = 0; i < contour.points.size(); ++i) {
-                        int ia = i;
-                        int ib = (i + 1) % contour.points.size();
-                        int ic = (i + 2) % contour.points.size();
-                        
-                        axiom::contour_point& point_a = contour.points[ia];
-                        axiom::contour_point& point_b = contour.points[ib];
-                        axiom::contour_point& point_c = contour.points[ic];
-
-                        if(point_a.curve && !point_b.curve && point_c.curve) {
-                            axiom::contour_bezier bezier;
-                            bezier.a = ia;
-                            bezier.b = ib;
-                            bezier.c = ic;
-
-                            contour.beziers.push_back(bezier);
-                        }
-                    }
-
-                    glyph.contours.push_back(contour);
-
-                    start_index = end_index + 1;
-                }
-
-                //std::cout << "num vertices: " << num_vertices << "\n";
-            } else if(num_contours < 0) { // compound glyph
-                glyph.compound = true;
-                compound_glyphs.push_back(k);
-            } else if(num_contours == 0) {
-
-            }
-        }
-
-        for(uint i : compound_glyphs) {
-            process_compound(i);
-        }
-
-        for(auto [k, glyph] : font.glyphs) {
-            for(auto& contour : glyph.contours) {
-                uint offset = 0;
-                for(auto& bezier : contour.beziers) {
-                    uint pa = bezier.a + offset;
-                    uint pb = bezier.b + offset;
-                    uint pc = bezier.c + offset;
-                    if(bezier.b < 2) pb = bezier.b;
-                    if(bezier.c < 2) pc = bezier.c;
-
-                    axiom::contour_point& point_a = contour.points[pa];
-                    axiom::contour_point& point_b = contour.points[pb];
-                    axiom::contour_point& point_c = contour.points[pc];
-
-                    std::vector<axiom::contour_point> new_points;
-                    int num_points = 3;
-
-                    for(int i = 0; i < num_points; ++i) {
-                        float frac = float(i + 1) / (num_points + 2);
-
-                        vec2 pa = point_a.point * (1.0f - frac) + point_b.point * frac;
-                        vec2 pb = point_b.point * (1.0f - frac) + point_c.point * frac;
-
-                        vec2 point = pa * (1.0f - frac) + pb * frac;
-
-                        new_points.push_back(axiom::contour_point(point, true));
-                    }
-
-                    contour.points.erase(contour.points.begin() + pb);
-                    contour.points.insert(contour.points.begin() + pb, new_points.begin(), new_points.end());
-                    offset += num_points - 1;
-                }
-            }
-        }
-    }
-        
-    {
-        ttf_table table = tables["hmtx"];
-
-        cursor = table.offset;
-
-        uint16_t num_metrics = num_metrics_hmtx;
-        uint16_t num_bearings = num_glyphs - num_metrics;
-
-        uint16_t prev_advance;
-
-        for(int i = 0; i < num_metrics; ++i) {
-            uint16_t advance = read_ushort_be();
-            int16_t bearing = read_short_be();
-
-            font.glyphs[i].h_advance = advance;
-            font.glyphs[i].h_bearing = bearing;
-
-            prev_advance = advance;
-        }
-
-        for(int i = 0; i < num_bearings; ++i) {
-            uint ii = i + num_metrics;
-            
-            int16_t bearing = read_short_be();
-            
-            font.glyphs[i].h_advance = prev_advance;
-            font.glyphs[i].h_bearing = bearing;
-        }
-    }
-
-    //
-
-    /*
-    uint frac = 4;
-    for(auto& [id, glyph] : font.glyphs) {
-        for(int j = 0; j < frac; ++j) {
-            float f = float(j) / frac;
-
-            axiom::glyph_key key;
-            key.glyph = id;
-            key.phase_x = j;
-            key.phase_y = 0;
-            key.size = 12;
-
-            axiom::glyph_phase phase;
-            auto bitmap = font.get_bitmap(key);
-            phase.bitmap = bitmap;
-
-            font.phases.emplace(key, phase);
-        }
-    }
-    */
-
-    fonts.emplace(label, font);
-    /*
-    
-    double start_time = axiom::get_time();
-    uint num_phases = 0;
-
-    std::cout << "NUMBER OF GLYPHS: " << font.glyphs.size() << std::endl;
-    
-    for(auto& [id, glyph] : font.glyphs) {
-        for(int y = 0; y < 4; ++y) {
-            for(int x = 0; x < 4; ++x) {
-                axiom::glyph_key key;
-                key.glyph = id;
-                key.phase_x = x;
-                key.phase_y = y;
-                key.size = 24;
-
-                axiom::glyph_phase phase;
-                auto bitmap = fonts["test"].get_bitmap(key);
-                phase.bitmap = bitmap;
-                
-                fonts["test"].phases.emplace(key, phase);
-
-                ++num_phases;
-            }
-        }
-    } 
-
-    double end_time = axiom::get_time();
-
-    std::cout << "TIME TAKEN: " << end_time - start_time << std::endl;
-    std::cout << "NUMBER OF PHASES: " << num_phases << std::endl;
-    std::cout << "TIME PER PHASE: " << (end_time - start_time) / num_phases << std::endl;
-    */
-}
-
-axiom::texture_asset font::get_bitmap(glyph_key key) {
-    auto create_glyph = [this](axiom::glyph& glyph, int units, vec2 frac) -> axiom::texture_asset {
-        if(glyph.contours.size() == 0) {
-            std::vector<byte> b = {0};
-            return axiom::texture_asset::load(b, ivec2(0), 4);
-        }
-
-        auto intersect = [](vec2 a0, vec2 a1, vec2 p0, vec2& p1) {
-            vec2 dir_p = vec2(1.0f, 0.0f);
-
-            float a = (p0.y - a0.y) / (a1.y - a0.y);
-
-            p1 = a0 + (a1 - a0) * a;
-            if(glm::isnan(a) && p0.y == a0.y) {
-                vec2 n = a1 - a0;
-                float d = (p0.x - a0.x) / (a1.x - a0.x);
-                p1 = a0 + (a1 - a0) * glm::clamp(d, 0.0f, 1.0f);
-            }
-
-            return (glm::isnan(a) && p0.y == a0.y) || (!glm::isnan(a) && a >= 0.0f && a <= 1.0f); //!(a0.x == a1.x) && 
-        };
-
-        auto capture = [&](float v) {
-            std::vector<uint> lines;
-            uint j = 0;
-            for(auto& contour : glyph.contours) {
-                for(int i = 0; i < contour.points.size(); ++i) {
-                    int i0 = i;
-                    int i1 = (i + 1) % contour.points.size();
-                    bool i0_above = contour.points[i0].point.y > v;
-                    bool i1_above = contour.points[i1].point.y > v;
-
-                    if(i0_above != i1_above) {
-                        lines.push_back(j);
-                        lines.push_back(i);
-                    }
-                }
-                ++j;
-            }
-
-            return lines;
-        };
-        
-
-        //
-        ivec2 supersample = {6, 6};
-        bool subpixel = false;
-
-        //
-
-        float descender = descender;
-
-        vec2 pmin = glyph.bounding_box.xy();
-        vec2 psize = vec2(glyph.bounding_box.zw()) - pmin;
-        ivec2 size = glm::ceil(psize / float(base_unit) * float(units) + frac);
-        psize = (vec2(size) / float(units)) * float(base_unit);
-        
-        std::vector<byte> colors(size.x * size.y * 4);
-        for(int y = 0; y < size.y; ++y) {
-            float pt_y = y - frac.y;
-
-            std::vector<std::vector<uint>> ls(supersample.y);
-
-            for(int i = 0; i < supersample.y; ++i) {
-                float offset = (i + 0.5f) / supersample.y;
-                float pt_o = pt_y + offset;
-                pt_o = (pt_o / size.y) * psize.y + pmin.y;
-                    
-                ls[i] = capture(pt_o);
-            }
-
-            for(int x = 0; x < size.x; ++x) {
-                vec2 pt = vec2(x - frac.x, pt_y);
-
-                uint k = x + y * size.x;
-
-                float min_width = glm::min(size.x, size.y);
-
-                if(subpixel) {
-                    for(int c = 0; c < 3; ++c) {
-                        float f = 0.0f;
-
-                        float cfrac = float(c) / 3;
-
-                        for(int ii = 0; ii < supersample.x * supersample.y; ++ii) {
-                            uint y_index = ii / supersample.x;
-
-                            vec2 offset = vec2(ii % supersample.x + 0.5f, ii / supersample.x + 0.5f) / vec2(supersample);
-                            offset.x /= 3;
-                            offset.x += cfrac;
-                            
-                            vec2 pt_o = pt + offset;
-
-                            pt_o = (pt_o / vec2(size)) * psize + pmin;
-
-                            int count = 0;
-                            float min_dist = axiom::max_float;
-
-                            for(int i = 0; i < ls[y_index].size(); i += 2) {
-                                auto& contour = glyph.contours[ls[y_index][i]];
-
-                                int a = ls[y_index][i + 1];
-                                int b = (a + 1) % contour.points.size();
-
-                                auto& point_a = contour.points[a];
-                                auto& point_b = contour.points[b];
-
-                                vec2 pt_s;
-
-                                bool did_intersect = intersect(point_a.point, point_b.point, pt_o, pt_s);
-
-                                if(pt_s.x < pt_o.x) did_intersect = false;
-
-                                if(did_intersect) {
-                                    if(point_a.point.y < point_b.point.y || (point_a.point.y == point_b.point.y && point_a.point.x < point_b.point.x)) {
-                                        ++count;
-                                    } else {
-                                        --count;
-                                    }
-                                }
-                            }
-                            
-                            if(count != 0) {
-                                f += 1.0f;
-                            }
-                        }
-
-                        f = (f / (supersample.x * supersample.y)) * 0xFF;
-
-                        colors[k * 4 + c] = f;
-                    }
-                    colors[k * 4 + 3] = 0xFF;
-                } else {
-                    float f = 0.0f;
-
-                    for(int ii = 0; ii < supersample.x * supersample.y; ++ii) {
-                        vec2 offset = vec2(ii % supersample.x + 0.5f, ii / supersample.x + 0.5f) / vec2(supersample);
-                        vec2 pt_o = pt + offset;
-
-                        pt_o = (pt_o / vec2(size)) * psize + pmin;
-
-                        int count = 0;
-                        float min_dist = axiom::max_float;
-                        
-                        for(int i = 0; i < glyph.contours.size(); ++i) {
-                            auto& contour = glyph.contours[i];
-
-                            for(int j = 0; j < contour.points.size(); ++j) {
-                                int a = j;
-                                int b = (j + 1) % contour.points.size();
-
-                                auto& point_a = contour.points[a];
-                                auto& point_b = contour.points[b];
-
-                                vec2 pt_s;
-
-                                bool did_intersect = intersect(point_a.point, point_b.point, pt_o, pt_s);
-
-                                if(pt_s.x < pt_o.x) did_intersect = false;
-
-                                if(did_intersect) {
-                                    if(point_a.point.y < point_b.point.y || (point_a.point.y == point_b.point.y && point_a.point.x < point_b.point.x)) {
-                                        ++count;
-                                    } else {
-                                        --count;
-                                    }
-                                }
-                            }
-                        }
-                        
-                        if(count != 0) {
-                            f += 1.0f;
-                        }
-                    }
-
-                    f = (f / (supersample.x * supersample.y)) * 0xFF;
-
-                    colors[k * 4] = f;
-                    colors[k * 4 + 1] = f;
-                    colors[k * 4 + 2] = f;
-                    colors[k * 4 + 3] = 0xFF;
-                }
-            }
-        }
-
-        axiom::texture_asset asset = axiom::texture_asset::load(colors, size, 4);
-
-        return asset;
-    };
-
-    return create_glyph(glyphs[key.glyph], key.size, {key.phase_x * 0.25f + 0.125f, key.phase_y * 0.25f + 0.125f});
-}
-
-void font_handler::touch_phase(glyph_key key) {
-    if(!fonts["test"].phases.contains(key)) {
-        axiom::glyph_phase phase;
-        auto bitmap = fonts["test"].get_bitmap(key);
-        phase.bitmap = bitmap;
-
-        fonts["test"].phases.emplace(key, phase);
-    }
-
-    fonts["test"].active_phases.emplace(key);
-}
-
-void font_handler::touch_texture() {
-    static std::set<glyph_key, glyph_key_less> prev_phases;
-
-    if(prev_phases != fonts["test"].active_phases) {
-        std::vector<glyph_key> to_erase;
-        for(const glyph_key& prev_key : prev_phases) {
-            if(!fonts["test"].active_phases.contains(prev_key)) to_erase.push_back(prev_key);
-        }
-        for(glyph_key key : to_erase) fonts["test"].phases.erase(key);
-
-        prev_phases = fonts["test"].active_phases;
-
-        //
-            
-        std::vector<byte> bytes;
-        ivec2 img_size = ivec2(0);
-
-        uint width = 1024;
-        std::vector<uint> heights(1024, 0);
-        uint cursor = 0;
-
-        uint ctr = 0;
-        for(auto& key : prev_phases) {
-            auto& phase = fonts["test"].phases[key];
-            
-            if(phase.bitmap.size.x) {
-                axiom::texture_asset& asset = phase.bitmap;
-
-                if(cursor + asset.size.x > width) cursor = 0;
-
-                uint height = 0;
-                for(int i = 0; i < asset.size.x; ++i) {
-                    uint h = heights[i + cursor];
-                    height = glm::max(height, h);
-                }
-                
-                for(int i = 0; i < asset.size.x; ++i) {
-                    heights[i + cursor] = height + asset.size.y;
-                }
-
-                uint new_height = glm::max(img_size.y, int(height + asset.size.y) + 1);
-
-                bytes.resize(width * new_height * 4, 0x00);
-
-                vec2 dst_pos = vec2(cursor, height);
-
-                ivec4 atlas = ivec4(dst_pos, dst_pos + vec2(asset.size));
-                phase.texture = atlas;
-
-                for(int j = 0; j < asset.size.x * asset.size.y; ++j) {
-                    ivec2 src_pos = {j % asset.size.x, j / asset.size.x};
-                    ivec2 ndst_pos = ivec2(dst_pos) + src_pos;
-
-                    int src_i = src_pos.y * asset.size.x + src_pos.x;
-                    int dst_i = ndst_pos.y * width + ndst_pos.x;
-
-                    bytes[dst_i * 4] = asset.data[src_i * 4];
-                    bytes[dst_i * 4 + 1] = asset.data[src_i * 4 + 1];
-                    bytes[dst_i * 4 + 2] = asset.data[src_i * 4 + 2];
-                    bytes[dst_i * 4 + 3] = asset.data[src_i * 4 + 3];
-                }
-
-                cursor += asset.size.x;
-
-                img_size.x = glm::max(img_size.x, (int)cursor);
-                img_size.y = glm::max(img_size.y, (int)new_height);
-            } else phase.texture.z = 0.0;
-        }
-        
-        axiom::texture_asset asset = axiom::texture_asset::load(bytes, {width, img_size.y}, 4);
-
-        texture.load(asset, axiom::texture_format::RGBA8, 0);
-    }
-
-    fonts["test"].active_phases.clear();
+    return sglyphs;
 }
 
 }

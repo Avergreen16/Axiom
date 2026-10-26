@@ -29,7 +29,10 @@ add_library(AxiomUI STATIC
     widgets/match_widget.cpp
     widgets/checkbox_widget.cpp
 
+    font/font_base.cpp
     font/ttf.cpp
+    font/bdf.cpp
+    font/font.cpp
 )
 
 target_include_directories(AxiomUI PUBLIC

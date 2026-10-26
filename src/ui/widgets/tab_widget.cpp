@@ -192,7 +192,7 @@ uint64_t tab_widget::insert(float tab_height, float tab_sep, std::vector<tab> ta
 
     for(tab& t : widget.tabs) {
         std::shared_ptr<axiom::text> text(new axiom::text);
-        text->font = &ui_system.font_handler.fonts["test"];
+        text->font = ui_system.font_handler.fonts["test"].get();
         text->string = t.label;
         text->wrap = false;
 

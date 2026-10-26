@@ -86,8 +86,8 @@ mat4 get_transform(mat4 m) {
     );
 }
 
-const int num_blocker = 1;//49;
-const int num_samples = 1;//;
+const int num_blocker = 25;//49;
+const int num_samples = 16;//;
 
 void create_offsets(out vec2[num_samples] v, ivec2 pos, float rad) {
     for(int i = 0; i < num_samples; ++i) {
