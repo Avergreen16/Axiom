@@ -14,7 +14,12 @@ ui_system::ui_system(axiom::window* window_) {
 void ui_system::init() {
     font_handler.init();
 
-    font_handler.process("external/axiom/res/fonts/cozette.bdf", "test");
+    font_handler.process("external/axiom/res/fonts/axiom-large.bdf", "test");
+    //font_handler.process("external/axiom/res/fonts/cozette.bdf", "test");
+    //font_handler.process("external/axiom/res/fonts/axiom-default.bdf", "test");
+    //font_handler.process("external/axiom/res/fonts/spleen.bdf", "test");
+    //font_handler.process("external/axiom/res/fonts/unifont-17.0.04.bdf", "test");
+    
     //font_handler.process("res/JetBrainsMono-Regular.ttf", "test");
 }
 

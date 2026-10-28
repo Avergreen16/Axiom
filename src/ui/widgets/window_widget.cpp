@@ -253,7 +253,9 @@ void window_widget::mesh() {
     if(dirty) {
         axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
-        float radius = 6.0f;
+        float radius = 0.0f;
+        float shadow_width = 6;
+        float roundedness = 0.0f;
 
         ui_system.clip_spaces[clip].range = vec4(position, position + vec2(size.x, size.y + header));
         ui_system.clip_spaces[clip].radius = radius;
@@ -263,7 +265,6 @@ void window_widget::mesh() {
 
         float text_scale = 1;
         bool scrollbar = false;
-        float shadow_width = 6;
 
         //
 
@@ -429,6 +430,10 @@ void window_widget::mesh() {
             float frac = float(i) / (5.0f);
 
             vec2 pos = vec2(cos((1.0f - frac) * axiom::pi * 0.5f), sin((1.0f - frac) * axiom::pi * 0.5f));
+
+            float m = glm::max(abs(pos.x), abs(pos.y));
+            vec2 sq_pos = pos / m;
+            pos = glm::mix(sq_pos, pos, roundedness);
 
             ui_vertex vv;
             vv.tex_pos = vec2(1.0f, 63.0f);

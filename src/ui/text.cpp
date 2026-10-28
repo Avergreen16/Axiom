@@ -81,6 +81,8 @@ void text::measure() {
             line_height = round(font->line_height * (float(text_size) / font->base_unit));
             line_start = tglyphs.size();
         } else if(glyph_struct.bounding_box.w == 0 || !glyph_struct.visible) {
+            vec2 position = word_cursor + vec2(sglyph.offset) + vec2(glyph_struct.bounding_box.xy()) * (float(text_size) / font->base_unit); /* */
+            
             text_glyph tglyph;
             tglyph.position = position;
             tglyph.selection = vec4(word_cursor + vec2(0.0f, round(font->descender * (float(text_size) / font->base_unit))), sglyph.advance.x, line_height + sglyph.advance.y);
@@ -204,8 +206,8 @@ void text::touch() {
 
         //
 
-        tglyph.key.phase_x = glm::floor((position.x - tglyph.position.x) * 16);
-        tglyph.key.phase_y = glm::floor((position.y - tglyph.position.y) * 16);
+        tglyph.key.phase_x = glm::floor((position.x - tglyph.position.x) * font->phase_range.x);
+        tglyph.key.phase_y = glm::floor((position.y - tglyph.position.y) * font->phase_range.y);
 
         axiom::ecs.get_system<axiom::ui_system>().font_handler.touch_phase(tglyph.key);
     }

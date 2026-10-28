@@ -79,7 +79,9 @@ void bdf_font::process(std::string filepath, font_handler* handler) {
 
             if(collect_bits) {
                 for(int i = 0; i < name.size() / 2; ++i) {
-                    std::string bit(name.begin() + i * 2, name.begin() + (i + 1) * 2);
+                    int ii = name.size() / 2 - i - 1;
+
+                    std::string bit(name.begin() + ii * 2, name.begin() + (ii + 1) * 2);
 
                     byte b = std::stoi(bit, nullptr, 16);
 
@@ -167,7 +169,10 @@ std::vector<shaped_glyph> bdf_font::shape(std::string string, uint text_size) {
     std::vector<shaped_glyph> sglyphs;
 
     for (unsigned int i = 0; i < count; ++i) {
-        auto& g = glyphs[s[i]];
+        uint32_t c = s[i];
+        if(!glyphs.contains(c)) c = 0;
+
+        auto& g = glyphs[c];
         auto& bdf_glyph = bdf_glyphs[g.glyph_id];
 
         uint32_t glyph_id = g.glyph_id;

@@ -87,9 +87,21 @@ mat4 get_transform(mat4 m) {
 }
 
 const int num_blocker = 25;//49;
-const int num_samples = 16;//;
+const int num_samples = 4;//;
 
 void create_offsets(out vec2[num_samples] v, ivec2 pos, float rad) {
+    v[0] = vec2(0.0, 0.0);
+    v[1] = vec2(-1.0, 0.0);
+    v[2] = vec2(0.0, -1.0);
+    v[3] = vec2(-1.0, -1.0);
+    /*
+    
+    v[0] = vec2(0.0, 0.0);
+    v[1] = vec2(1.0, 0.0);
+    v[2] = vec2(0.0, 1.0);
+    v[3] = vec2(1.0, 1.0);
+
+    /*
     for(int i = 0; i < num_samples; ++i) {
         float frac = float(i) / num_samples;
         float angle = 3.14159265358979 * (3.0 - sqrt(5.0));
@@ -102,6 +114,7 @@ void create_offsets(out vec2[num_samples] v, ivec2 pos, float rad) {
 
         v[i] = vec2(radius * cos(theta), radius * sin(theta)) * rad + rand * rad * sqrt(1.0 / float(num_samples)) * 0.5;
     }
+    */
 }
 
 void create_blocker(out vec2[num_blocker] v, ivec2 pos, float rad) {
@@ -281,8 +294,9 @@ void main() {
 
         if(include == 0xFFFFFFFF && spos.x < 1.0 && spos.x > -1.0 && spos.y < 1.0 && spos.y > -1.0 && spos.z >= 0.0 && spos.z < 1.0) {
             vec2 texel_f = (spos.xy * 0.5 + 0.5) * vec2(textureSize(shadow_depth_tex[i], 0));
-            ivec2 stexel = ivec2(floor(texel_f));
-
+            //ivec2 stexel = ivec2(floor(texel_f));
+            ivec2 stexel = ivec2(round(texel_f));
+            
             float sdepth = texelFetch(shadow_depth_tex[i], stexel, 0).r;
 
             vec3 snormal1 = mat3(sview) * normal;
@@ -326,7 +340,7 @@ void main() {
                 float null_pixels = 0;
 
                 for(int j = 0; j < num_samples; ++j) {
-                    vec2 offset = offsets[j] / texel_size;
+                    vec2 offset = offsets[j];// / texel_size;
                     vec2 screen_pos = texel_f;
                     screen_pos += offset;
 
@@ -354,13 +368,17 @@ void main() {
                         
                         float bias = 0.0;//texel_size * length(vec2(nslope_x, nslope_y));
 
-                        sd += (clamp(min(nslope_x * nt.x, slope_x * nt.x), -8.0, 0.0) + clamp(min(nslope_y * nt.y, slope_y * nt.y), -8.0, 0.0) - 0.25) * texel_size;
+                        sd += (clamp(min(nslope_x * nt.x, slope_x * nt.x), -8.0, 0.0) + clamp(min(nslope_y * nt.y, slope_y * nt.y), -8.0, 0.0) - 0.01) * texel_size;
 
                         if(target_depth + bias < sd) ++frac;
                     }
                 }
+
+                float shade = (frac) / (num_samples - null_pixels) * 2.0 - 1.0;
+                shade = clamp(shade, 0.0, 1.0);
+                if(shade != 0.0) shade = 1.0;
                 
-                frag_color = vec4(0.0, 0.0, 0.0, max(0.0, (frac) / (num_samples - null_pixels) * 2.0 - 1.0)); 
+                frag_color = vec4(0.0, 0.0, 0.0, shade); 
 
                 x = true;
             }
