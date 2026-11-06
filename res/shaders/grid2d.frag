@@ -4,19 +4,13 @@ vec4 color = vec4(1.0, 0.0, 0.0, 1.0);
 
 layout(location = 0) out vec4 frag_color;
 
+layout(location = 2) uniform ivec2 size;
+layout(location = 3) uniform vec2 cursor;
+
 layout(location = 0) in vec2 coords;
 
 vec3 hex_color(uint i) {
     return vec3((i >> 16) & 0xFF, (i >> 8) & 0xFF, i & 0xFF) / float(0xFF);
-}
-
-float filtered_grid(vec2 p, vec2 dpdx, vec2 dpdy, float blend) {
-    const vec2 N = max(vec2(6.0 * blend + (6.0 * 4.0) * (1.0 - blend)), 1.0 / (max(abs(dpdx), abs(dpdy)) * 0.5));
-    vec2 w = max(abs(dpdx), abs(dpdy));
-    vec2 a = p + 0.5 * w;                        
-    vec2 b = p - 0.5 * w;           
-    vec2 i = (floor(a) + min(fract(a) * N, 1.0) - floor(b) - min(fract(b) * N, 1.0)) / (N * w);
-    return (1.0 - i.x) * (1.0 - i.y);
 }
 
 vec3 base_color = hex_color(0x1E1F2E);
@@ -36,10 +30,76 @@ void main() {
     vec4 line_c = vec4(0.0);
     vec4 line_a = vec4(0.0);
 
-    float f = 1.0 - filtered_grid(coords, dx, dy, 0.5);
-    f *= 0.125;
 
-    c.rgb = vec3(1.0) * f + c.rgb * (1.0 - f);
+    // x direction
+    bool flag = false;
+    vec3 color = base_color * 2.0;
+    if(int(round(coords.x)) % 256 == 0) {
+        color = sector_color;
+        line_width = 2;
+        flag = true;
+    }
+    if(int(round(coords.x)) == 0) {
+        color = hex_color(0xFF5959);
+        line_width = 2;
+        flag = true;
+    }
+
+    float dist_from_line = abs(fract(coords.x + 0.5) - 0.5) / line_width * 2.0;
+    float alpha = max(0.0, 1.0 - (ddx / (line_width * line_width)) * 2.0);
+    if(dist_from_line <= ddx) {
+        if(flag) line_a = max(line_a, vec4(color, alpha));
+        else {
+            line_c = vec4(color, alpha);
+        }
+    }
+
+    // x direction pixel    
+    color = base_color * 2.0;
+    line_width = 1;
+    dist_from_line = abs(fract(coords.x * 16 + 0.5) - 0.5) / 16.0 / line_width * 2.0;
+    alpha = max(0.0, 1.0 - (ddx * 16.0 / line_width) * 2.0);
+    if(dist_from_line <= ddx) {
+        line_c = max(line_c, vec4(color, alpha * 0.5));
+    }
+    
+    // y direction
+    flag = false;
+    line_width = 1;
+    color = base_color * 2.0;
+    if(int(round(coords.y)) % 256 == 0) {
+        color = sector_color;
+        line_width = 2;
+        flag = true;
+    }
+    if(int(round(coords.y)) == 0) {
+        color = hex_color(0x59FF59);
+        line_width = 2;
+        flag = true;
+    }
+
+    dist_from_line = abs(fract(coords.y + 0.5) - 0.5) / line_width * 2.0;
+    alpha = max(0.0, 1.0 - (ddy / line_width) * 2.0);
+    if(dist_from_line <= ddy) {
+        if(flag) line_a = max(line_a, vec4(color, alpha));
+        else line_c = vec4(color, alpha);
+    }
+
+    // y direction pixel
+    color = base_color * 2.0;
+    line_width = 1;
+    dist_from_line = abs(fract(coords.y * 16 + 0.5) - 0.5) / 16.0 / line_width * 2.0;
+    alpha = max(0.0, 1.0 - (ddy * 16.0 / line_width) * 2.0);
+    if(dist_from_line <= ddy) {
+        line_c = max(line_c, vec4(color, alpha * 0.5));
+    }
+
+    c.rgb = line_c.rgb * line_c.w + c.rgb * (1.0 - line_c.w);
+    c.rgb = line_a.rgb * line_a.w + c.rgb * (1.0 - line_a.w);
 
     frag_color = c;
+
+    //if(length((coords - cursor) / vec2(ddx, ddy)) < 4.0f) frag_color = vec4(1.0, 0.35, 0.35, 1.0);
+
+    //frag_color = vec4(1.0, 0.0, 0.0, 1.0);
 }

@@ -7,7 +7,7 @@
 
 namespace axiom {
     
-bounding_box3d create_bounding_box(std::vector<vertex_element3d>& elements) {
+bounding_box3d create_bounding_box(std::vector<vec3>& elements) {
     bounding_box3d bb;
 
     bb.minimum = vec3(
@@ -28,10 +28,9 @@ bounding_box3d create_bounding_box(std::vector<vertex_element3d>& elements) {
     return bb;
 }
 
-bounding_box3d create_bounding_box(std::vector<vertex_element3d> elements, vec3 offset_pos, mat3 offset_ori) {
+bounding_box3d create_bounding_box(std::vector<vec3> elements, vec3 offset_pos, mat3 offset_ori) {
     for(auto& element : elements) {
-        element.center = offset_ori * element.center + offset_pos;
-        element.orientation = offset_ori * element.orientation;
+        element = offset_ori * element + offset_pos;
     }
 
     return create_bounding_box(elements);

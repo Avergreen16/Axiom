@@ -7,24 +7,10 @@
 
 namespace axiom {
 
-/*
-struct clipping_plane2d {
-    vec2 origin;
-    vec2 normal;
-};
-*/
-
-struct vertex_element3d {
-    vec3 center;
-    vec3 radii = vec3(0.0f);
-    mat3 orientation = glm::identity<mat3>();
-
-    //std::vector<clipping_plane2d> planes;
-};
-
 vec3 support(vec3 direction, vec3 center, mat3 orientation, vec3 radii);
-vec3 support(vec3 direction, std::vector<vertex_element3d> ellipsoids);
-vec3 support(vec3 direction, std::vector<vertex_element3d> ellipsoids, uint& element);
+vec3 support(vec3 direction, std::vector<vec3> vertices);
+uint support_i(vec3 direction, std::vector<vec3> vertices);
+vec3 support(vec3 direction, std::vector<vec3> vertices, uint& element);
 
 //
 
@@ -34,7 +20,7 @@ struct shape_face {
 };
 
 struct collision_shape3d {
-    std::vector<vertex_element3d> elements;
+    std::vector<vec3> elements;
     std::vector<shape_face> faces;
     
     float mass = 0.0f;
@@ -114,7 +100,7 @@ struct collider3d {
     vec3 get_angular_acceleration();
 };
 
-mat3 calculate_inertia_tensor(std::vector<vertex_element3d>& elements, vec3& center, float mass);
+mat3 calculate_inertia_tensor(std::vector<vec3>& elements, vec3& center, float mass);
 
 mat3 translate_inertia_tensor(vec3 delta, mat3 inertia_tensor, float mass);
 mat3 inv_translate_inertia_tensor(vec3 delta, mat3 inertia_tensor, float mass);
@@ -124,7 +110,7 @@ mat3 add_inertia_tensor(mat3 a, mat3 b);
 mat3 translate_M(vec3 d, mat3 M, float mass);
 mat3 inv_translate_M(vec3 d, mat3 M, float mass);
 mat3 cuboid_M(vec3 size);
-mat3 calculate_M(std::vector<vertex_element3d>& elements, vec3& center);
+mat3 calculate_M(std::vector<vec3>& elements, vec3& center);
     
 mat3 to_inertia_tensor(mat3 M);
 

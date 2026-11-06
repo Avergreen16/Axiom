@@ -192,7 +192,7 @@ struct physics_system2d : axiom::system {
     bool sim_active = false;//true;
 
     uint iterations = 8;
-    uint substeps = 8;
+    uint substeps = 1;
     float fps = 60.0f;
 
     // parameters

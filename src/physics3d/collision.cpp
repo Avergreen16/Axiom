@@ -119,14 +119,13 @@ int simplex::contains(glm::vec3 p, bool output) {
     return -1;
 }
 
-vec3 transform_vertices(std::vector<vertex_element3d>& elements, transform3d& transform, vec3 origin) {
+vec3 transform_vertices(std::vector<vec3>& elements, transform3d& transform, vec3 origin) {
     vec3 center = vec3(0.0f);
 
     for(auto& element : elements) {
-        element.orientation = transform.orientation * element.orientation;
-        element.center = transform.orientation * element.center + (transform.position - origin);
+        element = transform.orientation * element + (transform.position - origin);
 
-        center += element.center;
+        center += element;
     }
 
     return center / float(elements.size());
@@ -235,12 +234,12 @@ std::vector<uint> polytope::expand(simplex_vertex vertex) {
     return faces_seen;
 }
 
-bool contains(std::vector<vertex_element3d>& elements, vec3 point) {
+bool contains(std::vector<vec3>& elements, vec3 point) {
     axiom::simplex simplex;
 
     float limit = 0.0001;
 
-    vec3 direction = glm::normalize(point - elements[0].center);
+    vec3 direction = glm::normalize(point - elements[0]);
     
     vec3 offset = vec3(direction.y, -direction.x, direction.z);
 
@@ -316,8 +315,8 @@ std::vector<std::vector<vec3>> debug_vertices = {{}, {}};
 //
 
 std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transform3d& tb, collision_shape3d& cb, return_tag& tag, collision_event& c_event) {
-    std::vector<vertex_element3d> a_vertices = ca.elements;
-    std::vector<vertex_element3d> b_vertices = cb.elements;
+    std::vector<vec3> a_vertices = ca.elements;
+    std::vector<vec3> b_vertices = cb.elements;
 
     float limit = 0.00001f;
     uint32_t iter_limit = 256;
@@ -756,14 +755,14 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
                             std::vector<vec2> b_verts;
 
                             mat3 rot_mat = rotate_to(collision_normal, vec3(0, 0, 1));
-                            vec3 a_c = rot_mat * a_vertices[af->vertices[0]].center;
-                            vec3 b_c = rot_mat * b_vertices[bf->vertices[0]].center;
+                            vec3 a_c = rot_mat * a_vertices[af->vertices[0]];
+                            vec3 b_c = rot_mat * b_vertices[bf->vertices[0]];
 
                             for(uint32_t i : a_face.vertices) {
-                                a_verts.push_back((rot_mat * a_vertices[i].center).xy());
+                                a_verts.push_back((rot_mat * a_vertices[i]).xy());
                             }
                             for(uint32_t i : b_face.vertices) {
-                                b_verts.push_back((rot_mat * b_vertices[i].center).xy());
+                                b_verts.push_back((rot_mat * b_vertices[i]).xy());
                             }
 
                             a_normal = rot_mat * a_normal;
@@ -1113,8 +1112,8 @@ std::vector<return_point> collide(transform3d& ta, collider3d& ca, transform3d& 
 }
 
 bool gjk(collision_shape3d& ca, transform3d& ta, collision_shape3d& cb, transform3d& tb) {
-    std::vector<vertex_element3d> a_vertices = ca.elements;
-    std::vector<vertex_element3d> b_vertices = cb.elements;
+    std::vector<vec3> a_vertices = ca.elements;
+    std::vector<vec3> b_vertices = cb.elements;
 
     float limit = 0.001f;
     uint32_t iter_limit = 128;

@@ -3,6 +3,8 @@
 #include <include/core.hpp>
 
 #include <iostream>
+#include <functional>
+#include <numeric>
 
 namespace axiom {
 
@@ -12,13 +14,13 @@ struct mesh_face {
     int i2;
 };
 
-void create_mesh(std::vector<vertex_element3d> elements, std::vector<output_vertex>* vertices, std::vector<uint>* indices) {
+void create_mesh(std::vector<vec3> elements, std::vector<output_vertex>* vertices, std::vector<uint>* indices) {
     output_vertex va;
     output_vertex vb;
     output_vertex vc;
 
     vec3 center = vec3(0.0f);
-    for(auto& element : elements) center += element.center;
+    for(auto& element : elements) center += element;
     center /= elements.size();
 
     va.position = support(vec3(1.0f, 0.0f, 0.0f), elements, va.element);
@@ -56,7 +58,7 @@ void create_mesh(std::vector<vertex_element3d> elements, std::vector<output_vert
 
             //
 
-            float t = glm::max(glm::max(glm::length(elements[s.element].radii), glm::length(elements[points[face.i0].element].radii)) * threshold, threshold);
+            float t = glm::max(glm::max(glm::length(elements[s.element]), glm::length(elements[points[face.i0].element])) * threshold, threshold);
 
             if(dot(s.position, normal) > dot(points[face.i0].position, normal) + t) {
                 std::vector<uint> to_erase2 = {};
@@ -138,6 +140,119 @@ void create_mesh(std::vector<vertex_element3d> elements, std::vector<output_vert
 
     for(auto point : points) {
         vertices->push_back(point);
+    }
+    
+    for(mesh_face& face : faces) {
+        indices->push_back(face.i0);
+        indices->push_back(face.i1);
+        indices->push_back(face.i2);
+    }
+}
+
+void triangulate(std::vector<vec3> elements, std::vector<uint>* indices) {
+    uint va;
+    uint vb;
+    uint vc;
+
+    vec3 center = vec3(0.0f);
+    for(auto& element : elements) center += element;
+    center /= elements.size();
+
+    va = support_i(vec3(1.0f, 0.0f, 0.0f), elements);
+    vb = support_i(normalize(center - elements[va]), elements);
+
+    vec3 dir = normalize(elements[va] - elements[vb]);
+    vec3 d = elements[vb] + dir * dot(dir, center - elements[vb]);
+    vec3 dd = dir;
+
+    dir = center - d;
+    if(length(dir) < 0.01) dir += normalize(vec3(-dd.y, dd.x, 0.0f)) * 0.02f;
+    
+    dir = normalize(dir);
+
+    vc = support_i(dir, elements);
+
+    std::vector<mesh_face> faces = {mesh_face(va, vb, vc), mesh_face(vc, vb, va)};
+
+    std::vector<uint> ns(elements.size());
+    std::iota(ns.begin(), ns.end(), 0);
+    axiom::random32 rand(0x55F);
+
+    for(int i = 0; i < ns.size() - 1; ++i) {
+        std::swap(ns[i], ns[rand.next() % (ns.size() - 1 - i) + i]);
+    }
+    
+    for(int ii = 0; ii < elements.size(); ++ii) {
+        int index = ii;//ns[i];
+
+        if(index == va || index == vb || index == vc) {
+            continue;
+        }
+
+        std::vector<mesh_face> new_faces;
+        std::vector<uint> to_erase;
+
+        for(uint i = 0; i < faces.size(); ++i) {
+            mesh_face& face = faces[i];
+            
+            vec3 nn = normalize(cross(elements[face.i0] - elements[face.i2], elements[face.i1] - elements[face.i2]));
+            
+            if(dot(elements[index], nn) > dot(elements[face.i0], nn)) {
+                //std::cout << dot(elements[index], nn) << " " << dot(elements[face.i0], nn) << " | ";
+                to_erase.push_back(i);
+            }
+        }
+
+        //std::cout << "\n";
+
+        std::unordered_set<uint> indices;
+        std::unordered_map<uint, uint> edges;
+        for(int i : to_erase) {
+            mesh_face& face = faces[i];
+
+            uint a = face.i0;
+            uint b = face.i1;
+            uint c = face.i2;
+            
+            indices.insert(a);
+            indices.insert(b);
+            indices.insert(c);
+
+            uint e0 = ((glm::max(a, b) << 16) | glm::min(a, b));
+            uint e1 = ((glm::max(b, c) << 16) | glm::min(b, c));
+            uint e2 = ((glm::max(c, a) << 16) | glm::min(c, a));
+
+            if(edges.contains(e0)) ++edges[e0];
+            else edges[e0] = 1;
+            
+            if(edges.contains(e1)) ++edges[e1];
+            else edges[e1] = 1;
+            
+            if(edges.contains(e2)) ++edges[e2];
+            else edges[e2] = 1;
+        }
+
+        vec3 center = vec3(0.0f);
+        for(uint i : indices) center += elements[i];
+        center /= indices.size();
+        vec3 dir = elements[index] - center;
+
+        for(auto [e, n] : edges) {
+            if(n == 1) {
+                uint e0 = e & 0xFFFF;
+                uint e1 = e >> 16;
+
+                vec3 nn = normalize(cross(elements[e0] - elements[index], elements[e1] - elements[index]));
+                if(dot(nn, dir) < 0.0f) std::swap(e0, e1);
+                
+                new_faces.push_back(mesh_face(e0, e1, index));
+            }
+        }
+
+        for(auto iter = to_erase.rbegin(); iter != to_erase.rend(); ++iter) {
+            faces.erase(faces.begin() + *iter);
+        }
+        faces.insert(faces.end(), new_faces.begin(), new_faces.end());
     }
     
     for(mesh_face& face : faces) {

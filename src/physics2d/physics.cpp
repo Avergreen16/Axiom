@@ -1513,7 +1513,7 @@ void physics_system2d::velocity_solve() {
 
                     float v = glm::dot(velocity, cc.d->normal);
 
-                    float L = -v - diff;
+                    float L = -v;// - diff;
                     L /= inertia;
 
                     vec2 limits = vec2(0.0f, FLT_MAX);
@@ -1570,7 +1570,7 @@ void physics_system2d::velocity_solve() {
 
                     float v = glm::dot(velocity, cc.normal);
 
-                    float L = -v - diff;
+                    float L = -v;// - diff;
                     L /= inertia;
                     L -= softness * cc.lambdaN;
 
@@ -1656,13 +1656,12 @@ void physics_system2d::velocity_solve() {
                         float xdot = dot(jacobian, vel);
                         float x = c.baumgarte[k];
                         float zeta = 1.0f;
-                        float omega = 2.0f * axiom::pi * 16.0f;
+                        float omega = 2.0f * axiom::pi * 2.0f;
 
-                        float geometric = -jdotvel;
                         float damping = -2.0f * zeta * omega * xdot;
                         float spring = -omega * omega * x;
 
-                        float b = geometric + damping + spring;
+                        float b = damping + spring;
                         float Ja = dot(jacobian, acca);
 
                         float residual = b - Ja;
@@ -1699,9 +1698,7 @@ void physics_system2d::velocity_solve() {
                         float xdot = dot(jacobian, vela - velb);
                         float x = c.baumgarte[k];
                         float zeta = 1.0f;
-                        float omega = 2.0f * axiom::pi * 16.0f;
-
-                        float geometric = -jdotvel;
+                        float omega = 2.0f * axiom::pi * 2.0f;
                         float damping = -2.0f * zeta * omega * xdot;
                         float spring = -omega * omega * x;
 
@@ -1709,11 +1706,10 @@ void physics_system2d::velocity_solve() {
                         // j -> constraint id
                         // k -> direction
                         if(j == 0 && i == 0 && k == 0) {
-                            if(!(std::isnan(geometric) || std::isnan(damping) || std::isnan(spring))) {
+                            if(!(std::isnan(damping) || std::isnan(spring) || std::isinf(damping) || std::isinf(spring))) {
                                 std::stringstream ss;
                                 ss //<< "omegaA = " << data.ca->angular_velocity
                                 //<< " omegaB = " << data.cb->angular_velocity
-                                << " geometric = " << geometric
                                 << " damping = " << damping
                                 << " spring = " << spring
                                 //<< " position a = " << data.ta->position
@@ -1728,7 +1724,7 @@ void physics_system2d::velocity_solve() {
                             }
                         }
 
-                        float b = geometric + damping + spring;
+                        float b = damping + spring;
                         float Ja = dot(jacobian, acca - accb);
 
                         float residual = b - Ja;
@@ -1919,6 +1915,10 @@ vec2 physics_system2d::calculate_point_acceleration(collider2d* c, vec2 point) {
     vec2 linear_acceleration = vec2(cross(vec3(0.0f, 0.0f, angular_acceleration), vec3(point, 0.0f)));
 
     acceleration += linear_acceleration;
+    
+    vec2 centripetal = -c->angular_velocity * c->angular_velocity * point;
+
+    acceleration += centripetal;
 
     return acceleration;
 }

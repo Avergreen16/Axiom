@@ -90,10 +90,10 @@ const int num_blocker = 25;//49;
 const int num_samples = 4;//;
 
 void create_offsets(out vec2[num_samples] v, ivec2 pos, float rad) {
-    v[0] = vec2(0.0, 0.0);
-    v[1] = vec2(-1.0, 0.0);
-    v[2] = vec2(0.0, -1.0);
-    v[3] = vec2(-1.0, -1.0);
+    v[0] = vec2(0.5, 0.5);
+    v[1] = vec2(-0.5, 0.5);
+    v[2] = vec2(0.5, -0.5);
+    v[3] = vec2(-0.5, -0.5);
     /*
     
     v[0] = vec2(0.0, 0.0);

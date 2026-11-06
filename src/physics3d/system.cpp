@@ -618,9 +618,9 @@ bool physics_system3d::raycast(vec3 start, vec3 direction, float step, float dis
         t.position = start + vec3(direction * pos);
         t.orientation = glm::identity<mat3>();
 
-        std::vector<vertex_element3d> vs2 = {
-            vertex_element3d(vec3(0.0f), vec3(inflate, inflate, 0.0f)),
-            vertex_element3d(direction * length, vec3(inflate, inflate, 0.0f)),
+        std::vector<vec3> vs2 = {
+            vec3(0.0f),
+            direction * length
         };
         collider.shapes[0].elements = vs2;
         
@@ -695,9 +695,9 @@ bool physics_system3d::raycast(vec3 start, vec3 direction, float step, float dis
     t.position = start + vec3(direction * prev_pos);
     t.orientation = glm::identity<mat3>();
     
-    std::vector<vertex_element3d> vs2 = {
-        vertex_element3d(vec3(0.0f), vec3(inflate, inflate, 0.0f)),
-        vertex_element3d(direction * length, vec3(inflate, inflate, 0.0f)),
+    std::vector<vec3> vs2 = {
+        vec3(0.0f),
+        direction * length
     };
     collider.shapes[0].elements = vs2;
 

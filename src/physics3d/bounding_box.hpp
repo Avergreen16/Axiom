@@ -16,11 +16,10 @@ bounding_box3d transform_bounding_box(bounding_box3d b, vec3 pos, mat3 ori);
 bool collide(transform3d& ta, bounding_box3d& a, transform3d& tb, bounding_box3d& b);
 bool collide(bounding_box3d& a, bounding_box3d& b);
 
-struct vertex_element3d;
 struct collider3d;
 
-bounding_box3d create_bounding_box(std::vector<vertex_element3d>& elements);
-bounding_box3d create_bounding_box(std::vector<vertex_element3d> elements, vec3 offset_pos, mat3 offset_ori);
+bounding_box3d create_bounding_box(std::vector<vec3>& elements);
+bounding_box3d create_bounding_box(std::vector<vec3> elements, vec3 offset_pos, mat3 offset_ori);
 void create_bounding_box(collider3d& collider);
 
 // bvh

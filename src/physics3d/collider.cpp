@@ -23,14 +23,12 @@ vec3 support(vec3 direction, vec3 center, mat3 orientation, vec3 radii) {
     return center + point;
 }
 
-vec3 support(vec3 direction, std::vector<vertex_element3d> ellipsoids) {
+vec3 support(vec3 direction, std::vector<vec3> vertices) {
     float max_dot = -FLT_MAX;
     vec3 point = vec3(0.0f);
 
-    for(vertex_element3d& e : ellipsoids) {
-        vec3 new_point;
-        //if(e.planes.size()) new_point = support(direction, e.center, e.orientation, e.radii, e.planes);
-        new_point = support(direction, e.center, e.orientation, e.radii);
+    for(vec3& e : vertices) {
+        vec3 new_point = e;
 
         float new_dot = dot(new_point, direction);
 
@@ -43,15 +41,13 @@ vec3 support(vec3 direction, std::vector<vertex_element3d> ellipsoids) {
     return point;
 }
 
-vec3 support(vec3 direction, std::vector<vertex_element3d> ellipsoids, uint& element) {
+vec3 support(vec3 direction, std::vector<vec3> vertices, uint& element) {
     float max_dot = -FLT_MAX;
     vec3 point = vec3(0.0f);
 
     uint ee = 0;
-    for(vertex_element3d& e : ellipsoids) {
-        vec3 new_point;
-        //if(e.planes.size()) new_point = support(direction, e.center, e.orientation, e.radii, e.planes);
-        new_point = support(direction, e.center, e.orientation, e.radii);
+    for(vec3& e : vertices) {
+        vec3 new_point = e;
 
         float new_dot = dot(new_point, direction);
 
@@ -66,6 +62,25 @@ vec3 support(vec3 direction, std::vector<vertex_element3d> ellipsoids, uint& ele
     }
 
     return point;
+}
+
+uint support_i(vec3 direction, std::vector<vec3> vertices) {
+    float max_dot = -FLT_MAX;
+    uint index = 0;
+
+    uint i = 0;
+    for(vec3 v : vertices) {
+        float new_dot = dot(v, direction);
+
+        if(new_dot > max_dot) {
+            max_dot = new_dot;
+            index = i;
+        }
+
+        ++i;
+    }
+
+    return index;
 }
 
 //
@@ -135,7 +150,7 @@ vec3 collider3d::get_angular_acceleration() {
 
 // inertia tensor
 
-mat3 calculate_inertia_tensor(std::vector<vertex_element3d>& elements, vec3& center, float mass) {
+mat3 calculate_inertia_tensor(std::vector<vec3>& elements, vec3& center, float mass) {
     center = vec3(0, 0, 0);
 
     float center_mass = 0;
@@ -273,7 +288,7 @@ mat3 cuboid_M(vec3 size) {
     };
 }
 
-mat3 calculate_M(std::vector<vertex_element3d>& elements, vec3& center) {
+mat3 calculate_M(std::vector<vec3>& elements, vec3& center) {
     center = vec3(0, 0, 0);
     float center_mass = 0;
 
@@ -402,7 +417,7 @@ void create_mesh_collider(collider3d& collider, std::vector<vec3> triangles) {
         vec3 vc = triangles[i + 2];
 
         collision_shape3d shape;
-        shape.elements = {vertex_element3d(va), vertex_element3d(vb), vertex_element3d(vc)};
+        shape.elements = {vec3(va), vec3(vb), vec3(vc)};
         shape.faces = {axiom::shape_face({0, 1, 2}, glm::normalize(glm::cross(va - vc, vb - vc)))};
 
         collider.shapes.push_back(shape);

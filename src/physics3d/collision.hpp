@@ -116,9 +116,9 @@ struct polytope {
 
 extern std::vector<std::vector<vec3>> debug_vertices;
 
-vec3 transform_vertices(std::vector<vertex_element3d>& elements, transform3d& transform, vec3 origin);
+vec3 transform_vertices(std::vector<vec3>& elements, transform3d& transform, vec3 origin);
 
-bool contains(std::vector<vertex_element3d>& elements, vec3 point);
+bool contains(std::vector<vec3>& elements, vec3 point);
 std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transform3d& tb, collision_shape3d& cb, return_tag& tag, collision_event& c_event);
 std::vector<return_point> collide(transform3d& ta, collider3d& ca, transform3d& tb, collider3d& cb, std::vector<collision_event>& c_event);
 
