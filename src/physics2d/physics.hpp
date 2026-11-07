@@ -191,8 +191,8 @@ extern transform2d null_transform;
 struct physics_system2d : axiom::system {
     bool sim_active = false;//true;
 
-    uint iterations = 8;
-    uint substeps = 1;
+    uint iterations = 5;
+    uint substeps = 5;
     float fps = 60.0f;
 
     // parameters

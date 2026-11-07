@@ -16,7 +16,13 @@ void main() {
 
     float p = pow(dist.x, power) + pow(dist.y, power);
 
-    float l = float((-luminosity + 6.0) / 7.0 + 0.03125) / 1.03125;
+    //float l = float((-luminosity + 6.0) / 7.0 + 0.03125) / 1.03125;
+    float a = 10;
+    float b = -4.5;
+    float l = log(luminosity) / (log(a) * b);
+    l = float(l + 0.03125) / 1.03125;
+
+    l = clamp(l, 0.0, 1.0);
 
     if(p < l) frag_color = vec4(color, round((1.0 - p / l) * 4) / 4 * l);
     else frag_color = vec4(0.0);

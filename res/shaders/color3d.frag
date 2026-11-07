@@ -7,6 +7,7 @@ layout(location = 2) out vec4 frag_shading;
 layout(location = 0) in vec4 color;
 layout(location = 1) in vec3 normal;
 layout(location = 2) in vec3 position;
+layout(location = 3) in vec3 rel_position;
 
 layout(location = 3) uniform float contrast;
 
@@ -22,4 +23,10 @@ void main() {
     if(color.x > 1.0) frag_shading.w = 0.0;
     
     if(frag_color.w == 0.0) discard;
+
+    float grid_size = 0.25;
+    ivec3 g = ivec3(floor(rel_position / grid_size));
+    g = g % 2 * 2 - 1;
+
+    frag_color.xyz *= (g.x * g.y * g.z * 0.5 + 0.5) * 0.35 + 0.65;
 }

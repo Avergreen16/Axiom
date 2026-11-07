@@ -1447,10 +1447,10 @@ void physics_system2d::velocity_solve() {
                 vec2 impulse = v * c.lambda[i];
 
                 if(data.b == NULL_ENTITY) {
-                    apply_force(data.ca, impulse, c.pa - data.ta->position);
+                    apply_impulse(data.ca, impulse, c.pa - data.ta->position);
                 } else {
-                    apply_force(data.ca, impulse, c.pa - data.ta->position);
-                    apply_force(data.cb, -impulse, c.pb - data.tb->position);
+                    apply_impulse(data.ca, impulse, c.pa - data.ta->position);
+                    apply_impulse(data.cb, -impulse, c.pb - data.tb->position);
                 }
 
                 ++i;
@@ -1513,7 +1513,7 @@ void physics_system2d::velocity_solve() {
 
                     float v = glm::dot(velocity, cc.d->normal);
 
-                    float L = -v;// - diff;
+                    float L = -v - diff;
                     L /= inertia;
 
                     vec2 limits = vec2(0.0f, FLT_MAX);
@@ -1570,7 +1570,7 @@ void physics_system2d::velocity_solve() {
 
                     float v = glm::dot(velocity, cc.normal);
 
-                    float L = -v;// - diff;
+                    float L = -v - diff;
                     L /= inertia;
                     L -= softness * cc.lambdaN;
 
@@ -1641,102 +1641,51 @@ void physics_system2d::velocity_solve() {
 
                 uint k = 0;
                 for(vec2 v : c.vs) {
+                    float diff = (c.baumgarte[k]) * spring * fps;
+
                     if(data.b == NULL_ENTITY) {
                         vec2 vel = calculate_point_velocity(data.ca, c.pa - data.ta->position);
-                        vec2 acca = calculate_point_acceleration(data.ca, c.pa - data.ta->position);
 
-                        //
                         float inertia = c.inertia_a[k];
 
-                        vec2 jacobian = v;
+                        float v = dot(vel, c.vs[k]);
 
-                        vec2 r = c.pa - data.ta->position;
-                        float jdotvel = -data.ca->angular_velocity * data.ca->angular_velocity * dot(r, jacobian);
-
-                        float xdot = dot(jacobian, vel);
-                        float x = c.baumgarte[k];
-                        float zeta = 1.0f;
-                        float omega = 2.0f * axiom::pi * 2.0f;
-
-                        float damping = -2.0f * zeta * omega * xdot;
-                        float spring = -omega * omega * x;
-
-                        float b = damping + spring;
-                        float Ja = dot(jacobian, acca);
-
-                        float residual = b - Ja;
-
-                        float L = residual;
+                        float L = -v - diff;
                         L /= inertia;
-                        L -= c.lambda[k] * softness;
-                        c.lambda[k] += L;
-                        
-                        vec2 force = v * L;
-                        apply_force(data.ca, force, c.pa - data.ta->position);
-                    } else {
-                        vec2 vela = calculate_point_velocity(data.ca, c.pa - data.ta->position);
-                        vec2 velb = calculate_point_velocity(data.cb, c.pb - data.tb->position);
-                        
-                        vec2 acca = calculate_point_acceleration(data.ca, c.pa - data.ta->position);
-                        vec2 accb = calculate_point_acceleration(data.cb, c.pb - data.tb->position);
+                        L -= softness * c.lambda[k];
 
-                        //
+                        //vec2 limits = vec2(0.0f, FLT_MAX);
+
+                        float new_lambda = c.lambda[k] + L;
+                        //new_lambda = glm::clamp(new_lambda, limits.x, limits.y);
+                        L = new_lambda - c.lambda[k];
+                        c.lambda[k] = new_lambda;
+
+                        vec2 impulse = c.vs[k] * L;
+
+                        apply_impulse(data.ca, impulse, c.pa - data.ta->position);
+                    } else {
+                        vec2 vel = calculate_point_velocity(data.ca, c.pa - data.ta->position) - calculate_point_velocity(data.cb, c.pb - data.tb->position);;
 
                         float inertia = c.inertia_a[k] + c.inertia_b[k];
 
+                        float v = dot(vel, c.vs[k]);
 
-                        vec2 jacobian = v;
-
-                        vec2 ra = c.pa - data.ta->position;
-                        vec2 rb = c.pb - data.tb->position;
-
-                        float jdota = -data.ca->angular_velocity * data.ca->angular_velocity * dot(ra, jacobian);
-                        float jdotb = -data.cb->angular_velocity * data.cb->angular_velocity * dot(rb, jacobian);
-
-                        float jdotvel = jdota - jdotb;
-
-                        float xdot = dot(jacobian, vela - velb);
-                        float x = c.baumgarte[k];
-                        float zeta = 1.0f;
-                        float omega = 2.0f * axiom::pi * 2.0f;
-                        float damping = -2.0f * zeta * omega * xdot;
-                        float spring = -omega * omega * x;
-
-                        // i -> iteration
-                        // j -> constraint id
-                        // k -> direction
-                        if(j == 0 && i == 0 && k == 0) {
-                            if(!(std::isnan(damping) || std::isnan(spring) || std::isinf(damping) || std::isinf(spring))) {
-                                std::stringstream ss;
-                                ss //<< "omegaA = " << data.ca->angular_velocity
-                                //<< " omegaB = " << data.cb->angular_velocity
-                                << " damping = " << damping
-                                << " spring = " << spring
-                                //<< " position a = " << data.ta->position
-                                //<< " position b = " << data.tb->position
-                                << '\n';
-
-                                log.push_back(ss.str());
-                                if(log.size() > 512) log.erase(log.begin());
-                            } else if(output) {
-                                for(std::string l : log) std::cout << l;
-                                output = false;
-                            }
-                        }
-
-                        float b = damping + spring;
-                        float Ja = dot(jacobian, acca - accb);
-
-                        float residual = b - Ja;
-
-                        float L = residual;
+                        float L = -v - diff;
                         L /= inertia;
-                        L -= c.lambda[k] * softness;
-                        c.lambda[k] += L;
+                        L -= softness * c.lambda[k];
 
-                        vec2 force = v * L;
-                        apply_force(data.ca, force, c.pa - data.ta->position);
-                        apply_force(data.cb, -force, c.pb - data.tb->position);
+                        //vec2 limits = vec2(0.0f, FLT_MAX);
+
+                        float new_lambda = c.lambda[k] + L;
+                        //new_lambda = glm::clamp(new_lambda, limits.x, limits.y);
+                        L = new_lambda - c.lambda[k];
+                        c.lambda[k] = new_lambda;
+
+                        vec2 impulse = c.vs[k] * L;
+
+                        apply_impulse(data.ca, impulse, c.pa - data.ta->position);
+                        apply_impulse(data.cb, -impulse, c.pb - data.tb->position);
                     }
 
                     ++k;

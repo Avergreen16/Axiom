@@ -181,22 +181,22 @@ void shadow_renderer::call() {
     int i = 0;
     for(int i = 0; i < num_cascades; ++i) {
         framebuffers[i].textures[0].bind(i + 3);
-        framebuffers[i].textures[1].bind(i + 8);
+        framebuffers[i].textures[1].bind(i + 3 + num_cascades);
     }
 
     axiom::push_uniform(0, &model);
     axiom::push_uniform(1, &view);
     axiom::push_uniform(2, &proj);
-    axiom::push_uniform(8, 5, shadow_view.data());
-    axiom::push_uniform(13, 5, shadow_proj.data());
+    axiom::push_uniform(3 + num_cascades, num_cascades, shadow_view.data());
+    axiom::push_uniform(3 + num_cascades * 2, num_cascades, shadow_proj.data());
 
     //
 
-    axiom::push_uniform(19, texture_size);
-    axiom::push_uniform(20, base_pixel_size);
-    axiom::push_uniform(21, cascade_factor);
-    axiom::push_uniform(22, contrast);
-    axiom::push_uniform(23, blend_radius);
+    axiom::push_uniform(3 + num_cascades * 3 + 1, texture_size);
+    axiom::push_uniform(3 + num_cascades * 3 + 2, base_pixel_size);
+    axiom::push_uniform(3 + num_cascades * 3 + 3, cascade_factor);
+    axiom::push_uniform(3 + num_cascades * 3 + 4, contrast);
+    axiom::push_uniform(3 + num_cascades * 3 + 5, blend_radius);
 
     target->framebuffer.textures[1].bind(0);
     target->framebuffer.textures[2].bind(1);

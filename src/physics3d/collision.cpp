@@ -318,7 +318,7 @@ std::vector<return_point> collide(transform3d& ta, collision_shape3d& ca, transf
     std::vector<vec3> a_vertices = ca.elements;
     std::vector<vec3> b_vertices = cb.elements;
 
-    float limit = 0.00001f;
+    float limit = 0.001f;
     uint32_t iter_limit = 256;
 
     transform3d tta = ta;

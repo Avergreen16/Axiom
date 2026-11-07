@@ -1,10 +1,12 @@
 #version 460 core
 
+const uint num_cascades = 6;
+
 layout(binding = 0) uniform sampler2D viewport_normal_tex;
 layout(binding = 1) uniform sampler2D viewport_shading_tex;
 layout(binding = 2) uniform sampler2D viewport_depth_tex;
-layout(binding = 3) uniform sampler2D shadow_normal_tex[5];
-layout(binding = 8) uniform sampler2D shadow_depth_tex[5];
+layout(binding = 3) uniform sampler2D shadow_normal_tex[num_cascades];
+layout(binding = 3 + num_cascades) uniform sampler2D shadow_depth_tex[num_cascades];
 
 //
 layout(location = 0) in vec2 coords;
@@ -13,15 +15,15 @@ layout(location = 5) in mat4 inv_viewport_view;
 layout(location = 9) in mat4 inv_viewport_proj;
 
 layout(location = 1) uniform mat4 view;
-layout(location = 3) uniform mat4 shadow_model[5];
-layout(location = 8) uniform mat4 shadow_view[5];
-layout(location = 13) uniform mat4 shadow_proj[5];
+layout(location = 3) uniform mat4 shadow_model[num_cascades];
+layout(location = 3 + num_cascades) uniform mat4 shadow_view[num_cascades];
+layout(location = 3 + num_cascades * 2) uniform mat4 shadow_proj[num_cascades];
 
-layout(location = 19) uniform float texture_size;
-layout(location = 20) uniform float pixel_size;
-layout(location = 21) uniform float texture_growth;
-layout(location = 22) uniform float contrast;
-layout(location = 23) uniform float blend_rad;
+layout(location = 3 + num_cascades * 3 + 1) uniform float texture_size;
+layout(location = 3 + num_cascades * 3 + 2) uniform float pixel_size;
+layout(location = 3 + num_cascades * 3 + 3) uniform float texture_growth;
+layout(location = 3 + num_cascades * 3 + 4) uniform float contrast;
+layout(location = 3 + num_cascades * 3 + 5) uniform float blend_rad;
 
 layout(location = 0) out vec4 frag_color;
 
@@ -276,7 +278,7 @@ void main() {
     create_offsets(offsets, ptexel, penumbra_rad);
 
     //for(int i = 4; i >= 0; --i) {
-    for(int i = 0; i < 5; ++i) {
+    for(int i = 0; i < num_cascades; ++i) {
         float texel_size = pixel_size * pow(texture_growth, i);
         pos = save_pos;
         vec4 spos = pos;

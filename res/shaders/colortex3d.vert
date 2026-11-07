@@ -1,0 +1,26 @@
+#version 460 core
+
+layout(location = 0) in vec3 position;
+layout(location = 1) in vec4 color;
+layout(location = 2) in vec3 normal;
+
+layout(location = 0) uniform mat4 model;
+layout(location = 1) uniform mat4 view;
+layout(location = 2) uniform mat4 proj;
+
+layout(location = 0) out vec4 o_color;
+layout(location = 1) out vec3 o_normal;
+layout(location = 2) out vec3 o_position;
+layout(location = 3) out vec3 o_rposition;
+
+void main() {
+    gl_Position = view * model * vec4(position, 1.0);
+
+    gl_Position = proj * gl_Position;
+
+    o_color = color;
+    o_normal = mat3(model) * normal;
+
+    o_position = mat3(model) * position;
+    o_rposition = position;
+}

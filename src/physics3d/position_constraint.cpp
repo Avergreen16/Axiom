@@ -78,77 +78,57 @@ void position_constraint::solve(float delta_time) {
         //std::cout << "CALLED!\n";
         uint32_t i = 0;
         for(vec3 v : vs) {
-            vec3 vela = ca->get_velocity(ra);
-            vec3 acca = ca->get_acceleration(ra);
-            vec3 angvela = ca->get_angular_velocity();
+            float diff = baumgarte[i] * spring * (1.0f / delta_time);
 
-            //
+            vec3 vel = ca->get_velocity(ra);
 
             float inertia = inertia_a[i];
 
-            vec3 jacobian = v;
+            float vv = dot(vel, v);
 
-            float jdotvel = dot(v, cross(angvela, cross(angvela, ra)));
-            
-            float xdot = dot(jacobian, vela);
-            float x = baumgarte[i];
-            float zeta = 1.25f;
-            float omega = 2.0f * axiom::pi * 20.0f;
-
-            float geometric = -jdotvel;
-            float damping = -2.0f * zeta * omega * xdot;
-            float spring = -omega * omega * x;
-
-            float b = geometric + damping + spring;
-            float Ja = dot(jacobian, acca);
-
-            float L = b - Ja;
+            float L = -vv - diff;
             L /= inertia;
-            
-            vec3 force = v * L;
-            ca->apply_force(force, ra);
+            L -= softness * lambda[i];
+
+            //vec2 limits = vec2(0.0f, FLT_MAX);
+
+            float new_lambda = lambda[i] + L;
+            //new_lambda = glm::clamp(new_lambda, limits.x, limits.y);
+            L = new_lambda - lambda[i];
+            lambda[i] = new_lambda;
+
+            vec3 impulse = v * L;
+
+            ca->apply_impulse(impulse, ra);
 
             ++i;
         }
     } else {
         uint32_t i = 0;
         for(vec3 v : vs) {
-            vec3 vela = ca->get_velocity(ra);
-            vec3 velb = cb->get_velocity(rb);
-            vec3 acca = ca->get_acceleration(ra);
-            vec3 accb = cb->get_acceleration(rb);
+            float diff = baumgarte[i] * spring * (1.0f / delta_time);
 
-            vec3 angvela = ca->get_angular_velocity();
-            vec3 angvelb = cb->get_angular_velocity();
-
-            //
+            vec3 vel = ca->get_velocity(ra) - cb->get_velocity(rb);
 
             float inertia = inertia_a[i] + inertia_b[i];
 
-            vec3 jacobian = v;
+            float vv = dot(vel, v);
 
-            float jdotvela = dot(v, cross(angvela, cross(angvela, ra)));
-            float jdotvelb = dot(v, cross(angvelb, cross(angvelb, rb)));
-            float jdotvel = jdotvela - jdotvelb;
-            
-            float xdot = dot(jacobian, vela - velb);
-            float x = baumgarte[i];
-            float zeta = 1.25f;
-            float omega = 2.0f * axiom::pi * 20.0f;
-
-            float geometric = -jdotvel;
-            float damping = -2.0f * zeta * omega * xdot;
-            float spring = -omega * omega * x;
-
-            float b = geometric + damping + spring;
-            float Ja = dot(jacobian, acca - accb);
-
-            float L = b - Ja;
+            float L = -vv - diff;
             L /= inertia;
-            
-            vec3 force = v * L;
-            ca->apply_force(force, ra);
-            cb->apply_force(-force, rb);
+            L -= softness * lambda[i];
+
+            //vec2 limits = vec2(0.0f, FLT_MAX);
+
+            float new_lambda = lambda[i] + L;
+            //new_lambda = glm::clamp(new_lambda, limits.x, limits.y);
+            L = new_lambda - lambda[i];
+            lambda[i] = new_lambda;
+
+            vec3 impulse = v * L;
+
+            ca->apply_impulse(impulse, ra);
+            cb->apply_impulse(-impulse, rb);
 
             ++i;
         }

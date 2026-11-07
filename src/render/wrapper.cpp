@@ -601,15 +601,8 @@ void texture::load(texture_asset& asset, texture_format format, int mip_levels) 
     glTexStorage2D(GL_TEXTURE_2D, mip_levels + 1, desc.formatbits, size.x, size.y);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size.x, size.y, desc.format, desc.bits, data);
 
-    if(mip_levels > 0) {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, mip_levels);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    } else {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    }
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 }
 
 bool texture::load(glm::uvec2 size, texture_format format) {
@@ -662,7 +655,7 @@ texture::texture(uint8_t* data, glm::uvec3 size_, uint type_, texture_format for
         if(this->type == GL_TEXTURE_2D) {
             glTexStorage2D(GL_TEXTURE_2D, mip_levels + 1, desc.formatbits, size.x, size.y);
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size.x, size.y, desc.format, desc.bits, data);
-
+            
             if(mip_levels > 0) {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);

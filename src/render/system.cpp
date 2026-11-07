@@ -8,6 +8,7 @@ render_system::render_system(axiom::window* win_) {
     win = win_;
 
     axiom::text_asset vert;
+    axiom::text_asset geom;
     axiom::text_asset frag;
     axiom::texture_asset texasset;
 
@@ -34,6 +35,11 @@ render_system::render_system(axiom::window* win_) {
     vert = axiom::text_asset::load(resource_root + "/shaders/color3d.vert");
     frag = axiom::text_asset::load(resource_root + "/shaders/color3d.frag");
     shaders.emplace("color3d", std::move(axiom::shader(vert, frag)));
+
+    vert = axiom::text_asset::load(resource_root + "/shaders/colortex3d.vert");
+    geom = axiom::text_asset::load(resource_root + "/shaders/colortex3d.geom");
+    frag = axiom::text_asset::load(resource_root + "/shaders/colortex3d.frag");
+    shaders.emplace("colortex3d", std::move(axiom::shader(vert, geom, frag)));
 
     vert = axiom::text_asset::load(resource_root + "/shaders/texture2d.vert");
     frag = axiom::text_asset::load(resource_root + "/shaders/texture2d.frag");
