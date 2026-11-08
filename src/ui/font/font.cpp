@@ -3,19 +3,13 @@
 namespace axiom {
 
 void font_handler::init() {
-    auto error = FT_Init_FreeType( &library );
-    if(error) std::cout << "ERROR: freetype failed to initialize\n";
+    
 }
 
 void font_handler::process(std::string filepath, std::string label) {
     if(std::string(filepath.end() - 4, filepath.end()) == ".bdf") {
         fonts.emplace(label, std::unique_ptr<axiom::bdf_font>(new axiom::bdf_font()));
         axiom::bdf_font* font = reinterpret_cast<axiom::bdf_font*>(fonts[label].get());
-
-        font->process(filepath, this);
-    } else if(std::string(filepath.end() - 4, filepath.end()) == ".ttf") {
-        fonts.emplace(label, std::unique_ptr<axiom::ttf_font>(new axiom::ttf_font()));
-        axiom::ttf_font* font = reinterpret_cast<axiom::ttf_font*>(fonts[label].get());
 
         font->process(filepath, this);
     }

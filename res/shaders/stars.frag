@@ -20,11 +20,11 @@ void main() {
     float a = 10;
     float b = -4.5;
     float l = log(luminosity) / (log(a) * b);
-    l = float(l + 0.03125) / 1.03125;
+    l = float(l + 0.01) / 1.01;
 
-    l = clamp(l, 0.0, 1.0);
+    float f = l;
 
-    if(p < l) frag_color = vec4(color, round((1.0 - p / l) * 4) / 4 * l);
+    if(p < l) frag_color = vec4(color, round((1.0 - p / l) * 5) / 5 * f);
     else frag_color = vec4(0.0);
 
     frag_normal = vec4(1.0);

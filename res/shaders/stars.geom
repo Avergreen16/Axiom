@@ -11,7 +11,7 @@ layout(location = 2) out vec2 tex;
 layout(location = 0) in vec3 i_color[];
 layout(location = 1) in float i_luminosity[];
 
-void main() {    
+void main() {
     vec2 size = vec2(21.0) / vec2(viewport_size);
     vec4 position = gl_in[0].gl_Position;
     if(position.w > 0.0) {

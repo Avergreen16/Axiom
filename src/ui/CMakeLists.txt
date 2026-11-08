@@ -38,9 +38,6 @@ add_library(AxiomUI STATIC
 target_include_directories(AxiomUI PUBLIC
     ${AXIOM_ROOT}/src
     ${AXIOM_ROOT}
-    
-    ${AXIOM_ROOT}/../freetype/include
-    ${AXIOM_ROOT}/../harfbuzz/src
 )
 
 target_link_libraries(AxiomUI PUBLIC
@@ -50,8 +47,6 @@ target_link_libraries(AxiomUI PUBLIC
     glfw
 
     atomic
-    freetype
-    harfbuzz
 )
 
 if(WIN32)

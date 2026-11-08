@@ -5,14 +5,12 @@
 
 #include <ui/font/font_base.hpp>
 #include <ui/font/bdf.hpp>
-#include <ui/font/ttf.hpp>
 
 namespace axiom {
     
 struct font_handler {
     axiom::texture texture;
 
-    FT_Library library;
     std::map<std::string, std::unique_ptr<font>> fonts;
 
     void init();

@@ -46,7 +46,7 @@ void create_mesh(std::vector<vec3> elements, std::vector<output_vertex>* vertice
 
         std::vector<uint> to_erase;
 
-        float threshold = 0.0025f;
+        float threshold = 0.000001f;
 
         int index = 0;
 
