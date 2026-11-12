@@ -47,7 +47,6 @@ target_compile_options(AxiomPhysics3D PRIVATE
     -g
     -O3
     -fpermissive
-    -march=native
     -static
     -Wtemplate-body
     -Wchanges-meaning

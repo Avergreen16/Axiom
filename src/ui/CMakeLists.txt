@@ -75,7 +75,6 @@ target_compile_options(AxiomUI PUBLIC
     -g
     -O3
     -fpermissive
-    -march=native
     -static
     -Wtemplate-body
     -Wchanges-meaning

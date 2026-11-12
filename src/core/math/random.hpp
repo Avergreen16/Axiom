@@ -1,11 +1,10 @@
 #pragma once;
+
 #include "hash.hpp"
 
 #include <array>
 #include <vector>
 #include <experimental/simd>
-
-namespace stdx = std::experimental;
 
 #include <xsimd/xsimd.hpp>
 

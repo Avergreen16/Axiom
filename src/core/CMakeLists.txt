@@ -25,11 +25,15 @@ target_include_directories(AxiomCore PUBLIC
     ${AXIOM_ROOT}/../xsimd/include
 )
 
-target_link_libraries(AxiomCore PRIVATE
-    atomic
-)
+if(WEB)
+    target_compile_options(AxiomCore PRIVATE
+        -msimd128
+    )
 
-if(WIN32)
+    target_link_options(AxiomCore PRIVATE
+        -msimd128
+    )
+elseif(WIN32)
     target_link_libraries(AxiomCore PRIVATE
         dwmapi
         gdi32
@@ -54,7 +58,6 @@ endif()
 target_compile_options(AxiomCore PRIVATE
     -O3
     -fpermissive
-    -march=native
     -static
     -Wtemplate-body
 )

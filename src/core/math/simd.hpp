@@ -1,8 +1,8 @@
+#pragma once
+
 #include <array>
 #include <vector>
 #include <experimental/simd>
-
-namespace stdx = std::experimental;
 
 #include <xsimd/xsimd.hpp>
 

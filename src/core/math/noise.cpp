@@ -257,6 +257,7 @@ namespace axiom
         return sum;
     }
 
+    /*
     std::vector<float> noise_gen::perlin_noise(vec3 pos, float period, uint octaves, uint seed, ivec3 size, float diff, float persistance)
     {
         std::vector<float> ret;
@@ -704,5 +705,6 @@ namespace axiom
         ret.resize(size.x * size.y * size.z);
         return ret;
     }
+    */
 
 }

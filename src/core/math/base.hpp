@@ -1,4 +1,7 @@
+#pragma once
+
 #include <string>
+#include <vector>
 
 #define GLM_FORCE_SWIZZLE
 #define GLM_FORCE_RADIANS

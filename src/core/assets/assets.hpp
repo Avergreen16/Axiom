@@ -4,6 +4,7 @@
 #include <memory>
 #include <unordered_map>
 #include <sstream>
+#include <vector>
 
 #define GLM_FORCE_SWIZZLE
 #define GLM_FORCE_RADIANS

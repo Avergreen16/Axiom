@@ -302,7 +302,7 @@ std::string convert_string(std::u32string str) {
 
 std::string get_text_from_file(std::string path) {
     std::ifstream file;
-    file.open(path);
+    file.open(path, std::ios::beg);
 
     if(file.is_open()) {
         std::stringstream ss;
@@ -320,7 +320,7 @@ std::string get_text_from_file(std::string path) {
 
 std::vector<byte> get_bytes_from_file(std::string path) {
     std::ifstream file;
-    file.open(path, std::ios::in | std::ios::binary);
+    file.open(path, std::ios::in | std::ios::binary | std::ios::beg);
 
     if(file.is_open()) {
         std::vector<byte> ret;

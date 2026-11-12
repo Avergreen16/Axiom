@@ -1,4 +1,5 @@
 #include <render/mesh/render_mesh.hpp>
+#include <include/core.hpp>
 
 namespace axiom {
 

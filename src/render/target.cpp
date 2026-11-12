@@ -1,5 +1,3 @@
-#include <graphicsh.hpp>
-#include <render/wrapper.hpp>
 #include <render/target.hpp>
 #include <render/system.hpp>
 #include <render/shadow/shadow.hpp>
@@ -7,28 +5,27 @@
 namespace axiom {
 
 void render_target::set_size(ivec2 new_size) {
-    size = new_size;
-    framebuffer.resize(size);
+    if(size != new_size) {
+        size = new_size;
+        framebuffer.resize(size);
+    }
 }
 
 void render_target::call() {
     framebuffer.bind();
 
     //
-    
-    glEnable(GL_BLEND);
-    //glEnable(GL_DEPTH_TEST);
-    //glDepthFunc(GL_GEQUAL);
-    //glDepthRange(0, 1);
-    glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
-    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE);
-    
-    glViewport(0, 0, framebuffer.size.x, framebuffer.size.y);
+    enable_blend();
 
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClearDepth(0.0f);
+    //glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+    set_blend_func_separate(axiom::blend_func::SRC_ALPHA, axiom::blend_func::ONE_MINUS_SRC_ALPHA, axiom::blend_func::SRC_ALPHA, axiom::blend_func::ONE);
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    set_viewport({0, 0, framebuffer.size.x, framebuffer.size.y});
+
+    set_clear_color(vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    set_clear_depth(0.0f);
+
+    clear_framebuffer(true, true, false);
 
     //
 

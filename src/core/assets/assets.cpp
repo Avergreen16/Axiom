@@ -49,7 +49,7 @@ texture_asset texture_asset::load(std::vector<byte> data, uvec2 size, uint num_c
     return asset;
 }
 
-void texture_asset::save(std::string path, bool flip = true) {
+void texture_asset::save(std::string path, bool flip) {
     stbi_flip_vertically_on_write(flip);
     stbi_write_png(path.c_str(), size.x, size.y, num_channels, data.data(), size.x * num_channels);
 }

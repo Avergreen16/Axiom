@@ -1,7 +1,6 @@
 #pragma once
 
 #include <include/core.hpp>
-#include <render/wrapper.hpp>
 #include <render/target.hpp>
 
 namespace axiom {

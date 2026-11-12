@@ -1,7 +1,7 @@
+#pragma once
+
 #include <array>
 #include <experimental/simd>
-
-namespace stdx = std::experimental;
 
 #include <xsimd/xsimd.hpp>
 
@@ -55,13 +55,13 @@ struct noise_gen {
 
     static float ridged_perlin_noise(glm::vec3 position, float period, uint32_t octaves, uint32_t seed, float persistance = 0.5f);
 
-    static std::vector<float> perlin_noise(vec3 pos, float period, uint32_t octaves, uint32_t seed, ivec3 size, float diff, float persistance = 0.5f);
+    //static std::vector<float> perlin_noise(vec3 pos, float period, uint32_t octaves, uint32_t seed, ivec3 size, float diff, float persistance = 0.5f);
     
-    static std::vector<float> ridged_perlin_noise(vec3 pos, float period, uint32_t octaves, uint32_t seed, ivec3 size, float diff, float persistance = 0.5f);
+    //static std::vector<float> ridged_perlin_noise(vec3 pos, float period, uint32_t octaves, uint32_t seed, ivec3 size, float diff, float persistance = 0.5f);
     
-    static std::vector<float> perlin_noise_normalized(vec3 pos, float period, uint32_t octaves, uint32_t seed, ivec3 size, float diff, float persistance = 0.5f);
+    //static std::vector<float> perlin_noise_normalized(vec3 pos, float period, uint32_t octaves, uint32_t seed, ivec3 size, float diff, float persistance = 0.5f);
     
-    static std::vector<float> ridged_perlin_noise_normalized(vec3 pos, float period, uint32_t octaves, uint32_t seed, ivec3 size, float diff, float persistance = 0.5f);
+    //static std::vector<float> ridged_perlin_noise_normalized(vec3 pos, float period, uint32_t octaves, uint32_t seed, ivec3 size, float diff, float persistance = 0.5f);
     
     void generate_noise(glm::ivec4 index, float* ptr);
 };

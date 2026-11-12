@@ -10,7 +10,7 @@
 namespace axiom {
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    axiom::window* w = (axiom::window*)glfwGetWindowUserPointer(window);
+    axiom::context* w = (axiom::context*)glfwGetWindowUserPointer(window);
 
     axiom::action axiom_action;
 
@@ -26,12 +26,12 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 }
 
 void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos) {
-    axiom::window* w = (axiom::window*)glfwGetWindowUserPointer(window);
+    axiom::context* w = (axiom::context*)glfwGetWindowUserPointer(window);
     w->cursor_events.push_back(cursor_event{xpos, ypos});
 }
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
-    axiom::window* w = (axiom::window*)glfwGetWindowUserPointer(window);
+    axiom::context* w = (axiom::context*)glfwGetWindowUserPointer(window);
     
     axiom::action axiom_action;
 
@@ -47,17 +47,17 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
-    axiom::window* w = (axiom::window*)glfwGetWindowUserPointer(window);
+    axiom::context* w = (axiom::context*)glfwGetWindowUserPointer(window);
     w->scroll_events.push_back(scroll_event{xoffset, yoffset});
 }
 
 void character_callback(GLFWwindow* window, unsigned int codepoint) {
-    axiom::window* w = (axiom::window*)glfwGetWindowUserPointer(window);
+    axiom::context* w = (axiom::context*)glfwGetWindowUserPointer(window);
     w->text_events.push_back(text_event{codepoint});
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-    axiom::window* w = (axiom::window*)glfwGetWindowUserPointer(window);
+    axiom::context* w = (axiom::context*)glfwGetWindowUserPointer(window);
 
     w->size.x = width;
     w->size.y = height;
@@ -68,7 +68,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 }
 
 void iconify_callback(GLFWwindow* window, int flag) {
-    axiom::window* w = (axiom::window*)glfwGetWindowUserPointer(window);
+    axiom::context* w = (axiom::context*)glfwGetWindowUserPointer(window);
 
     if(flag) {
         w->restore();
@@ -76,7 +76,7 @@ void iconify_callback(GLFWwindow* window, int flag) {
     }
 }
 
-void window::init_callbacks() {
+void context::init_callbacks() {
     glfwSetWindowUserPointer(window_handle, this);
 
     glfwSetFramebufferSizeCallback(window_handle, framebuffer_size_callback);
@@ -87,7 +87,7 @@ void window::init_callbacks() {
     glfwSetCharCallback(window_handle, character_callback);
 }
 
-window::window(ivec2 position, ivec2 size, float border, std::string name, bool decorated) {
+context::context(ivec2 position, ivec2 size, float border, std::string name, bool decorated) {
     if(glfwInit() == GLFW_FALSE) {
         std::cout << "ERROR: GLFW failed to load.\n";
         exit(-1);
@@ -152,7 +152,7 @@ window::window(ivec2 position, ivec2 size, float border, std::string name, bool 
     */
 }
 
-void window::clear_events() {
+void context::clear_events() {
     pressed_buttons.clear();
     repeat_buttons.clear();
     released_buttons.clear();
@@ -164,7 +164,7 @@ void window::clear_events() {
     //for(auto& [k, b] : input_map) b = false;
 }
 
-void window::poll_events() {
+void context::poll_events() {
     glfwPollEvents();
     
     if(glfwWindowShouldClose(window_handle)) {
@@ -263,19 +263,19 @@ void window::poll_events() {
     }
 }
 
-bool window::is_fullscreen() {
+bool context::is_fullscreen() {
     return axiom::is_fullscreen(window_handle);
 }
 
-bool window::is_maximized() {
+bool context::is_maximized() {
     return axiom::is_maximized(window_handle);
 }
 
-bool window::is_windowed() {
+bool context::is_windowed() {
     return !is_maximized() && !is_minimized();
 }
 
-bool window::is_minimized() {
+bool context::is_minimized() {
     return axiom::is_minimized(window_handle);
 }
 
@@ -291,7 +291,7 @@ if(fullscreen) {
 }
 */
 
-void window::make_fullscreen() {
+void context::make_fullscreen() {
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 
@@ -301,33 +301,33 @@ void window::make_fullscreen() {
     glfwSetWindowMonitor(window_handle, monitor, 0, 0, mode->width, mode->height, 60);
 }
 
-void window::make_windowed() {
+void context::make_windowed() {
     glfwRestoreWindow(window_handle);
     restore();
 }
 
-void window::make_minimized() {
+void context::make_minimized() {
     ivec4 range = get_window_range(window_handle);
     rs.push_back(range);
 
     glfwIconifyWindow(window_handle);
 }
 
-void window::make_maximized() {
+void context::make_maximized() {
     ivec4 range = get_window_range(window_handle);
     rs.push_back(range);
 
     glfwMaximizeWindow(window_handle);
 }
 
-void window::restore() {
+void context::restore() {
     if(rs.size()) {
         glfwSetWindowMonitor(window_handle, nullptr, rs.back().x, rs.back().y, rs.back().z, rs.back().w, 60);
         rs.pop_back();
     }
 }
 
-void window::hide_cursor() {
+void context::hide_cursor() {
     glfwSetInputMode(window_handle, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
     if(cursor_disabled) cursor_pos = prev_cursor_pos;
 
@@ -337,14 +337,14 @@ void window::hide_cursor() {
     //set_cursor(window_handle, -1);
 }
 
-void window::disable_cursor() {
+void context::disable_cursor() {
     glfwSetInputMode(window_handle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     if(!cursor_disabled) prev_cursor_pos = cursor_pos;
     
     cursor_disabled = true;
 }
 
-void window::show_cursor() {
+void context::show_cursor() {
     glfwSetInputMode(window_handle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     if(cursor_disabled) cursor_pos = prev_cursor_pos;
     
@@ -353,11 +353,11 @@ void window::show_cursor() {
 }
 
 
-void window::attach(axiom::render_target* target_) {
+void context::attach(axiom::render_target* target_) {
     target = target_;
 }
 
-window::~window() {
+context::~context() {
     window_platform_destruct(*this);
 }
 

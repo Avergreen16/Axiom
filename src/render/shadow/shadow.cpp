@@ -43,7 +43,7 @@ void shadow_renderer::call() {
 
     //
     
-    glEnable(GL_DEPTH_CLAMP);
+    //enable_depth_clamp();
 
     auto vfunc = [this](int t) {
         return texture_size * base_pixel_size * pow(cascade_factor, t);
@@ -154,7 +154,7 @@ void shadow_renderer::call() {
 
     //
 
-    glDisable(GL_DEPTH_TEST);
+    disable_depth_test();
     
     target->framebuffer.bind();
 
@@ -170,8 +170,8 @@ void shadow_renderer::call() {
 
     vs = {vs[0], vs[1], vs[3], vs[0], vs[3], vs[2]};
 
-    vertices.vertex_buffer_data(vs.data(), vs.size(), sizeof(vec2), GL_STATIC_DRAW);
-    vertices.add_vertex_attribute(0, 2, GL_FLOAT, false, sizeof(vec2), 0);
+    vertices.vertex_buffer_data(vs.data(), vs.size(), sizeof(vec2), axiom::usage_type::STATIC_DRAW);
+    vertices.add_vertex_attribute(0, 2, axiom::number_type::FLOAT, false, sizeof(vec2), 0);
 
     auto& shadow_shader = axiom::get_shader("shadow");
     shadow_shader.use();
@@ -204,8 +204,8 @@ void shadow_renderer::call() {
 
     vertices.draw_vertices_triangles();
     
-    glDisable(GL_DEPTH_CLAMP);
-    glEnable(GL_DEPTH_TEST);
+    //disable_depth_clamp();
+    enable_depth_test();
 
     //
 
@@ -320,7 +320,8 @@ void shadow_renderer::create(uint num_cascades, float cascade_factor, float base
                 .binding = 1,
             },
             fb_tex_params{
-                .format = axiom::texture_format::DEPTH32,
+                //.format = axiom::texture_format::DEPTH32,
+                .format = axiom::texture_format::DEPTH16,
                 .attachment = axiom::texture_attachment::DEPTH,
             }
         };

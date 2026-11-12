@@ -22,6 +22,11 @@ if(AXIOM_INCLUDE_RENDER)
     target_link_libraries(Axiom INTERFACE AxiomRender)
 endif()
 
+if(AXIOM_INCLUDE_WRAPPER)
+    add_subdirectory(${AXIOM_ROOT}/src/wrapper)
+    target_link_libraries(Axiom INTERFACE AxiomWrapper)
+endif()
+
 if(AXIOM_INCLUDE_UI)
     add_subdirectory(${AXIOM_ROOT}/src/ui)
     target_link_libraries(Axiom INTERFACE AxiomUI)
@@ -30,7 +35,6 @@ endif()
 target_compile_options(Axiom INTERFACE
     -O3
     -fpermissive
-    -march=native
     -static
     -Wtemplate-body
 )

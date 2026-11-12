@@ -43,7 +43,6 @@ target_compile_options(AxiomPhysics2D PRIVATE
     -g
     -O3
     -fpermissive
-    -march=native
     -static
     -Wtemplate-body
 )
