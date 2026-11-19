@@ -12,11 +12,10 @@ ui_system::ui_system() {
 }
     
 void ui_system::init() {
-    auto& render_system = axiom::ecs.get_system<axiom::render_system>();
+    //auto& render_system = axiom::ecs.get_system<axiom::render_system>();
 
     font_handler.init();
 
-    font_handler.process(render_system.resource_root + "/fonts/axiom-large.bdf", "test");
     //font_handler.process("external/axiom/res/fonts/cozette.bdf", "test");
     //font_handler.process("external/axiom/res/fonts/axiom-default.bdf", "test");
     //font_handler.process("external/axiom/res/fonts/spleen.bdf", "test");

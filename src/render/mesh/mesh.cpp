@@ -9,8 +9,8 @@ void color_mesh2d::load() {
     }
 
     v_lines->vertex_buffer_data(border.data(), border.size(), sizeof(color_vertex2d), axiom::usage_type::STATIC_DRAW);
-    v_lines->add_vertex_attribute(0, 3, axiom::number_type::FLOAT, false, sizeof(color_vertex2d), 0);
-    v_lines->add_vertex_attribute(1, 4, axiom::number_type::FLOAT, false, sizeof(color_vertex2d), sizeof(float) * 3);
+    v_lines->add_vertex_attribute(0, 3, axiom::var_type::FLOAT, false, sizeof(color_vertex2d), 0);
+    v_lines->add_vertex_attribute(1, 4, axiom::var_type::FLOAT, false, sizeof(color_vertex2d), sizeof(float) * 3);
 
     if(!v_tris) {
         v_tris = std::shared_ptr<axiom::vertices>(new axiom::vertices);
@@ -18,8 +18,8 @@ void color_mesh2d::load() {
     }
 
     v_tris->vertex_buffer_data(area.data(), area.size(), sizeof(color_vertex2d), axiom::usage_type::STATIC_DRAW);
-    v_tris->add_vertex_attribute(0, 3, axiom::number_type::FLOAT, false, sizeof(color_vertex2d), 0);
-    v_tris->add_vertex_attribute(1, 4, axiom::number_type::FLOAT, false, sizeof(color_vertex2d), sizeof(float) * 3);
+    v_tris->add_vertex_attribute(0, 3, axiom::var_type::FLOAT, false, sizeof(color_vertex2d), 0);
+    v_tris->add_vertex_attribute(1, 4, axiom::var_type::FLOAT, false, sizeof(color_vertex2d), sizeof(float) * 3);
 }
 
 void texture_mesh2d::load() {
@@ -29,9 +29,9 @@ void texture_mesh2d::load() {
     }
 
     vertices->vertex_buffer_data(vs.data(), vs.size(), sizeof(texture_vertex2d), axiom::usage_type::STATIC_DRAW);
-    vertices->add_vertex_attribute(0, 3, axiom::number_type::FLOAT, false, sizeof(texture_vertex2d), 0);
-    vertices->add_vertex_attribute(1, 2, axiom::number_type::FLOAT, false, sizeof(texture_vertex2d), sizeof(float) * 3);
-    vertices->add_vertex_attribute(2, 4, axiom::number_type::FLOAT, false, sizeof(texture_vertex2d), sizeof(float) * 5);
+    vertices->add_vertex_attribute(0, 3, axiom::var_type::FLOAT, false, sizeof(texture_vertex2d), 0);
+    vertices->add_vertex_attribute(1, 2, axiom::var_type::FLOAT, false, sizeof(texture_vertex2d), sizeof(float) * 3);
+    vertices->add_vertex_attribute(2, 4, axiom::var_type::FLOAT, false, sizeof(texture_vertex2d), sizeof(float) * 5);
 }
 
 void color_mesh3d::load() {
@@ -53,9 +53,9 @@ void color_mesh3d::load() {
     }
 
     vertices->vertex_buffer_data(vs.data(), vs.size(), sizeof(color_vertex3d), axiom::usage_type::STATIC_DRAW);
-    vertices->add_vertex_attribute(0, 3, axiom::number_type::FLOAT, false, sizeof(color_vertex3d), 0);
-    vertices->add_vertex_attribute(1, 4, axiom::number_type::FLOAT, false, sizeof(color_vertex3d), sizeof(float) * 3);
-    vertices->add_vertex_attribute(2, 3, axiom::number_type::FLOAT, false, sizeof(color_vertex3d), sizeof(float) * 7);
+    vertices->add_vertex_attribute(0, 3, axiom::var_type::FLOAT, false, sizeof(color_vertex3d), 0);
+    vertices->add_vertex_attribute(1, 4, axiom::var_type::FLOAT, false, sizeof(color_vertex3d), sizeof(float) * 3);
+    vertices->add_vertex_attribute(2, 3, axiom::var_type::FLOAT, false, sizeof(color_vertex3d), sizeof(float) * 7);
 }
 
 void texture_mesh3d::load() {
@@ -75,10 +75,10 @@ void texture_mesh3d::load() {
     }
 
     vertices->vertex_buffer_data(vs.data(), vs.size(), sizeof(texture_vertex3d), axiom::usage_type::STATIC_DRAW);
-    vertices->add_vertex_attribute(0, 3, axiom::number_type::FLOAT, false, sizeof(texture_vertex3d), 0);
-    vertices->add_vertex_attribute(1, 2, axiom::number_type::FLOAT, false, sizeof(texture_vertex3d), sizeof(float) * 3);
-    vertices->add_vertex_attribute(2, 4, axiom::number_type::FLOAT, false, sizeof(texture_vertex3d), sizeof(float) * 5);
-    vertices->add_vertex_attribute(3, 3, axiom::number_type::FLOAT, false, sizeof(texture_vertex3d), sizeof(float) * 9);
+    vertices->add_vertex_attribute(0, 3, axiom::var_type::FLOAT, false, sizeof(texture_vertex3d), 0);
+    vertices->add_vertex_attribute(1, 2, axiom::var_type::FLOAT, false, sizeof(texture_vertex3d), sizeof(float) * 3);
+    vertices->add_vertex_attribute(2, 4, axiom::var_type::FLOAT, false, sizeof(texture_vertex3d), sizeof(float) * 5);
+    vertices->add_vertex_attribute(3, 3, axiom::var_type::FLOAT, false, sizeof(texture_vertex3d), sizeof(float) * 9);
 }
 
 void texture_range_mesh3d::load() {
@@ -98,11 +98,11 @@ void texture_range_mesh3d::load() {
     }
 
     vertices->vertex_buffer_data(vs.data(), vs.size(), sizeof(texture_range_vertex3d), axiom::usage_type::STATIC_DRAW);
-    vertices->add_vertex_attribute(0, 3, axiom::number_type::FLOAT, false, sizeof(texture_range_vertex3d), 0);
-    vertices->add_vertex_attribute(1, 2, axiom::number_type::FLOAT, false, sizeof(texture_range_vertex3d), sizeof(float) * 3);
-    vertices->add_vertex_attribute(2, 4, axiom::number_type::FLOAT, false, sizeof(texture_range_vertex3d), sizeof(float) * 5);
-    vertices->add_vertex_attribute(3, 4, axiom::number_type::FLOAT, false, sizeof(texture_range_vertex3d), sizeof(float) * 9);
-    vertices->add_vertex_attribute(4, 3, axiom::number_type::FLOAT, false, sizeof(texture_range_vertex3d), sizeof(float) * 13);
+    vertices->add_vertex_attribute(0, 3, axiom::var_type::FLOAT, false, sizeof(texture_range_vertex3d), 0);
+    vertices->add_vertex_attribute(1, 2, axiom::var_type::FLOAT, false, sizeof(texture_range_vertex3d), sizeof(float) * 3);
+    vertices->add_vertex_attribute(2, 4, axiom::var_type::FLOAT, false, sizeof(texture_range_vertex3d), sizeof(float) * 5);
+    vertices->add_vertex_attribute(3, 4, axiom::var_type::FLOAT, false, sizeof(texture_range_vertex3d), sizeof(float) * 9);
+    vertices->add_vertex_attribute(4, 3, axiom::var_type::FLOAT, false, sizeof(texture_range_vertex3d), sizeof(float) * 13);
 }
 
 }

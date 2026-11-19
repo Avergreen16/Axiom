@@ -1,7 +1,7 @@
-#include <render/window/input.hpp>
+#include <wrapper/opengl/input.hpp>
 
 #include <array>
-#include <graphicsh.hpp>
+#include <wrapper/opengl/graphicsh.hpp>
 
 namespace axiom {
 
@@ -153,7 +153,7 @@ std::array<axiom::input_code, GLFW_MOUSE_BUTTON_LAST + 1> get_glfw_mouse_button(
     return buttons;
 }
 
-std::array<axiom::input_code, GLFW_KEY_LAST + 1> glfw_input_map_key = get_glfw_key();
-std::array<axiom::input_code, GLFW_MOUSE_BUTTON_LAST + 1> glfw_input_map_mouse_button = get_glfw_mouse_button();
+std::array<axiom::input_code, GLFW_KEY_LAST + 1> input_map_key = get_glfw_key();
+std::array<axiom::input_code, GLFW_MOUSE_BUTTON_LAST + 1> input_map_mouse_button = get_glfw_mouse_button();
 
 }

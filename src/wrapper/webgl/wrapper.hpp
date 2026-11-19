@@ -247,7 +247,7 @@ struct framebuffer;
 
 void blit(ivec4 src, ivec4 dst, framebuffer* srcf, framebuffer* dstf, axiom::texture_attachment src_attachment, axiom::texture_attachment dst_attachment, bool color, bool depth, bool stencil);
 
-enum class number_type {
+enum class var_type {
     BYTE, 
     UNSIGNED_BYTE, 
     SHORT, 
@@ -284,8 +284,8 @@ struct vertices {
     void bind();
 
     void vertex_buffer_data(void* ptr, uint num_vertices_, uint vertex_size, axiom::usage_type usage);
-    void index_buffer_data(void* ptr, uint num_indices_, axiom::number_type index_type_, uint index_size, axiom::usage_type usage);
-    void add_vertex_attribute(uint index, uint size, axiom::number_type type, uint normalized, uint stride, uint offset);
+    void index_buffer_data(void* ptr, uint num_indices_, axiom::var_type index_type_, uint index_size, axiom::usage_type usage);
+    void add_vertex_attribute(uint index, uint size, axiom::var_type type, uint normalized, uint stride, uint offset);
 
     void draw_vertices_points();
     void draw_vertices_lines();

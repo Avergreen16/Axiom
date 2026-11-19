@@ -18,6 +18,9 @@ void main() {
         position /= position.w;
 
         position.xy = floor(position.xy * vec2(viewport_size * 0.5)) + 0.5;
+        if(viewport_size.x % 2 == 1) position.x += 0.5;
+        if(viewport_size.y % 2 == 1) position.y += 0.5;
+
         position.xy /= vec2(viewport_size * 0.5);
 
 

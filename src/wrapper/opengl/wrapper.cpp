@@ -1,7 +1,7 @@
-#include <graphicsh.hpp>
+#include <wrapper/opengl/graphicsh.hpp>
 
 #include <core/assets/assets.hpp>
-#include <render/wrapper.hpp>
+#include <wrapper/opengl/wrapper.hpp>
 
 #include "stb_image.h"
 #include "stb_image_write.h"
@@ -9,8 +9,189 @@
 
 namespace axiom {
 
-void set_blend() {
+void set_clear_color(vec4 color) {
+    glClearColor(color.r, color.g, color.b, color.a);
+}
+
+void set_clear_depth(float depth) {
+    glClearDepthf(depth);
+}
+
+void enable_blend() {
+    glEnable(GL_BLEND);
+}
+
+void disable_blend() {
+    glDisable(GL_BLEND);
+}
+
+void enable_depth_test() {
+    glEnable(GL_DEPTH_TEST);
+}
+
+void disable_depth_test() {
+    glDisable(GL_DEPTH_TEST);
+}
+
+void enable_depth_clamp() {
+    glEnable(GL_DEPTH_CLAMP);
+}
+
+void disable_depth_clamp() {
+    glDisable(GL_DEPTH_CLAMP);
+}
+
+void set_viewport(ivec4 range) {
+    glViewport(range.x, range.y, range.z, range.w);
+}
+
+void clear_framebuffer(bool clear_color, bool clear_depth, bool clear_stencil) {
+    glClear((GL_COLOR_BUFFER_BIT * clear_color) | (GL_DEPTH_BUFFER_BIT * clear_depth) | (GL_STENCIL_BUFFER_BIT * clear_stencil));
+}
+
+void set_depth_func(axiom::depth_func depth_func) {
+    uint d[] = {
+        GL_NEVER, 
+        GL_LESS, 
+        GL_EQUAL,
+        GL_LEQUAL, 
+        GL_GREATER, 
+        GL_NOTEQUAL, 
+        GL_GEQUAL,
+        GL_ALWAYS
+    };
+
+    glDepthFunc(d[(uint)depth_func]);
+}
+
+void set_depth_range(float near, float far) {
+    glDepthRangef(near, far);
+}
+
+/*
+void set_clip_control() {
+    f
+}
+*/
+
+void set_blend_func(blend_func src_func, blend_func dst_func) {
+    uint opengl_values[] = {
+        GL_ZERO, 
+        GL_ONE, 
+        GL_SRC_COLOR, 
+        GL_ONE_MINUS_SRC_COLOR, 
+        GL_DST_COLOR, 
+        GL_ONE_MINUS_DST_COLOR, 
+        GL_SRC_ALPHA, 
+        GL_ONE_MINUS_SRC_ALPHA, 
+        GL_DST_ALPHA, 
+        GL_ONE_MINUS_DST_ALPHA, 
+        GL_CONSTANT_COLOR, 
+        GL_ONE_MINUS_CONSTANT_COLOR, 
+        GL_CONSTANT_ALPHA, 
+        GL_ONE_MINUS_CONSTANT_ALPHA, 
+        GL_SRC_ALPHA_SATURATE, 
+        0xFFFFFFFF,
+        0xFFFFFFFF,
+        0xFFFFFFFF,
+        0xFFFFFFFF,
+    };
+
+    uint src = opengl_values[(uint)src_func];
+    uint dst = opengl_values[(uint)dst_func];
+
+    if(src == 0xFFFFFFFF) {
+        throw std::runtime_error("set_blend_func: this (src_func) blend_func enum is not supported in WebGL");
+    }
     
+    if(dst == 0xFFFFFFFF) {
+        throw std::runtime_error("set_blend_func: this (dst_func) blend_func enum is not supported in WebGL");
+    }
+
+    glBlendFunc(src, dst);
+}
+
+void set_blend_func_separate(blend_func src_func_color, blend_func dst_func_color, blend_func src_func_alpha, blend_func dst_func_alpha) {
+    uint opengl_values[] = {
+        GL_ZERO, 
+        GL_ONE, 
+        GL_SRC_COLOR, 
+        GL_ONE_MINUS_SRC_COLOR, 
+        GL_DST_COLOR, 
+        GL_ONE_MINUS_DST_COLOR, 
+        GL_SRC_ALPHA, 
+        GL_ONE_MINUS_SRC_ALPHA, 
+        GL_DST_ALPHA, 
+        GL_ONE_MINUS_DST_ALPHA, 
+        GL_CONSTANT_COLOR, 
+        GL_ONE_MINUS_CONSTANT_COLOR, 
+        GL_CONSTANT_ALPHA, 
+        GL_ONE_MINUS_CONSTANT_ALPHA, 
+        GL_SRC_ALPHA_SATURATE, 
+        0xFFFFFFFF,
+        0xFFFFFFFF,
+        0xFFFFFFFF,
+        0xFFFFFFFF,
+    };
+
+    uint src_c = opengl_values[(uint)src_func_color];
+    uint dst_c = opengl_values[(uint)dst_func_color];
+    uint src_a = opengl_values[(uint)src_func_alpha];
+    uint dst_a = opengl_values[(uint)dst_func_alpha];
+
+    if(src_c == 0xFFFFFFFF) throw std::runtime_error("set_blend_func_separate: this (src_func_color) blend_func enum is not supported in WebGL");
+    if(dst_c == 0xFFFFFFFF) throw std::runtime_error("set_blend_func_separate: this (dst_func_color) blend_func enum is not supported in WebGL");
+    if(src_a == 0xFFFFFFFF) throw std::runtime_error("set_blend_func_separate: this (src_func_alpha) blend_func enum is not supported in WebGL");
+    if(dst_a == 0xFFFFFFFF) throw std::runtime_error("set_blend_func_separate: this (dst_func_alpha) blend_func enum is not supported in WebGL");
+
+    glBlendFuncSeparate(src_c, dst_c, src_a, dst_a);
+}
+
+void bind_default_framebuffer() {
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void blit(ivec4 src, ivec4 dst, framebuffer* srcf, framebuffer* dstf, axiom::texture_attachment src_attachment, axiom::texture_attachment dst_attachment, bool color, bool depth, bool stencil) {
+    if(srcf == nullptr) {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
+        glReadBuffer(GL_BACK);
+    } else {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, srcf->id);
+
+        glReadBuffer(get_texture_attachment(src_attachment));
+    }
+
+    if(dstf == nullptr) {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+        uint buf[1] = {GL_BACK};
+        glDrawBuffers(1, buf);
+    } else {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dstf->id);
+        
+        uint buf[1] = {get_texture_attachment(dst_attachment)};
+        glDrawBuffers(1, buf);
+    }
+
+    glBlitFramebuffer(
+        src.x, src.y, src.z, src.w, 
+        dst.x, dst.y, dst.z, dst.w, 
+        (GL_COLOR_BUFFER_BIT * color) | (GL_DEPTH_BUFFER_BIT * depth) | (GL_STENCIL_BUFFER_BIT * stencil),
+        GL_NEAREST
+    );
+}
+
+void draw_points(uint start, uint num) {
+    glDrawArrays(GL_POINTS, start, num);
+}
+
+void draw_lines(uint start, uint num) {
+    glDrawArrays(GL_LINES, start, num);
+}
+
+void draw_triangles(uint start, uint num) {
+    glDrawArrays(GL_TRIANGLES, start, num);
 }
 
 void vertices::init() {
@@ -26,25 +207,70 @@ void vertices::init() {
     }
 }   
 
-void vertices::vertex_buffer_data(void* ptr, uint num_vertices_, uint vertex_size, uint usage) {
+void vertices::vertex_buffer_data(void* ptr, uint num_vertices_, uint vertex_size, axiom::usage_type usage) {
+    uint u[] = {
+        GL_STATIC_DRAW,
+        GL_DYNAMIC_DRAW,
+        GL_STREAM_DRAW,
+    };
+
     bind();
     num_vertices = num_vertices_;
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-    glBufferData(GL_ARRAY_BUFFER, num_vertices * vertex_size, ptr, usage);
+    glBufferData(GL_ARRAY_BUFFER, num_vertices * vertex_size, ptr, u[(uint)usage]);
 }
+void vertices::index_buffer_data(void* ptr, uint num_indices_, axiom::var_type index_type_, uint index_size, axiom::usage_type usage) {
+    uint v[] = {
+        GL_BYTE, 
+        GL_UNSIGNED_BYTE, 
+        GL_SHORT, 
+        GL_UNSIGNED_SHORT, 
+        GL_INT, 
+        GL_UNSIGNED_INT,
 
-void vertices::index_buffer_data(void* ptr, uint num_indices_, uint index_type_, uint index_size, uint usage) {
+        GL_HALF_FLOAT, 
+        GL_FLOAT, 
+        GL_DOUBLE, 
+        GL_INT_2_10_10_10_REV,
+        GL_UNSIGNED_INT_2_10_10_10_REV
+    };
+    
+    uint u[] = {
+        GL_STATIC_DRAW,
+        GL_DYNAMIC_DRAW,
+        GL_STREAM_DRAW
+    };
+
+    if(v[(uint)index_type_] == 0xFFFFFFFF) throw std::runtime_error("index_buffer_data: this (index_type_) var_type enum is not supported in WebGL");
+
     bind();
     num_indices = num_indices_;
-    index_type = index_type_;
+    index_type = v[(uint)index_type_];
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer); 
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, num_indices * index_size, ptr, usage);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, num_indices * index_size, ptr, u[(uint)usage]);
 }
 
-void vertices::add_vertex_attribute(uint index, uint size, uint type, uint normalized, uint stride, uint offset) {
+void vertices::add_vertex_attribute(uint index, uint size, axiom::var_type type, uint normalized, uint stride, uint offset) {
+    uint v[] = {
+        GL_BYTE, 
+        GL_UNSIGNED_BYTE, 
+        GL_SHORT, 
+        GL_UNSIGNED_SHORT, 
+        GL_INT, 
+        GL_UNSIGNED_INT,
+
+        GL_HALF_FLOAT, 
+        GL_FLOAT, 
+        GL_DOUBLE,
+        GL_INT_2_10_10_10_REV,
+        GL_UNSIGNED_INT_2_10_10_10_REV
+    };
+
+    uint t = v[(uint)type];
+
     glBindVertexArray(vertex_array);
-    if(type == GL_INT || type == GL_UNSIGNED_INT) glVertexAttribIPointer(index, size, type, stride, (void*)offset);
-    else glVertexAttribPointer(index, size, type, normalized, stride, (void*)offset);
+    if(t == GL_BYTE || t == GL_UNSIGNED_BYTE || t == GL_SHORT || t == GL_UNSIGNED_SHORT || t == GL_INT || t == GL_UNSIGNED_INT) glVertexAttribIPointer(index, size, t, stride, (void*)offset);
+    else glVertexAttribPointer(index, size, t, normalized, stride, (void*)offset);
     glEnableVertexAttribArray(index);  
 }
 
@@ -144,9 +370,15 @@ void storage_buffer::init() {
     }
 }
 
-void storage_buffer::buffer_data(void* data, uint size_bytes, uint usage) {
+void storage_buffer::buffer_data(void* data, uint size_bytes, axiom::usage_type usage) {
+    uint u[] = {
+        GL_STATIC_DRAW,
+        GL_DYNAMIC_DRAW,
+        GL_STREAM_DRAW
+    };
+
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, id);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, size_bytes, data, usage);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, size_bytes, data, u[(uint)usage]);
 }
 
 void storage_buffer::buffer_subdata(void* data, uint size_bytes, uint offset) {
@@ -174,9 +406,15 @@ void uniform_buffer::init() {
     }
 }
 
-void uniform_buffer::buffer_data(void* data, uint size_bytes, uint usage) {
+void uniform_buffer::buffer_data(void* data, uint size_bytes, axiom::usage_type usage) {
+    uint u[] = {
+        GL_STATIC_DRAW,
+        GL_DYNAMIC_DRAW,
+        GL_STREAM_DRAW
+    };
+
     glBindBuffer(GL_UNIFORM_BUFFER, id);
-    glBufferData(GL_UNIFORM_BUFFER, size_bytes, data, usage);
+    glBufferData(GL_UNIFORM_BUFFER, size_bytes, data, u[(uint)usage]);
 }
 
 void uniform_buffer::buffer_subdata(void* data, uint size_bytes, uint offset) {
@@ -1028,6 +1266,300 @@ GLenum get_texture_attachment(texture_attachment attachment) {
                 return GL_DEPTH_STENCIL_ATTACHMENT;
         }
     }
+}
+
+// uniforms
+
+// by value
+
+void push_uniform(uint index, int value) {
+    glUniform1i(index, value);
+}
+
+void push_uniform(uint index, uint value) {
+    glUniform1ui(index, value);
+}
+
+void push_uniform(uint index, float value) {
+    glUniform1f(index, value);
+}
+
+void push_uniform(uint index, double value) {
+    glUniform1d(index, value);
+}
+
+//
+
+void push_uniform(uint index, ivec2 value) {
+    glUniform2i(index, value.x, value.y);
+}
+
+void push_uniform(uint index, uvec2 value) {
+    glUniform2ui(index, value.x, value.y);
+}
+
+void push_uniform(uint index, vec2 value) {
+    glUniform2f(index, value.x, value.y);
+}
+
+void push_uniform(uint index, dvec2 value) {
+    glUniform2d(index, value.x, value.y);
+}
+
+//
+
+void push_uniform(uint index, ivec3 value) {
+    glUniform3i(index, value.x, value.y, value.z);
+}
+
+void push_uniform(uint index, uvec3 value) {
+    glUniform3ui(index, value.x, value.y, value.z);
+}
+
+void push_uniform(uint index, vec3 value) {
+    glUniform3f(index, value.x, value.y, value.z);
+}
+
+void push_uniform(uint index, dvec3 value) {
+    glUniform3d(index, value.x, value.y, value.z);
+}
+
+//
+
+void push_uniform(uint index, ivec4 value) {
+    glUniform4i(index, value.x, value.y, value.z, value.w);
+}
+
+void push_uniform(uint index, uvec4 value) {
+    glUniform4ui(index, value.x, value.y, value.z, value.w);
+}
+
+void push_uniform(uint index, vec4 value) {
+    glUniform4f(index, value.x, value.y, value.z, value.w);
+}
+
+void push_uniform(uint index, dvec4 value) {
+    glUniform4d(index, value.x, value.y, value.z, value.w);
+}
+
+// pointers
+
+void push_uniform(uint index, int* value) {
+    glUniform1iv(index, 1, value);
+}
+
+void push_uniform(uint index, uint* value) {
+    glUniform1uiv(index, 1, value);
+}
+
+void push_uniform(uint index, float* value) {
+    glUniform1fv(index, 1, value);
+}
+
+void push_uniform(uint index, double* value) {
+    glUniform1dv(index, 1, value);
+}
+
+//
+
+void push_uniform(uint index, ivec2* value) {
+    glUniform2iv(index, 1, (int*)value);
+}
+
+void push_uniform(uint index, uvec2* value) {
+    glUniform2uiv(index, 1, (uint*)value);
+}
+
+void push_uniform(uint index, vec2* value) {
+    glUniform2fv(index, 1, (float*)value);
+}
+
+void push_uniform(uint index, dvec2* value) {
+    glUniform2dv(index, 1, (double*)value);
+}
+
+//
+
+void push_uniform(uint index, ivec3* value) {
+    glUniform3iv(index, 1, (int*)value);
+}
+
+void push_uniform(uint index, uvec3* value) {
+    glUniform3uiv(index, 1, (uint*)value);
+}
+
+void push_uniform(uint index, vec3* value) {
+    glUniform3fv(index, 1, (float*)value);
+}
+
+void push_uniform(uint index, dvec3* value) {
+    glUniform3dv(index, 1, (double*)value);
+}
+
+//
+
+void push_uniform(uint index, ivec4* value) {
+    glUniform4iv(index, 1, (int*)value);
+}
+
+void push_uniform(uint index, uvec4* value) {
+    glUniform4uiv(index, 1, (uint*)value);
+}
+
+void push_uniform(uint index, vec4* value) {
+    glUniform4fv(index, 1, (float*)value);
+}
+
+void push_uniform(uint index, dvec4* value) {
+    glUniform4dv(index, 1, (double*)value);
+}
+
+//
+
+void push_uniform(uint index, mat2* value) {
+    glUniformMatrix2fv(index, 1, false, (const float*)value);
+}
+
+void push_uniform(uint index, glm::mat2x3* value) {
+    glUniformMatrix2x3fv(index, 1, false, (const float*)value);
+}
+
+void push_uniform(uint index, glm::mat2x4* value) {
+    glUniformMatrix2x4fv(index, 1, false, (const float*)value);
+}
+
+void push_uniform(uint index, glm::mat3x2* value) {
+    glUniformMatrix3x2fv(index, 1, false, (const float*)value);
+}
+
+void push_uniform(uint index, mat3* value) {
+    glUniformMatrix3fv(index, 1, false, (const float*)value);
+}
+
+void push_uniform(uint index, glm::mat3x4* value) {
+    glUniformMatrix3x4fv(index, 1, false, (const float*)value);
+}
+
+void push_uniform(uint index, glm::mat4x2* value) {
+    glUniformMatrix4x2fv(index, 1, false, (const float*)value);
+}
+
+void push_uniform(uint index, glm::mat4x3* value) {
+    glUniformMatrix4x3fv(index, 1, false, (const float*)value);
+}
+
+void push_uniform(uint index, mat4* value) {
+    glUniformMatrix4fv(index, 1, false, (const float*)value);
+}
+
+// pointer packs
+
+void push_uniform(uint index, uint count, int* value) {
+    glUniform1iv(index, count, value);
+}
+
+void push_uniform(uint index, uint count, uint* value) {
+    glUniform1uiv(index, count, value);
+}
+
+void push_uniform(uint index, uint count, float* value) {
+    glUniform1fv(index, count, value);
+}
+
+void push_uniform(uint index, uint count, double* value) {
+    glUniform1dv(index, count, value);
+}
+
+//
+
+void push_uniform(uint index, uint count, ivec2* value) {
+    glUniform2iv(index, count, (int*)value);
+}
+
+void push_uniform(uint index, uint count, uvec2* value) {
+    glUniform2uiv(index, count, (uint*)value);
+}
+
+void push_uniform(uint index, uint count, vec2* value) {
+    glUniform2fv(index, count, (float*)value);
+}
+
+void push_uniform(uint index, uint count, dvec2* value) {
+    glUniform2dv(index, count, (double*)value);
+}
+
+//
+
+void push_uniform(uint index, uint count, ivec3* value) {
+    glUniform3iv(index, count, (int*)value);
+}
+
+void push_uniform(uint index, uint count, uvec3* value) {
+    glUniform3uiv(index, count, (uint*)value);
+}
+
+void push_uniform(uint index, uint count, vec3* value) {
+    glUniform3fv(index, count, (float*)value);
+}
+
+void push_uniform(uint index, uint count, dvec3* value) {
+    glUniform3dv(index, count, (double*)value);
+}
+
+//
+
+void push_uniform(uint index, uint count, ivec4* value) {
+    glUniform4iv(index, count, (int*)value);
+}
+
+void push_uniform(uint index, uint count, uvec4* value) {
+    glUniform4uiv(index, count, (uint*)value);
+}
+
+void push_uniform(uint index, uint count, vec4* value) {
+    glUniform4fv(index, count, (float*)value);
+}
+
+void push_uniform(uint index, uint count, dvec4* value) {
+    glUniform4dv(index, count, (double*)value);
+}
+
+//
+
+void push_uniform(uint index, uint count, mat2* value) {
+    glUniformMatrix2fv(index, count, false, (const float*)value);
+}
+
+void push_uniform(uint index, uint count, glm::mat2x3* value) {
+    glUniformMatrix2x3fv(index, count, false, (const float*)value);
+}
+
+void push_uniform(uint index, uint count, glm::mat2x4* value) {
+    glUniformMatrix2x4fv(index, count, false, (const float*)value);
+}
+
+void push_uniform(uint index, uint count, glm::mat3x2* value) {
+    glUniformMatrix3x2fv(index, count, false, (const float*)value);
+}
+
+void push_uniform(uint index, uint count, mat3* value) {
+    glUniformMatrix3fv(index, count, false, (const float*)value);
+}
+
+void push_uniform(uint index, uint count, glm::mat3x4* value) {
+    glUniformMatrix3x4fv(index, count, false, (const float*)value);
+}
+
+void push_uniform(uint index, uint count, glm::mat4x2* value) {
+    glUniformMatrix4x2fv(index, count, false, (const float*)value);
+}
+
+void push_uniform(uint index, uint count, glm::mat4x3* value) {
+    glUniformMatrix4x3fv(index, count, false, (const float*)value);
+}
+
+void push_uniform(uint index, uint count, mat4* value) {
+    glUniformMatrix4fv(index, count, false, (const float*)value);
 }
 
 }

@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include <render/window/window.hpp>
+#include <wrapper/opengl/context.hpp>
 
 #include <graphicsh.hpp>
 
@@ -67,20 +67,20 @@ bool is_minimized(GLFWwindow* window) {
     return glfwGetWindowAttrib(window, GLFW_ICONIFIED);
 }
 
-void set_cursor(GLFWwindow* window, int id) {
+void wset_cursor(GLFWwindow* window, axiom::cursor_mode mode) {
     static GLFWcursor* arrow_cursor = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
     static GLFWcursor* resize_ew_cursor = glfwCreateStandardCursor(GLFW_RESIZE_EW_CURSOR);
     static GLFWcursor* resize_ns_cursor = glfwCreateStandardCursor(GLFW_RESIZE_NS_CURSOR);
     static GLFWcursor* resize_nwse_cursor = glfwCreateStandardCursor(GLFW_RESIZE_NWSE_CURSOR);
     static GLFWcursor* resize_nesw_cursor = glfwCreateStandardCursor(GLFW_RESIZE_NESW_CURSOR);
 
-    if(id == 0) glfwSetCursor(window, arrow_cursor); // normal arrow
-    else if(id == 1) glfwSetCursor(window, resize_ew_cursor); // horizontal resize
-    else if(id == 2) glfwSetCursor(window, resize_ns_cursor); // vertical resize
-    else if(id == 3) glfwSetCursor(window, resize_nwse_cursor); // diagonal
-    else if(id == 4) glfwSetCursor(window, resize_nesw_cursor); // diagonal
+    if(mode == axiom::cursor_mode::DEFAULT) glfwSetCursor(window, arrow_cursor); // normal arrow
+    else if(mode == axiom::cursor_mode::DRAG_L || mode == axiom::cursor_mode::DRAG_R) glfwSetCursor(window, resize_ew_cursor); // horizontal resize
+    else if(mode == axiom::cursor_mode::DRAG_T || mode == axiom::cursor_mode::DRAG_B) glfwSetCursor(window, resize_ns_cursor); // vertical resize
+    else if(mode == axiom::cursor_mode::DRAG_TL || mode == axiom::cursor_mode::DRAG_BR) glfwSetCursor(window, resize_nwse_cursor); // diagonal
+    else if(mode == axiom::cursor_mode::DRAG_TR || mode == axiom::cursor_mode::DRAG_BL) glfwSetCursor(window, resize_nesw_cursor); // diagonal
 
-    if(id == -1) glfwSetCursor(window, nullptr);
+    //if(id == -1) glfwSetCursor(window, nullptr);
 }
 
 ivec2 get_cursor_pos(GLFWwindow* window) {

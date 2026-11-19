@@ -1,4 +1,4 @@
-#include <graphicsh.hpp>
+#include <wrapper/opengl/graphicsh.hpp>
 
 #include <windows.h>
 #include <dwmapi.h>
@@ -6,7 +6,7 @@
 
 #include <iostream>
 
-#include <render/window/window.hpp>
+#include <wrapper/opengl/context.hpp>
 
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include "GLFW/glfw3native.h"
@@ -139,13 +139,14 @@ void print_wsize(GLFWwindow* window) {
     );
 }
 
-void set_cursor(GLFWwindow* window, int id) {
-    if(id == 0) SetCursor(LoadCursor(nullptr, IDC_ARROW)); // normal arrow
-    else if(id == 1) SetCursor(LoadCursor(nullptr, IDC_SIZEWE)); // horizontal resize
-    else if(id == 2) SetCursor(LoadCursor(nullptr, IDC_SIZENS)); // vertical resize
-    else if(id == 3) SetCursor(LoadCursor(nullptr, IDC_SIZENWSE)); // diagonal
-    else if(id == 4) SetCursor(LoadCursor(nullptr, IDC_SIZENESW)); // diagonal
-    else if(id == 5) SetCursor(LoadCursor(nullptr, IDC_HAND)); // normal arrow
+void wset_cursor(GLFWwindow* window, axiom::cursor_mode mode) {
+    if(mode == axiom::cursor_mode::DEFAULT) SetCursor(LoadCursor(nullptr, IDC_ARROW)); // normal arrow
+    else if(mode == axiom::cursor_mode::DRAG_L || mode == axiom::cursor_mode::DRAG_R) SetCursor(LoadCursor(nullptr, IDC_SIZEWE)); // horizontal resize
+    else if(mode == axiom::cursor_mode::DRAG_T || mode == axiom::cursor_mode::DRAG_B) SetCursor(LoadCursor(nullptr, IDC_SIZENS)); // vertical resize
+    else if(mode == axiom::cursor_mode::DRAG_TL || mode == axiom::cursor_mode::DRAG_BR) SetCursor(LoadCursor(nullptr, IDC_SIZENWSE)); // diagonal
+    else if(mode == axiom::cursor_mode::DRAG_TR || mode == axiom::cursor_mode::DRAG_BL) SetCursor(LoadCursor(nullptr, IDC_SIZENESW)); // diagonal
+    else if(mode == axiom::cursor_mode::CLICK) SetCursor(LoadCursor(nullptr, IDC_HAND)); // hand
+    else if(mode == axiom::cursor_mode::TEXT) SetCursor(LoadCursor(nullptr, IDC_IBEAM)); // text
 }
 
 ivec2 get_cursor_pos(GLFWwindow* window) {
@@ -156,7 +157,7 @@ ivec2 get_cursor_pos(GLFWwindow* window) {
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-    window* win = reinterpret_cast<window*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+    context* win = reinterpret_cast<context*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
     win32_window* w = reinterpret_cast<win32_window*>(win->platform_data);
 
     bool fullscreen = is_fullscreen(win->window_handle);
@@ -217,11 +218,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 bool bottom = p.y > rect.bottom;
 
                 if (top && left) {
-                    set_cursor(win->window_handle, 3);
+                    wset_cursor(win->window_handle, axiom::cursor_mode::DRAG_TL);
                     return HTTOPLEFT;
                 }
                 if (top && right) {
-                    set_cursor(win->window_handle, 4);
+                    wset_cursor(win->window_handle, axiom::cursor_mode::DRAG_TR);
                     return HTTOPRIGHT;
                 }
                 if (bottom && left) return HTBOTTOMLEFT;
@@ -230,7 +231,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 if (left) return HTLEFT;
                 if (right) return HTRIGHT;
                 if (top) {
-                    set_cursor(win->window_handle, 2);
+                    wset_cursor(win->window_handle, axiom::cursor_mode::DRAG_T);
                     return HTTOP;
                 }
                 if (bottom) return HTBOTTOM;
@@ -248,7 +249,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     return CallWindowProcW((WNDPROC)w->oldWndProc, hwnd, msg, wParam, lParam);
 };
 
-void handle_window_platform(window& win) {
+void handle_window_platform(context& win) {
     win32_window* ww = new win32_window;
 
     HWND hwnd = glfwGetWin32Window(win.window_handle);
@@ -282,11 +283,11 @@ void handle_window_platform(window& win) {
     );
 }
 
-void window_platform_destruct(window& window) {
+void window_platform_destruct(context& window) {
     delete reinterpret_cast<win32_window*>(window.platform_data);
 }
 
-bool window::cursor_in_window() {
+bool context::cursor_in_window() {
     double x, y;
     int wx, wy;
     int width, height;

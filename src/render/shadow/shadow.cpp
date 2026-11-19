@@ -171,7 +171,7 @@ void shadow_renderer::call() {
     vs = {vs[0], vs[1], vs[3], vs[0], vs[3], vs[2]};
 
     vertices.vertex_buffer_data(vs.data(), vs.size(), sizeof(vec2), axiom::usage_type::STATIC_DRAW);
-    vertices.add_vertex_attribute(0, 2, axiom::number_type::FLOAT, false, sizeof(vec2), 0);
+    vertices.add_vertex_attribute(0, 2, axiom::var_type::FLOAT, false, sizeof(vec2), 0);
 
     auto& shadow_shader = axiom::get_shader("shadow");
     shadow_shader.use();
@@ -321,7 +321,7 @@ void shadow_renderer::create(uint num_cascades, float cascade_factor, float base
             },
             fb_tex_params{
                 //.format = axiom::texture_format::DEPTH32,
-                .format = axiom::texture_format::DEPTH16,
+                .format = axiom::texture_format::DEPTH32,
                 .attachment = axiom::texture_attachment::DEPTH,
             }
         };

@@ -1,9 +1,9 @@
-#include <graphicsh.hpp>
+#include <wrapper/opengl/graphicsh.hpp>
 
 #include <iostream>
 
-#include <render/window/input.hpp>
-#include <render/window/window.hpp>
+#include <wrapper/opengl/input.hpp>
+#include <wrapper/opengl/context.hpp>
 
 #include <include/core.hpp>
 
@@ -22,7 +22,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         axiom_action = axiom::action::REPEAT;
     }
 
-    w->key_events.push_back(key_event{glfw_input_map_key[key], scancode, axiom_action});
+    w->key_events.push_back(key_event{input_map_key[key], scancode, axiom_action});
 }
 
 void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos) {
@@ -43,7 +43,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         axiom_action = axiom::action::REPEAT;
     }
 
-    w->mouse_button_events.push_back(mouse_button_event{glfw_input_map_mouse_button[button], axiom_action});
+    w->mouse_button_events.push_back(mouse_button_event{input_map_mouse_button[button], axiom_action});
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
@@ -251,14 +251,8 @@ void context::poll_events() {
                 glfwSetWindowPos(window_handle, s.x, s.y);
                 
                 show_cursor();
-                set_cursor(window_handle, 0);
+                set_cursor(axiom::cursor_mode::DEFAULT);
             }
-        }
-    }
-    
-    if(target != nullptr) {
-        if(target->size != size) {
-            target->set_size(size);
         }
     }
 }
@@ -352,13 +346,61 @@ void context::show_cursor() {
     cursor_disabled = false;
 }
 
-
-void context::attach(axiom::render_target* target_) {
-    target = target_;
-}
-
 context::~context() {
     window_platform_destruct(*this);
+}
+
+void context::set_cursor(cursor_mode mode) {
+    wset_cursor(window_handle, mode);
+}
+
+void context::create_shaders() {
+    /*
+    auto& render_system = axiom::ecs.get_system<axiom::render_system>();
+
+    axiom::text_asset vert;
+    axiom::text_asset frag;
+
+    vert = axiom::text_asset::load(render_system.resource_root + "/shaders/webgl/texture2d.vert");
+    frag = axiom::text_asset::load(render_system.resource_root + "/shaders/webgl/texture2d.frag");
+    render_system.shaders.emplace("texture2d", std::move(
+        axiom::shader(vert, frag)
+    ));
+    
+    vert = axiom::text_asset::load(render_system.resource_root + "/shaders/webgl/grid2d.vert");
+    frag = axiom::text_asset::load(render_system.resource_root + "/shaders/webgl/grid2d.frag");
+    render_system.shaders.emplace("grid2d", std::move(
+        axiom::shader(vert, frag)
+    ));
+    
+    vert = axiom::text_asset::load(render_system.resource_root + "/shaders/webgl/grid3d.vert");
+    frag = axiom::text_asset::load(render_system.resource_root + "/shaders/webgl/grid3d.frag");
+    render_system.shaders.emplace("grid3d", std::move(
+        axiom::shader(vert, frag)
+    ));
+    
+    vert = axiom::text_asset::load(render_system.resource_root + "/shaders/webgl/ui.vert");
+    frag = axiom::text_asset::load(render_system.resource_root + "/shaders/webgl/ui.frag");
+    render_system.shaders.emplace("ui", std::move(
+        axiom::shader(vert, frag)
+    ));
+    
+    vert = axiom::text_asset::load(render_system.resource_root + "/shaders/webgl/ui_composite.vert");
+    frag = axiom::text_asset::load(render_system.resource_root + "/shaders/webgl/ui_composite.frag");
+    render_system.shaders.emplace("ui_composite", std::move(
+        axiom::shader(vert, frag)
+    ));
+    
+    axiom::texture_asset tex;
+    tex = axiom::texture_asset::load(render_system.resource_root + "/textures/ui.png");
+    render_system.textures.emplace("ui", std::move(
+        axiom::texture(tex, axiom::texture_format::RGBA8, 0)
+    ));
+    */
+}
+
+void context::swap_buffers() {
+    glfwSwapBuffers(window_handle);
 }
 
 }

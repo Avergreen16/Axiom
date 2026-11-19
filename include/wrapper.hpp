@@ -4,7 +4,7 @@
 #include <wrapper/webgl/context.hpp>
 #include <wrapper/webgl/wrapper.hpp>
 
-#elifdef AXIOM_OPENGL
+#elif defined(AXIOM_OPENGL)
 #include <wrapper/opengl/context.hpp>
 #include <wrapper/opengl/wrapper.hpp>
 

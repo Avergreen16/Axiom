@@ -62,7 +62,130 @@ using uint = unsigned int;
 
 namespace axiom {
     
-void set_blend();
+enum class texture_attachment {
+    COLOR0 = 0,
+    COLOR1 = 1,
+    COLOR2 = 2,
+    COLOR3 = 3,
+    COLOR4 = 4,
+    COLOR5 = 5,
+    COLOR6 = 6,
+    COLOR7 = 7,
+    COLOR8 = 8,
+    COLOR9 = 9,
+    COLOR10 = 10,
+    COLOR11 = 11,
+    COLOR12 = 12,
+    COLOR13 = 13,
+    COLOR14 = 14,
+    COLOR15 = 15,
+    COLOR16 = 16,
+    COLOR17 = 17,
+    COLOR18 = 18,
+    COLOR19 = 19,
+    COLOR20 = 20,
+    COLOR21 = 21,
+    COLOR22 = 22,
+    COLOR23 = 23,
+    COLOR24 = 24,
+    COLOR25 = 25,
+    COLOR26 = 26,
+    COLOR27 = 27,
+    COLOR28 = 28,
+    COLOR29 = 29,
+    COLOR30 = 30,
+    COLOR31 = 31,
+
+    //
+
+    DEPTH,
+    STENCIL,
+    DEPTH_STENCIL
+};
+
+enum class blend_func {
+    ZERO,
+    ONE,
+    SRC_COLOR,
+    ONE_MINUS_SRC_COLOR,
+    DST_COLOR,
+    ONE_MINUS_DST_COLOR,
+    SRC_ALPHA,
+    ONE_MINUS_SRC_ALPHA,
+    DST_ALPHA,
+    ONE_MINUS_DST_ALPHA,
+    CONSTANT_COLOR,
+    ONE_MINUS_CONSTANT_COLOR,
+    CONSTANT_ALPHA,
+    ONE_MINUS_CONSTANT_AMPHA,
+    SRC_ALPHA_SATURATE,
+    SRC1_COLOR,
+    ONE_MINUS_SRC1_COLOR,
+    SRC1_APHA,
+    ONE_MINUS_SRC1_ALPHA
+};
+
+enum class depth_func {
+    NEVER,
+    LESS,
+    EQUAL,
+    LESS_EQUAL,
+    GREATER,
+    NOTEQUAL,
+    GREATER_EQUAL,
+    ALWAYS
+};
+
+enum class usage_type {
+    STATIC_DRAW,
+    DYNAMIC_DRAW,
+    STREAM_DRAW
+};
+
+enum class var_type {
+    BYTE, 
+    UNSIGNED_BYTE, 
+    SHORT, 
+    USHORT, 
+    INT, 
+    UINT,
+
+    HALF_FLOAT, 
+    FLOAT, 
+    DOUBLE, 
+    COLOR_PACKED_INT, // 2 alpha, 10 red, 10 green, 10 blue
+    COLOR_PACKED_UINT // 2 alpha, 10 red, 10 green, 10 blue
+};
+
+void clear_framebuffer(bool clear_color, bool clear_depth, bool clear_stencil);
+void bind_default_framebuffer();
+
+void enable_blend();
+void disable_blend();
+void enable_depth_test();
+void disable_depth_test();
+void enable_depth_clamp();
+void disable_depth_clamp();
+
+void set_clear_color(vec4 color);
+void set_clear_depth(float depth);
+void set_viewport(ivec4 range);
+void set_depth_func(axiom::depth_func depth_func);
+void set_clear_depth(float depth);
+void set_depth_range(float near, float far);
+void set_clip_control();
+void set_blend_func(blend_func src_func, blend_func dst_func);
+void set_blend_func_separate(blend_func src_func_color, blend_func dst_func_color, blend_func src_func_alpha, blend_func dst_func_alpha);
+
+struct framebuffer;
+
+void blit(ivec4 src, ivec4 dst, framebuffer* srcf, framebuffer* dstf, axiom::texture_attachment src_attachment, axiom::texture_attachment dst_attachment, bool color, bool depth, bool stencil);
+
+void draw_points(uint start, uint num);
+void draw_lines(uint start, uint num);
+void draw_triangles(uint start, uint num);
+
+//
 
 struct vertices {
     uint vertex_buffer;
@@ -89,11 +212,9 @@ struct vertices {
 
     void init();
 
-    void vertex_buffer_data(void* ptr, uint num_vertices_, uint vertex_size, uint usage);
-
-    void index_buffer_data(void* ptr, uint num_indices_, uint index_type_, uint index_size, uint usage);
-
-    void add_vertex_attribute(uint index, uint size, uint type, uint normalized, uint stride, uint offset);
+    void vertex_buffer_data(void* ptr, uint num_vertices_, uint vertex_size, axiom::usage_type usage);
+    void index_buffer_data(void* ptr, uint num_indices_, axiom::var_type index_type_, uint index_size, axiom::usage_type usage);
+    void add_vertex_attribute(uint index, uint size, axiom::var_type type, uint normalized, uint stride, uint offset);
 
     void bind();
 
@@ -112,7 +233,7 @@ struct storage_buffer {
 
     void init();
 
-    void buffer_data(void* data, uint size_bytes, uint usage);
+    void buffer_data(void* data, uint size_bytes, axiom::usage_type usage);
 
     void buffer_subdata(void* data, uint size_bytes, uint offset);
 
@@ -129,7 +250,7 @@ struct uniform_buffer {
 
     void init();
 
-    void buffer_data(void* data, uint size_bytes, uint usage);
+    void buffer_data(void* data, uint size_bytes, axiom::usage_type usage);
 
     void buffer_subdata(void* data, uint size_bytes, uint offset);
 
@@ -207,47 +328,6 @@ enum class texture_format {
     DEPTH16,
     DEPTH32,
     DEPTHF,
-};
-
-enum class texture_attachment {
-    COLOR0 = 0,
-    COLOR1 = 1,
-    COLOR2 = 2,
-    COLOR3 = 3,
-    COLOR4 = 4,
-    COLOR5 = 5,
-    COLOR6 = 6,
-    COLOR7 = 7,
-    COLOR8 = 8,
-    COLOR9 = 9,
-    COLOR10 = 10,
-    COLOR11 = 11,
-    COLOR12 = 12,
-    COLOR13 = 13,
-    COLOR14 = 14,
-    COLOR15 = 15,
-    COLOR16 = 16,
-    COLOR17 = 17,
-    COLOR18 = 18,
-    COLOR19 = 19,
-    COLOR20 = 20,
-    COLOR21 = 21,
-    COLOR22 = 22,
-    COLOR23 = 23,
-    COLOR24 = 24,
-    COLOR25 = 25,
-    COLOR26 = 26,
-    COLOR27 = 27,
-    COLOR28 = 28,
-    COLOR29 = 29,
-    COLOR30 = 30,
-    COLOR31 = 31,
-
-    //
-
-    DEPTH,
-    STENCIL,
-    DEPTH_STENCIL
 };
 
 texture_desc get_texture_desc(texture_format f);
@@ -331,6 +411,99 @@ struct framebuffer {
     ~framebuffer();
 };
 
-}
+void blit(ivec4 src, ivec4 dst, framebuffer* srcf, framebuffer* dstf, axiom::texture_attachment src_attachment, axiom::texture_attachment dst_attachment, bool color, bool depth, bool stencil);
 
-#include <render/uniform.hpp>
+void push_uniform(uint index, int value);
+void push_uniform(uint index, uint value);
+void push_uniform(uint index, float value);
+void push_uniform(uint index, double value);
+
+//
+void push_uniform(uint index, ivec2 value);
+void push_uniform(uint index, uvec2 value);
+void push_uniform(uint index, vec2 value);
+void push_uniform(uint index, dvec2 value);
+
+//
+void push_uniform(uint index, ivec3 value);
+void push_uniform(uint index, uvec3 value);
+void push_uniform(uint index, vec3 value);
+void push_uniform(uint index, dvec3 value);
+
+//
+void push_uniform(uint index, ivec4 value);
+void push_uniform(uint index, uvec4 value);
+void push_uniform(uint index, vec4 value);
+void push_uniform(uint index, dvec4 value);
+
+// pointers
+void push_uniform(uint index, int* value);
+void push_uniform(uint index, uint* value);
+void push_uniform(uint index, float* value);
+void push_uniform(uint index, double* value);
+
+//
+void push_uniform(uint index, ivec2* value);
+void push_uniform(uint index, uvec2* value);
+void push_uniform(uint index, vec2* value);
+void push_uniform(uint index, dvec2* value);
+
+//
+void push_uniform(uint index, ivec3* value);
+void push_uniform(uint index, uvec3* value);
+void push_uniform(uint index, vec3* value);
+void push_uniform(uint index, dvec3* value);
+
+//
+void push_uniform(uint index, ivec4* value);
+void push_uniform(uint index, uvec4* value);
+void push_uniform(uint index, vec4* value);
+void push_uniform(uint index, dvec4* value);
+
+//
+void push_uniform(uint index, mat2* value);
+void push_uniform(uint index, glm::mat2x3* value);
+void push_uniform(uint index, glm::mat2x4* value);
+void push_uniform(uint index, glm::mat3x2* value);
+void push_uniform(uint index, mat3* value);
+void push_uniform(uint index, glm::mat3x4* value);
+void push_uniform(uint index, glm::mat4x2* value);
+void push_uniform(uint index, glm::mat4x3* value);
+void push_uniform(uint index, mat4* value);
+
+// pointer packs
+void push_uniform(uint index, uint count, int* value);
+void push_uniform(uint index, uint count, uint* value);
+void push_uniform(uint index, uint count, float* value);
+void push_uniform(uint index, uint count, double* value);
+
+//
+void push_uniform(uint index, uint count, ivec2* value);
+void push_uniform(uint index, uint count, uvec2* value);
+void push_uniform(uint index, uint count, vec2* value);
+void push_uniform(uint index, uint count, dvec2* value);
+
+//
+void push_uniform(uint index, uint count, ivec3* value);
+void push_uniform(uint index, uint count, uvec3* value);
+void push_uniform(uint index, uint count, vec3* value);
+void push_uniform(uint index, uint count, dvec3* value);
+
+//
+void push_uniform(uint index, uint count, ivec4* value);
+void push_uniform(uint index, uint count, uvec4* value);
+void push_uniform(uint index, uint count, vec4* value);
+void push_uniform(uint index, uint count, dvec4* value);
+
+//
+void push_uniform(uint index, uint count, mat2* value);
+void push_uniform(uint index, uint count, glm::mat2x3* value);
+void push_uniform(uint index, uint count, glm::mat2x4* value);
+void push_uniform(uint index, uint count, glm::mat3x2* value);
+void push_uniform(uint index, uint count, mat3* value);
+void push_uniform(uint index, uint count, glm::mat3x4* value);
+void push_uniform(uint index, uint count, glm::mat4x2* value);
+void push_uniform(uint index, uint count, glm::mat4x3* value);
+void push_uniform(uint index, uint count, mat4* value);
+
+}

@@ -222,7 +222,7 @@ void vertices::vertex_buffer_data(void* ptr, uint num_vertices_, uint vertex_siz
     glBufferData(GL_ARRAY_BUFFER, num_vertices * vertex_size, ptr, u[(uint)usage]);
 }
 
-void vertices::index_buffer_data(void* ptr, uint num_indices_, axiom::number_type index_type_, uint index_size, axiom::usage_type usage) {
+void vertices::index_buffer_data(void* ptr, uint num_indices_, axiom::var_type index_type_, uint index_size, axiom::usage_type usage) {
     uint v[] = {
         GL_BYTE, 
         GL_UNSIGNED_BYTE, 
@@ -244,7 +244,7 @@ void vertices::index_buffer_data(void* ptr, uint num_indices_, axiom::number_typ
         GL_STREAM_DRAW
     };
 
-    if(v[(uint)index_type_] == 0xFFFFFFFF) throw std::runtime_error("index_buffer_data: this (index_type_) number_type enum is not supported in WebGL");
+    if(v[(uint)index_type_] == 0xFFFFFFFF) throw std::runtime_error("index_buffer_data: this (index_type_) var_type enum is not supported in WebGL");
 
     bind();
     num_indices = num_indices_;
@@ -253,7 +253,7 @@ void vertices::index_buffer_data(void* ptr, uint num_indices_, axiom::number_typ
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, num_indices * index_size, ptr, u[(uint)usage]);
 }
 
-void vertices::add_vertex_attribute(uint index, uint size, axiom::number_type type, uint normalized, uint stride, uint offset) {
+void vertices::add_vertex_attribute(uint index, uint size, axiom::var_type type, uint normalized, uint stride, uint offset) {
     uint v[] = {
         GL_BYTE, 
         GL_UNSIGNED_BYTE, 
@@ -271,7 +271,7 @@ void vertices::add_vertex_attribute(uint index, uint size, axiom::number_type ty
 
     uint t = v[(uint)type];
 
-    if(t == 0xFFFFFFFF) throw std::runtime_error("add_vertex_attribute: this (type) number_type enum is not supported in WebGL");
+    if(t == 0xFFFFFFFF) throw std::runtime_error("add_vertex_attribute: this (type) var_type enum is not supported in WebGL");
 
     glBindVertexArray(imp->vertex_array);
     if(t == GL_BYTE || t == GL_UNSIGNED_BYTE || t == GL_SHORT || t == GL_UNSIGNED_SHORT || t == GL_INT || t == GL_UNSIGNED_INT) glVertexAttribIPointer(index, size, t, stride, (void*)offset);

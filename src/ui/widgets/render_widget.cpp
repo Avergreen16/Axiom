@@ -53,7 +53,10 @@ void render_widget::handle_inputs() {
     axiom::set_clear_color(vec4(0.0f));
     axiom::clear_framebuffer(true, true, false);
 
-    if(target->size != ivec2(size)) target->set_size(ivec2(size));
+    if(target->size != ivec2(size)) {
+        std::cout << size << "\n";
+        target->set_size(ivec2(size));
+    }
     //target->call();
     callback(this);
     

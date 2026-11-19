@@ -52,7 +52,7 @@ enum class action {
     REPEAT
 };
 
-extern std::array<axiom::input_code, GLFW_KEY_LAST + 1> glfw_input_map_key;
-extern std::array<axiom::input_code, GLFW_MOUSE_BUTTON_LAST + 1> glfw_input_map_mouse_button;
+extern std::array<axiom::input_code, GLFW_KEY_LAST + 1> input_map_key;
+extern std::array<axiom::input_code, GLFW_MOUSE_BUTTON_LAST + 1> input_map_mouse_button;
 
 }

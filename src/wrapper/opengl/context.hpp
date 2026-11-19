@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <wrapper-opengl/context/input.hpp>
+#include <wrapper/opengl/input.hpp>
 
 #define GLM_FORCE_SWIZZLE
 #define GLM_FORCE_RADIANS
@@ -38,6 +38,20 @@ using mat4 = glm::mat4;
 using uint = unsigned int;
 
 namespace axiom {
+
+enum class cursor_mode{
+    DEFAULT,
+    CLICK,
+    TEXT,
+    DRAG_T,
+    DRAG_TR,
+    DRAG_R,
+    DRAG_BR,
+    DRAG_B,
+    DRAG_BL,
+    DRAG_L,
+    DRAG_TL,
+};
 
 struct key_event {
     axiom::input_code key;
@@ -91,8 +105,6 @@ class context {
     
     bool click_capture = false;
     bool hover_capture = false;
-
-    axiom::render_target* target = nullptr;
 
     private: 
     
@@ -156,10 +168,12 @@ class context {
     void hide_cursor();
     void disable_cursor();
     void show_cursor();
+    void set_cursor(cursor_mode mode);
+    void swap_buffers();
+    
+    void create_shaders();
 
     void clear_events();
-
-    void attach(axiom::render_target* target_);
 
     friend void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
     friend void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos);
@@ -173,8 +187,8 @@ class context {
 void copy_to_clipboard(GLFWwindow* window, std::string str);
 std::string paste_from_clipboard(GLFWwindow* window);
 
-void handle_window_platform(window& win);
-void window_platform_destruct(window& win);
+void handle_window_platform(context& win);
+void window_platform_destruct(context& win);
 
 bool is_fullscreen(GLFWwindow* window);
 bool is_maximized(GLFWwindow* window);
@@ -185,7 +199,7 @@ int get_caption_height(GLFWwindow* window);
 
 void print_wsize(GLFWwindow* window);
 
-void set_cursor(GLFWwindow* window, int id);
+void wset_cursor(GLFWwindow* window, axiom::cursor_mode mode);
 
 ivec2 get_cursor_pos(GLFWwindow* window);
 

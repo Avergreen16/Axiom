@@ -80,6 +80,20 @@ enum class action {
     REPEAT
 };
 
+enum class cursor_mode{
+    DEFAULT,
+    CLICK,
+    TEXT,
+    DRAG_T,
+    DRAG_TR,
+    DRAG_R,
+    DRAG_BR,
+    DRAG_B,
+    DRAG_BL,
+    DRAG_L,
+    DRAG_TL,
+};
+
 struct key_event {
     axiom::input_code key;
     int scancode;
@@ -124,20 +138,6 @@ struct touch {
     uint identifier;
     vec2 position;
     vec2 delta = vec2(0.0f);
-};
-
-enum class cursor_mode{
-    DEFAULT,
-    CLICK,
-    TEXT,
-    DRAG_T,
-    DRAG_TR,
-    DRAG_R,
-    DRAG_BR,
-    DRAG_B,
-    DRAG_BL,
-    DRAG_L,
-    DRAG_TL,
 };
 
 struct context {

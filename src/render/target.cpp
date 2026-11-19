@@ -17,7 +17,7 @@ void render_target::call() {
     //
     enable_blend();
 
-    //glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+    glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
     set_blend_func_separate(axiom::blend_func::SRC_ALPHA, axiom::blend_func::ONE_MINUS_SRC_ALPHA, axiom::blend_func::SRC_ALPHA, axiom::blend_func::ONE);
 
     set_viewport({0, 0, framebuffer.size.x, framebuffer.size.y});
