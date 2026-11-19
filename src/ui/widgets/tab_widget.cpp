@@ -4,6 +4,7 @@
 namespace axiom {
 
 void tab_widget::handle_inputs() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
     
     float pos = 0.0f;
@@ -13,7 +14,7 @@ void tab_widget::handle_inputs() {
     for(tab& tab : tabs) {
         vec4 region = vec4(position + vec2(pos, size.y - tab_height), tab.width, tab_height);
 
-        if(includes(ui_system.window->cursor_pos, vec4(region.xy(), region.xy() + region.zw()))) {
+        if(includes(render_system.ctx->cursor_pos, vec4(region.xy(), region.xy() + region.zw()))) {
             hovered = i;
             ui_system.cursor.cursor_mode = axiom::cursor_mode::CLICK;
         }
@@ -28,7 +29,7 @@ void tab_widget::handle_inputs() {
         uint prev_selected = selected;
 
         if(hovered != 0xFFFFFFFF) {
-            if(ui_system.window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
+            if(render_system.ctx->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
                 if(selected != hovered) t = true;
                 selected = hovered;
             }
@@ -218,13 +219,14 @@ uint64_t tab_widget::insert(float tab_height, float tab_sep, std::vector<tab> ta
 }
 
 capture_data tab_widget::handle_capture() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     float pos = 0.0f;
     for(tab& tab : tabs) {
         vec4 range = vec4(position + vec2(pos, size.y - tab_height), tab.width, tab_height);
 
-        if(includes(ui_system.window->cursor_pos, vec4(range.xy(), range.xy() + range.zw()))) {
+        if(includes(render_system.ctx->cursor_pos, vec4(range.xy(), range.xy() + range.zw()))) {
             return {self, z, true};
         }
 

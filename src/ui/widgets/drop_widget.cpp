@@ -4,6 +4,7 @@
 namespace axiom {
 
 void drop_widget::handle_inputs() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     float height = glm::min(drop_unit_height * (options.size() - 1), drop_height);
@@ -19,13 +20,13 @@ void drop_widget::handle_inputs() {
             vec4 range = vec4(position.x, position.y + offset, size.x, panel_height);
             range = {range.xy(), range.xy() + range.zw()};
             
-            if(includes(ui_system.window->cursor_pos, range)) {
+            if(includes(render_system.ctx->cursor_pos, range)) {
                 if(content_height > panel_height) {
                     float scroll_region = content_height - panel_height;
 
-                    if(ui_system.window->scroll_delta) {
+                    if(render_system.ctx->scroll_delta) {
                         float scroll_speed = 20.0f;
-                        scroll -= ui_system.window->scroll_delta * scroll_speed;
+                        scroll -= render_system.ctx->scroll_delta * scroll_speed;
                         
                         scroll = glm::clamp(scroll, 0.0f, scroll_region);
                         dirty = true;
@@ -36,7 +37,7 @@ void drop_widget::handle_inputs() {
                 
                 float origin = position.y + (panel_height + offset) - drop_unit_height + scroll;
 
-                uint rel = -floor((ui_system.window->cursor_pos.y - origin) / drop_unit_height);
+                uint rel = -floor((render_system.ctx->cursor_pos.y - origin) / drop_unit_height);
 
                 if(hovered != rel) dirty = true;
                 hovered = rel;
@@ -54,14 +55,14 @@ void drop_widget::handle_inputs() {
     vec4 range = vec4(position.x + size.x - button_width, position.y, button_width, size.y);
     range = {range.xy(), range.xy() + range.zw()};
 
-    if(includes(ui_system.window->cursor_pos, range)) {
+    if(includes(render_system.ctx->cursor_pos, range)) {
         drop_hover = true;
         ui_system.cursor.cursor_mode = axiom::cursor_mode::CLICK;
     }
     
     if(ui_system.click_capture == self) {
         if(drop_down) {
-            if(ui_system.window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
+            if(render_system.ctx->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
                 if(hovered != 0xFFFFFFFF) {
                     selected = hovered;
 
@@ -71,7 +72,7 @@ void drop_widget::handle_inputs() {
             }
         }
 
-        if(ui_system.window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT) && drop_hover) {
+        if(render_system.ctx->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT) && drop_hover) {
             if(drop_down == false) {
                 if(position.y - height < 0.0f) drop_direction = true;
                 else drop_direction = false;
@@ -357,6 +358,7 @@ uint64_t drop_widget::insert(vec2 size, vec3 color, float w, float h, float h2, 
 }
 
 capture_data drop_widget::handle_capture() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     std::vector<vec4> ranges = {
@@ -364,7 +366,7 @@ capture_data drop_widget::handle_capture() {
     };
 
     for(vec4 range : ranges) {
-        if(includes(ui_system.window->cursor_pos, range)) return {z, true};
+        if(includes(render_system.ctx->cursor_pos, range)) return {self, z, true};
     }
     
     if(drop_down) {
@@ -374,11 +376,11 @@ capture_data drop_widget::handle_capture() {
         };
         
         for(vec4 range : ranges) {
-            if(includes(ui_system.window->cursor_pos, range)) return {z + 0.001f, true};
+            if(includes(render_system.ctx->cursor_pos, range)) return {self, z + 0.001f, true};
         }
     }
 
-    return {z, false};
+    return {self, z, false};
 }
 
 }

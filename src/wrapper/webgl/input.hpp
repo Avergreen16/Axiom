@@ -5,7 +5,7 @@
 #include <GLES3/gl3.h>
 #include <emscripten/key_codes.h>
 
-#include <wrapper/context.hpp>
+#include <wrapper/webgl/context.hpp>
 
 #include <array>
 #include <string>

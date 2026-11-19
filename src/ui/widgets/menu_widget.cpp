@@ -4,6 +4,7 @@
 namespace axiom {
 
 void menu_widget::handle_inputs() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system &ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     menu_node *rootn = root;
@@ -23,13 +24,13 @@ void menu_widget::handle_inputs() {
     vec4 range = vec4(position.x, position.y + offset, size.x, panel_height);
     range = {range.xy(), range.xy() + range.zw()};
 
-    if(includes(ui_system.window->cursor_pos, range) && ui_system.hover_capture == self && (ui_system.click_capture == NULL_WIDGET || ui_system.click_capture == self)) {
+    if(includes(render_system.ctx->cursor_pos, range) && ui_system.hover_capture == self && (ui_system.click_capture == NULL_WIDGET || ui_system.click_capture == self)) {
         if(content_height > panel_height) {
             float scroll_region = content_height - panel_height;
 
-            if(ui_system.window->scroll_delta) {
+            if(render_system.ctx->scroll_delta) {
                 float scroll_speed = 20.0f;
-                scroll -= ui_system.window->scroll_delta * scroll_speed;
+                scroll -= render_system.ctx->scroll_delta * scroll_speed;
 
                 scroll = glm::clamp(scroll, 0.0f, scroll_region);
                 dirty = true;
@@ -40,7 +41,7 @@ void menu_widget::handle_inputs() {
 
         float origin = position.y + (panel_height + offset) + scroll;
 
-        uint rel = -floor((ui_system.window->cursor_pos.y - origin) / drop_unit_height + 1);
+        uint rel = -floor((render_system.ctx->cursor_pos.y - origin) / drop_unit_height + 1);
 
         if(hovered != rel) dirty = true;
         hovered = rel;
@@ -87,9 +88,9 @@ void menu_widget::handle_inputs() {
                 widget.pressed = true;
             }
 
-            bool hover_self = widget.hovered || w != NULL_WIDGET && includes(ui_system.window->cursor_pos, vec4(ui_system.widgets[w]->position, ui_system.widgets[w]->position + ui_system.widgets[w]->size));
+            bool hover_self = widget.hovered || w != NULL_WIDGET && includes(render_system.ctx->cursor_pos, vec4(ui_system.widgets[w]->position, ui_system.widgets[w]->position + ui_system.widgets[w]->size));
 
-            if(!hover_self && ui_system.window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT) || hovered_siblings) {
+            if(!hover_self && render_system.ctx->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT) || hovered_siblings) {
                 widget.children.clear();
                 ecs.get_system<ui_system>().delete_buffer.push_back(w);
                 w = NULL_WIDGET;
@@ -97,7 +98,7 @@ void menu_widget::handle_inputs() {
             */
         }
 
-        if(ui_system.window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
+        if(render_system.ctx->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
             clicked = hovered;
             if(!rootn->children[clicked].children.size()) {
                 ui_system.delete_buffer.push_back(self);
@@ -112,7 +113,7 @@ void menu_widget::handle_inputs() {
     }
 
     {   
-        if(ui_system.window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
+        if(render_system.ctx->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
             std::vector<uint64_t> parent_children;
 
             uint64_t current = self;
@@ -394,6 +395,7 @@ uint64_t menu_widget::insert(vec2 position, float z, vec3 color, float w, float 
 // capture data
 
 capture_data menu_widget::handle_capture() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system &ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     std::vector<vec4> ranges = {
@@ -401,7 +403,7 @@ capture_data menu_widget::handle_capture() {
     };
 
     for(vec4 range : ranges) {
-        if(includes(ui_system.window->cursor_pos, range)) return {self, z, true};
+        if(includes(render_system.ctx->cursor_pos, range)) return {self, z, true};
     }
 
     return {self, z, false};

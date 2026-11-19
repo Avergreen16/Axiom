@@ -14,7 +14,7 @@ void relative_widget::init() {
     after.push_back(c);
 }
 
-uint64_t relative_widget::insert(std::function<void(relative_widget&)> callback = [](relative_widget& self) {}) {
+uint64_t relative_widget::insert(std::function<void(relative_widget&)> callback) {
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     relative_widget widget;

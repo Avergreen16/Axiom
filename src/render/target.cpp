@@ -5,7 +5,7 @@
 namespace axiom {
 
 void render_target::set_size(ivec2 new_size) {
-    if(size != new_size) {
+    if(size != new_size && new_size.x != 0 && new_size.y != 0) {
         size = new_size;
         framebuffer.resize(size);
     }
@@ -39,9 +39,14 @@ void render_target::call() {
 }
 
 render_target* render_target::create(std::function<void(render_target&)> draw_func, ivec2 size, std::vector<texture_format> fb_format, std::vector<texture_attachment> fb_attachment, std::vector<int> fb_binding) {
-    render_target target;
-    target.draw = draw_func;
-    target.size = size;
+    axiom::render_system& rs = ecs.get_system<axiom::render_system>();
+
+    rs.targets.emplace_back(std::unique_ptr<axiom::render_target>(new axiom::render_target));
+
+    render_target* target = rs.targets.back().get();
+
+    target->draw = draw_func;
+    target->size = size;
 
     std::vector<fb_tex_params> params;
     uint counter = 0;
@@ -58,12 +63,11 @@ render_target* render_target::create(std::function<void(render_target&)> draw_fu
 
         ++counter;
     }
-    target.framebuffer = std::move(axiom::framebuffer(size, std::move(params)));
+    target->framebuffer = std::move(axiom::framebuffer(size, std::move(params)));
 
-    axiom::render_system& rs = ecs.get_system<axiom::render_system>();
-    rs.targets.emplace_back(std::move(target));
+    std::cout << "FRAMEBUFFER CREATED " << target->framebuffer.textures[0].id << " " << target->framebuffer.textures[1].id << std::endl;
 
-    return &rs.targets.back();
+    return target;
 }
 
 }

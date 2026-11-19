@@ -29,9 +29,9 @@ void render_widget::mesh() {
         for(ui_vertex& v : ret) {
             v.pos = vec3(floor(vec2(position + v.pos.xy() * size)), z);
             v.color = vec4(1.0f, 1.0f, 1.0f, 1.0f);
-            v.data = 0x80000000 + target_id;
+            v.data = 0x80000000u + uint(target_id);
 
-            if(clip != 0xFFFFFFFF) v.clip_space = ui_system->clip_spaces[clip].parent;
+            //if(clip != 0xFFFFFFFF) v.clip_space = ui_system->clip_spaces[clip].parent;
         }
         total_ret.insert(total_ret.end(), ret.begin(), ret.end());
 
@@ -49,9 +49,9 @@ void render_widget::handle_inputs() {
     axiom::ui_system* ui_system = &axiom::ecs.get_system<axiom::ui_system>();
 
     target->framebuffer.bind();
-    glViewport(0, 0, target->size.x, target->size.y);
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    axiom::set_viewport({0, 0, target->size.x, target->size.y});
+    axiom::set_clear_color(vec4(0.0f));
+    axiom::clear_framebuffer(true, true, false);
 
     if(target->size != ivec2(size)) target->set_size(ivec2(size));
     //target->call();
@@ -63,13 +63,14 @@ void render_widget::handle_inputs() {
 }
 
 axiom::capture_data render_widget::handle_capture() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     std::vector<vec4> ranges = {
         vec4(position, position + size)
     };
 
-    if(includes(ui_system.window->cursor_pos, ranges[0])) return {self, z, true, false, true};
+    if(includes(render_system.ctx->cursor_pos, ranges[0])) return {self, z, true, false, true};
 
     return {self, z, false};
 }

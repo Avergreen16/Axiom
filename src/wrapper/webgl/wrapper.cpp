@@ -1,5 +1,5 @@
 #include <core/assets/assets.hpp>
-#include <wrapper/wrapper.hpp>
+#include <wrapper/webgl/wrapper.hpp>
 
 #include <GLES3/gl3.h>
 
@@ -169,7 +169,7 @@ void blit(ivec4 src, ivec4 dst, framebuffer* srcf, framebuffer* dstf, axiom::tex
     if(srcf == nullptr) {
         glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
-        glReadBuffer(get_texture_attachment(axiom::texture_attachment::COLOR0));
+        glReadBuffer(GL_BACK);
     } else {
         glBindFramebuffer(GL_READ_FRAMEBUFFER, srcf->id);
 
@@ -179,7 +179,7 @@ void blit(ivec4 src, ivec4 dst, framebuffer* srcf, framebuffer* dstf, axiom::tex
     if(dstf == nullptr) {
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
-        uint buf[1] = {get_texture_attachment(axiom::texture_attachment::COLOR0)};
+        uint buf[1] = {GL_BACK};
         glDrawBuffers(1, buf);
     } else {
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dstf->id);
@@ -498,9 +498,22 @@ void shader::use() {
 
 */
 
-void uniform_buffer::buffer_data(void* data, uint size_bytes, uint usage) {
+void uniform_buffer::init() {
+    if(!initialized) {
+        glGenBuffers(1, &id);
+        initialized = true;
+    }
+}
+
+void uniform_buffer::buffer_data(void* data, uint size_bytes, axiom::usage_type usage) {
+    uint u[] = {
+        GL_STATIC_DRAW,
+        GL_DYNAMIC_DRAW,
+        GL_STREAM_DRAW
+    };
+
     glBindBuffer(GL_UNIFORM_BUFFER, id);
-    glBufferData(GL_UNIFORM_BUFFER, size_bytes, data, usage);
+    glBufferData(GL_UNIFORM_BUFFER, size_bytes, data, u[(uint)usage]);
 }
 
 void uniform_buffer::buffer_subdata(void* data, uint size_bytes, uint offset) {
@@ -680,8 +693,15 @@ texture::texture(glm::uvec3 size, uint type, texture_format format) {
     }
 }
 
+uint ctr = 0;
 void texture::bind(int binding) {
     glActiveTexture(GL_TEXTURE0 + binding);
+
+    if(ctr < 10) {
+        std::cout << type << " " << id << " " << (uint)format << " " << binding << "x\n";
+        ++ctr;
+    }
+
     glBindTexture(type, id);
 }
 
@@ -826,6 +846,20 @@ void framebuffer::bind() {
     glViewport(0, 0, size.x, size.y);
 }
 
+void framebuffer::bind(std::vector<bool> enabled) {
+    glBindFramebuffer(GL_FRAMEBUFFER, id);
+
+    auto buffers = draw_buffers;
+
+    for(int i = 0; i < enabled.size(); ++i) {
+        if(!enabled[i]) buffers[i] = GL_NONE;
+    }
+    
+    glDrawBuffers(buffers.size(), buffers.data());
+
+    glViewport(0, 0, size.x, size.y);
+}
+
 void framebuffer::resize(glm::ivec2 new_size) {
     size = new_size;
     glBindFramebuffer(GL_FRAMEBUFFER, id);
@@ -866,7 +900,7 @@ framebuffer::~framebuffer() {
 void framebuffer::clear(vec4 color, float depth) {
     bind();
 
-    glClearColor(color.x, color.y, color.z, color.q);
+    glClearColor(color.x, color.y, color.z, color.w);
     glClearDepthf(depth);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -963,6 +997,18 @@ GLenum get_texture_attachment(texture_attachment attachment) {
                 return GL_DEPTH_STENCIL_ATTACHMENT;
         }
     }
+}
+
+void draw_points(uint start, uint num) {
+    glDrawArrays(GL_POINTS, start, num);
+}
+
+void draw_lines(uint start, uint num) {
+    glDrawArrays(GL_LINES, start, num);
+}
+
+void draw_triangles(uint start, uint num) {
+    glDrawArrays(GL_TRIANGLES, start, num);
 }
 
 }

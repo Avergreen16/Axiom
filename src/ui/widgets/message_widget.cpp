@@ -5,6 +5,7 @@
 namespace axiom {
 
 void message_widget::handle_inputs() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     //text[0]->range = range;
@@ -14,7 +15,7 @@ void message_widget::handle_inputs() {
     vec4 include_range = vec4(position, position + size + vec2(0.0f, buffer.w));
     if(inserted) include_range.w += ui_system.font_handler.fonts["test"]->line_height + buffer.y;
 
-    if(includes(ui_system.window->cursor_pos, include_range) && ui_system.hover_capture == self) {
+    if(includes(render_system.ctx->cursor_pos, include_range) && ui_system.hover_capture == self) {
         hover = true;
     } else {
         hover = false;
@@ -230,6 +231,7 @@ void message_widget::init() {
 }
 
 axiom::capture_data message_widget::handle_capture() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     //if(!includes(ui_system.window->cursor_pos, view_range)) return {z, false};
@@ -237,7 +239,7 @@ axiom::capture_data message_widget::handle_capture() {
     vec4 hover_range = vec4(position, position + size + vec2(0.0f, buffer.w));
     if(inserted) hover_range.w += ui_system.font_handler.fonts["test"]->line_height + buffer.y;
 
-    if(includes(ui_system.window->cursor_pos, hover_range)) return {self, z, true};
+    if(includes(render_system.ctx->cursor_pos, hover_range)) return {self, z, true};
 
     return {self, z, false};
 }

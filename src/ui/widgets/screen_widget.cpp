@@ -15,6 +15,7 @@ void screen_widget::handle_inputs() {
 
     uint ctr = 0;
 
+    /*
     if(ui_system.hover_capture == self && (ui_system.click_capture == NULL_WIDGET || ui_system.click_capture == self) && !win->decorated) {
         region = vec4(position.x + size.x - header, position.y + size.y - header, header, header);
         region.z += region.x;
@@ -72,14 +73,14 @@ void screen_widget::handle_inputs() {
                 win->move = false;
             }
         }
-    } else {
+    } else {*/
         hover_close = false;
         hover_maximize = false;
         hover_minimize = false;
 
         ++ctr;
         if(ctr > 1) win->move = false;
-    }
+    //}
 }
 
 void screen_widget::mesh() {
@@ -96,8 +97,12 @@ void screen_widget::mesh() {
     ui_vertex d = {vec3(1.0f, 1.0f, 0.0f), vec2(1.0f, 1.0f), vec4(1.0f)};
     std::vector<ui_vertex> ret;
     
-    ui_system.clip_spaces[attachments[0].clip].range = {position, position + vec2(size.x, size.y - header)};
-    ui_system.clip_spaces[attachments[1].clip].range = {position + vec2(0.0f, size.y - header), position + size};
+    //ui_system.clip_spaces[attachments[0].clip].range = {position, position + vec2(size.x, size.y - header)};
+    //ui_system.clip_spaces[attachments[1].clip].range = {position + vec2(0.0f, size.y - header), position + size};
+    /*
+    NOTE enabling these previous lines causes problems with the text rendering and text texture touching
+    */
+
     //ui_system.clip_spaces[attachments[1].clip].radius = 20;
 
     if(header > 0) {
@@ -145,6 +150,7 @@ void screen_widget::mesh() {
 
         // icons
         
+        /*
         if(!win->decorated) {
             vec3 hover_color = clamp(color + 0.15f, 0.0f, 1.0f);
             vec3 col;
@@ -222,6 +228,7 @@ void screen_widget::mesh() {
             }
             vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
         }
+        */
         
         // panel
         ret = {a, b, d, a, d, c};
@@ -237,27 +244,29 @@ void screen_widget::mesh() {
 
 void screen_widget::init() {
     axiom::ui_system* ui_system = &axiom::ecs.get_system<axiom::ui_system>();
+    axiom::render_system* render_system = &axiom::ecs.get_system<axiom::render_system>();
 
     widget_constraint c;
-    c.func = [this, ui_system]() {
+    c.func = [this, ui_system, render_system]() {
+        /*
         if(!win->decorated && win->is_windowed()) {
-            attachments[0].region = {0.0f, 0.0f, win->size.x, win->size.y - header};
-            attachments[1].region = {header, win->size.y - header, win->size.x - header, header};
+            attachments[0].region = {0.0f, 0.0f, ui_system->virtual_screen.x, ui_system->virtual_screen.y - header};
+            attachments[1].region = {header, ui_system->virtual_screen.y - header, ui_system->virtual_screen.x - header, header};
         } else if(win->is_fullscreen()) {
-            attachments[0].region = {0.0f, 0.0f, win->size.x, win->size.y - header};
-            attachments[1].region = {header, win->size.y - header, win->size.x - header, header};
-        } else {
-            attachments[0].region = {0.0f, 0.0f, win->size.x, win->size.y - header};
-            attachments[1].region = {header, win->size.y - header, win->size.x - header, header};
-        }
+            attachments[0].region = {0.0f, 0.0f, ui_system->virtual_screen.x, ui_system->virtual_screen.y - header};
+            attachments[1].region = {header, ui_system->virtual_screen.y - header, ui_system->virtual_screen.x - header, header};
+        } else {*/
+            attachments[0].region = {0.0f, 0.0f, ui_system->virtual_screen.x, ui_system->virtual_screen.y - header};
+            attachments[1].region = {header, ui_system->virtual_screen.y - header, ui_system->virtual_screen.x - header, header};
+        //}
 
         position = vec2(0.0f);
-        size = win->size;
+        size = ui_system->virtual_screen;
         
-        if(!ui_system->window->is_minimized()) {
-            //ivec4 range = ivec4(0, 0, win->size);
-            //if(!win->decorated && win->is_windowed()) range = ivec4(shadow_width + border_width, shadow_width + border_width, win->size - int(shadow_width + border_width) * 2);
-            //else if(win->is_fullscreen()) range = ivec4(0, 0, win->size);
+        if(!render_system->ctx->is_minimized()) {
+            //ivec4 range = ivec4(0, 0, ui_system->virtual_screen);
+            //if(!win->decorated && win->is_windowed()) range = ivec4(shadow_width + border_width, shadow_width + border_width, ui_system->virtual_screen - int(shadow_width + border_width) * 2);
+            //else if(win->is_fullscreen()) range = ivec4(0, 0, ui_system->virtual_screen);
 
             //position = range.xy();
             //size = range.zw();
@@ -284,7 +293,7 @@ void screen_widget::init() {
     before.push_back(c);
 }
 
-ulong screen_widget::insert(std::string name, vec3 color, axiom::window* win) {
+ulong screen_widget::insert(std::string name, vec3 color, axiom::context* win) {
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     screen_widget widget;

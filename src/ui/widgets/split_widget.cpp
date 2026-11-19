@@ -21,6 +21,7 @@ uint64_t split_widget::insert(axiom::layout_mode layout, std::vector<panel_const
 }
 
 void split_widget::handle_inputs() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
     
     process_size();
@@ -42,7 +43,7 @@ void split_widget::handle_inputs() {
     if(ui_system.click_capture != self) operation = 0;
 
     if(ui_system.click_capture == self) {
-        if(ui_system.window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
+        if(render_system.ctx->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
             for(int i = 0; i < children.size() - 1; ++i) {
                 int i0 = i;
                 int i1 = i + 1;
@@ -56,7 +57,7 @@ void split_widget::handle_inputs() {
 
                     range += buffer_range;
 
-                    if(includes(ui_system.window->cursor_pos, range)) {
+                    if(includes(render_system.ctx->cursor_pos, range)) {
                         ui_system.cursor.cursor_mode = axiom::cursor_mode::DRAG_L;
 
                         operation = i;
@@ -69,7 +70,7 @@ void split_widget::handle_inputs() {
 
                     range += buffer_range;
 
-                    if(includes(ui_system.window->cursor_pos, range)) {
+                    if(includes(render_system.ctx->cursor_pos, range)) {
                         ui_system.cursor.cursor_mode = axiom::cursor_mode::DRAG_B;
                         
                         operation = i;
@@ -97,7 +98,7 @@ void split_widget::handle_inputs() {
             s -= borders;
             
             float p = position.x;
-            float c = ui_system.window->cursor_pos.x;
+            float c = render_system.ctx->cursor_pos.x;
             
             c = glm::clamp(c, w0->position.x + w0->min_width, w1->position.x + w1->size.x - w1->min_width - sep.x);
 
@@ -123,7 +124,7 @@ void split_widget::handle_inputs() {
             s -= borders;
             
             float p = position.y;
-            float c = ui_system.window->cursor_pos.y;
+            float c = render_system.ctx->cursor_pos.y;
             
             c = glm::clamp(c, w0->position.y + w0->min_height, w1->position.y + w1->size.y - w1->min_height - sep.y);
 
@@ -465,6 +466,7 @@ void split_widget::init() {
 }
     
 capture_data split_widget::handle_capture() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     float buffer = 4.0f;
@@ -486,7 +488,7 @@ capture_data split_widget::handle_capture() {
 
             range += buffer_range;
 
-            if(includes(ui_system.window->cursor_pos, range)) {
+            if(includes(render_system.ctx->cursor_pos, range)) {
                 return {self, z + 0.001f, true, false};
             }
         } else if(layout_mode == axiom::layout_mode::COLUMN) {
@@ -497,7 +499,7 @@ capture_data split_widget::handle_capture() {
 
             range += buffer_range;
 
-            if(includes(ui_system.window->cursor_pos, range)) {
+            if(includes(render_system.ctx->cursor_pos, range)) {
                 return {self, z + 0.001f, true};
             }
         }

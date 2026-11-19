@@ -1,4 +1,4 @@
-#include <wrapper/webgl/context/input.hpp>
+#include <wrapper/webgl/input.hpp>
 
 #include <array>
 
@@ -47,6 +47,9 @@ std::unordered_map<std::string, axiom::input_code> get_key() {
     keys["KeyX"] = axiom::input_code::KEY_X;
     keys["KeyY"] = axiom::input_code::KEY_Y;
     keys["KeyZ"] = axiom::input_code::KEY_Z;
+
+    keys["Space"] = axiom::input_code::KEY_SPACE;
+    keys["ShiftLeft"] = axiom::input_code::KEY_LEFT_SHIFT;
     
     /*
     keys[GLFW_KEY_ESCAPE] = axiom::input_code::KEY_ESCAPE;

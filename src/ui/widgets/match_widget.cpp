@@ -68,6 +68,7 @@ void match_widget::init() {
 }
 
 capture_data match_widget::handle_capture() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     //auto& parent_widget = ui_system.widgets[parent];
@@ -77,7 +78,7 @@ capture_data match_widget::handle_capture() {
         vec4(range.xy(), range.xy() + range.zw())
     };
 
-    if(includes(ui_system.window->cursor_pos, ranges[0])) {
+    if(includes(render_system.ctx->cursor_pos, ranges[0])) {
         return {parent, z, true, true};
     }
 

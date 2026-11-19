@@ -156,9 +156,10 @@ void text_widget::init() {
 }
 
 axiom::capture_data text_widget::handle_capture() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
-    if(ui_system.cursor_clip(clip, ui_system.window->cursor_pos) && includes(ui_system.window->cursor_pos, ivec4(position, position + size))) {
+    if(ui_system.cursor_clip(clip, render_system.ctx->cursor_pos) && includes(render_system.ctx->cursor_pos, ivec4(position, position + size))) {
         return {parent, z, true, true};
     }
 

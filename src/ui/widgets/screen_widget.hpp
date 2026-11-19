@@ -15,7 +15,7 @@ struct screen_widget : widget {
     vec2 text_size;
     vec3 color;
 
-    axiom::window* win;
+    axiom::context* win;
 
     bool fullscreen = false;
     bool hover_minimize = false;
@@ -27,7 +27,7 @@ struct screen_widget : widget {
     void init();
     capture_data handle_capture();
 
-    static ulong insert(std::string name, vec3 color, axiom::window* win);
+    static ulong insert(std::string name, vec3 color, axiom::context* win);
 };
 
 }

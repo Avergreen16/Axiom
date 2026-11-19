@@ -14,6 +14,13 @@
 #include "glm/gtx/quaternion.hpp"
 #include "glm/gtx/orthonormalize.hpp"
 
+#ifdef AXIOM_WEBGL
+
+#elifdef AXIOM_OPENGL
+#define AXIOM_TAKE_SCREENSHOT
+
+#endif
+
 using ivec2 = glm::ivec2;
 using ivec3 = glm::ivec3;
 using ivec4 = glm::ivec4;
@@ -53,8 +60,8 @@ struct render_system : axiom::system {
     std::unordered_map<std::string, axiom::texture> textures;
     std::unordered_map<std::string, axiom::shader> shaders;
 
-    std::vector<axiom::render_target> targets;
-    std::vector<axiom::shadow_renderer> shadow_renderers;
+    std::vector<std::unique_ptr<axiom::render_target>> targets;
+    std::vector<std::unique_ptr<axiom::shadow_renderer>> shadow_renderers;
 
     // shadow parameters
     float light_altitude = 50.0f;
@@ -67,13 +74,14 @@ struct render_system : axiom::system {
 
     void process_inputs();
 
-    //void take_screenshot(std::string filepath);
+    #ifdef AXIOM_TAKE_SCREENSHOT
+    void take_screenshot(std::string filepath);
+    #endif
 };
 
 void render_init(axiom::context* ctx);
 
 axiom::shader& get_shader(std::string id);
 axiom::texture& get_texture(std::string id);
-axiom::vertices& get_vertices();
 
 }

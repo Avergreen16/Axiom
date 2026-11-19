@@ -239,5 +239,4 @@ void push_uniform(uint index, uint count, mat4* value) {
     glUniformMatrix4fv(index, count, false, (const float*)value);
 }
 
-
 }

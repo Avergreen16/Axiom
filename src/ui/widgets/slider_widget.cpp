@@ -4,6 +4,7 @@
 namespace axiom {
 
 void slider_widget::handle_inputs() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
     
     if(ui_system.hover_capture == self && ui_system.click_capture == NULL_WIDGET || ui_system.click_capture == self) {
@@ -14,7 +15,7 @@ void slider_widget::handle_inputs() {
     if(ui_system.click_capture == self) {
         pressed = true;
 
-        float p = ui_system.window->cursor_pos.x - position.x - slider_width * 0.5f;
+        float p = render_system.ctx->cursor_pos.x - position.x - slider_width * 0.5f;
 
         float frac = p / (size.x - slider_width);
         frac = glm::clamp(frac, 0.0f, 1.0f);
@@ -148,9 +149,10 @@ uint64_t slider_widget::insert(vec2 size, float slider_width, vec3 color, vec2 r
 }
 
 capture_data slider_widget::handle_capture() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
-    bool clip_cursor = ui_system.cursor_clip(clip, ui_system.window->cursor_pos);
+    bool clip_cursor = ui_system.cursor_clip(clip, render_system.ctx->cursor_pos);
 
     if(clip_cursor) {
         std::vector<vec4> ranges = {
@@ -158,7 +160,7 @@ capture_data slider_widget::handle_capture() {
         };
 
         for(vec4 range : ranges) {
-            if(includes(ui_system.window->cursor_pos, range)) return {self, z, true};
+            if(includes(render_system.ctx->cursor_pos, range)) return {self, z, true};
         }
     }
 

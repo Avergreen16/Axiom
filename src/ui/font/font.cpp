@@ -3,7 +3,7 @@
 namespace axiom {
 
 void font_handler::init() {
-    
+    texture.load(uvec3(1, 1, 1), axiom::texture_format::RGBA8);
 }
 
 void font_handler::process(std::string filepath, std::string label) {
@@ -34,9 +34,10 @@ void font_handler::touch_texture() {
     if(prev_phases != fonts["test"]->active_phases) {
         std::vector<glyph_key> to_erase;
         for(const glyph_key& prev_key : prev_phases) {
-            if(!fonts["test"]->active_phases.contains(prev_key)) to_erase.push_back(prev_key);
+            if(!fonts["test"]->active_phases.contains(prev_key)) {
+                to_erase.push_back(prev_key);
+            }
         }
-        for(glyph_key key : to_erase) fonts["test"]->phases.erase(key);
 
         prev_phases = fonts["test"]->active_phases;
 

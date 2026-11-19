@@ -7,14 +7,16 @@
 
 namespace axiom {
 
-ui_system::ui_system(axiom::window* window_) {
-    window = window_;
+ui_system::ui_system() {
+    
 }
     
 void ui_system::init() {
+    auto& render_system = axiom::ecs.get_system<axiom::render_system>();
+
     font_handler.init();
 
-    font_handler.process("external/axiom/res/fonts/axiom-large.bdf", "test");
+    font_handler.process(render_system.resource_root + "/fonts/axiom-large.bdf", "test");
     //font_handler.process("external/axiom/res/fonts/cozette.bdf", "test");
     //font_handler.process("external/axiom/res/fonts/axiom-default.bdf", "test");
     //font_handler.process("external/axiom/res/fonts/spleen.bdf", "test");
@@ -151,6 +153,9 @@ void ui_system::input_set(ulong w) {
 }
 
 void ui_system::call() {
+    auto& render_system = axiom::ecs.get_system<axiom::render_system>();
+    virtual_screen = render_system.ctx->size;
+    
     target_textures.clear();
     
     handle_capture();
@@ -158,8 +163,8 @@ void ui_system::call() {
     copy = false;
     paste = false;
     copy_strings.clear();
-    if(window->pressed_buttons.contains(axiom::input_code::KEY_V) && window->input_map[axiom::input_code::KEY_LEFT_CTRL]) paste = true;
-    if(window->pressed_buttons.contains(axiom::input_code::KEY_C) && window->input_map[axiom::input_code::KEY_LEFT_CTRL] && !paste) copy = true;
+    if(render_system.ctx->pressed_buttons.contains(axiom::input_code::KEY_V) && render_system.ctx->input_map[axiom::input_code::KEY_LEFT_CTRL]) paste = true;
+    if(render_system.ctx->pressed_buttons.contains(axiom::input_code::KEY_C) && render_system.ctx->input_map[axiom::input_code::KEY_LEFT_CTRL] && !paste) copy = true;
 
     vertices.clear();
     cursor.cursor_mode = axiom::cursor_mode::DEFAULT;
@@ -246,8 +251,8 @@ void ui_system::call() {
     }
 
     if(text_capture != NULL_WIDGET && widgets.contains(text_capture)) {
-        if(window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT) && !window->input_map[axiom::input_code::KEY_LEFT_SHIFT]) {
-            cursor_anchor = window->cursor_pos;
+        if(render_system.ctx->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT) && !render_system.ctx->input_map[axiom::input_code::KEY_LEFT_SHIFT]) {
+            cursor_anchor = render_system.ctx->cursor_pos;
             
             for(int i = 0; i < selections.size(); ++i) {
                 auto& sel = selections[i];
@@ -258,8 +263,8 @@ void ui_system::call() {
             }
         }
 
-        if(window->input_map[axiom::input_code::MOUSE_LEFT]) {
-            cursor_pos = window->cursor_pos;
+        if(render_system.ctx->input_map[axiom::input_code::MOUSE_LEFT]) {
+            cursor_pos = render_system.ctx->cursor_pos;
 
             std::vector<std::shared_ptr<axiom::text>> child_texts;
             //
@@ -362,7 +367,7 @@ void ui_system::call() {
         std::vector<uint64_t> child_ids = {0};
         //
 
-        cursor_pos = window->cursor_pos;
+        cursor_pos = render_system.ctx->cursor_pos;
         
         while(true) {
             if(path.size() == 0) break;
@@ -388,7 +393,7 @@ void ui_system::call() {
         for(auto& [key, widget] : widgets) {
             if(c.contains(key)) {
                 for(auto& text : widget->text) {
-                    //text->select(vec4(cursor_anchor, cursor_pos), window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT));
+                    //text->select(vec4(cursor_anchor, cursor_pos), render_system.ctx->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT));
 
                     //if(text->select_range.x != -1) {
                     //    text_cursor = true;
@@ -426,6 +431,7 @@ void ui_system::call() {
 
             if(child_ids.back() == 0) {
                 widget->mesh();
+
                 vertices.insert(vertices.end(), widget->vertices_before.begin(), widget->vertices_before.end());
             }
 
@@ -446,17 +452,12 @@ void ui_system::call() {
 
     vertices.insert(vertices.end(), selection_vertices.begin(), selection_vertices.end());
 
-    if(window->cursor_hidden && !window->cursor_disabled && window->cursor_in_window()) {
-        std::vector<ui_vertex> cursor_vertices = mesh_cursor(cursor.cursor_mode, window->cursor_pos);
+    if(render_system.ctx->cursor_hidden && !render_system.ctx->cursor_disabled && render_system.ctx->cursor_in_window()) {
+        std::vector<ui_vertex> cursor_vertices = mesh_cursor(cursor.cursor_mode, render_system.ctx->cursor_pos);
 
         vertices.insert(vertices.end(), cursor_vertices.begin(), cursor_vertices.end());
-    } else if(!window->cursor_hidden && !window->cursor_disabled && window->cursor_in_window()) {
-        if(cursor.cursor_mode == axiom::cursor_mode::DEFAULT) set_cursor(window->window_handle, 0);
-        else if(cursor.cursor_mode == axiom::cursor_mode::DRAG_L || cursor.cursor_mode == axiom::cursor_mode::DRAG_R) set_cursor(window->window_handle, 1);
-        else if(cursor.cursor_mode == axiom::cursor_mode::DRAG_B || cursor.cursor_mode == axiom::cursor_mode::DRAG_T) set_cursor(window->window_handle, 2);
-        else if(cursor.cursor_mode == axiom::cursor_mode::DRAG_BR || cursor.cursor_mode == axiom::cursor_mode::DRAG_TL) set_cursor(window->window_handle, 3);
-        else if(cursor.cursor_mode == axiom::cursor_mode::DRAG_BL || cursor.cursor_mode == axiom::cursor_mode::DRAG_TR) set_cursor(window->window_handle, 4);
-        else if(cursor.cursor_mode == axiom::cursor_mode::CLICK) set_cursor(window->window_handle, 5);
+    } else if(!render_system.ctx->cursor_hidden && !render_system.ctx->cursor_disabled && render_system.ctx->cursor_in_window()) {
+        render_system.ctx->set_cursor(cursor.cursor_mode);
     }
 
     for(ulong k : delete_buffer) {
@@ -472,7 +473,7 @@ void ui_system::call() {
 
     uint32_t i = 0;
     for(auto& t : text) {
-        if(t.unique()) {
+        if(t.use_count() == 1) {
             delete_indices.push_back(i);
         }
         ++i;
@@ -540,6 +541,8 @@ void ui_system::set_attrib(vec2 min_size, vec2 max_size, vec2 weights) {
 }
 
 void ui_system::handle_capture() {
+    auto& render_system = axiom::ecs.get_system<axiom::render_system>();
+
     capture_data capture_global;
     capture_global.z = 0.0f;
     capture_data capture_text;
@@ -587,18 +590,18 @@ void ui_system::handle_capture() {
     
     hover_capture = capture_global.key;
 
-    if(window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
+    if(render_system.ctx->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
         click_capture = hover_capture;
         if(capture_text.text_capture) text_capture = capture_text.key;
     }
-    if(!window->input_map[axiom::input_code::MOUSE_LEFT]) {
+    if(!render_system.ctx->input_map[axiom::input_code::MOUSE_LEFT]) {
         click_capture = NULL_WIDGET;
         text_capture = NULL_WIDGET;
     }
 }
 
-void ui_init(axiom::window* window) {
-    axiom::ecs.register_system(axiom::ui_system(window));
+void ui_init() {
+    axiom::ecs.register_system(axiom::ui_system());
     
     //static axiom::font_asset default_font = axiom::font_asset::load(axiom::ecs.get_system<axiom::render_system>().resource_root + "/fonts/axiom_default.bdf");
     //axiom::ecs.get_system<axiom::ui_system>().font_assets = {&default_font};
@@ -762,6 +765,8 @@ float clip_sdf(clip_space& space, vec2 point) {
 }
 
 bool ui_system::cursor_clip(uint clip, vec2 cursor) {
+    return true;
+    /*
     uint current_clip = clip;
     while(current_clip != 0xFFFFFFFF) {
         auto& space = clip_spaces[current_clip];
@@ -773,6 +778,7 @@ bool ui_system::cursor_clip(uint clip, vec2 cursor) {
         current_clip = space.parent;
     }
     return true;
+    */
 }
 
 void ui_system::input_attach(ulong a) {

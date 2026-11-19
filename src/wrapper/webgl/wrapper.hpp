@@ -320,7 +320,7 @@ struct uniform_buffer {
 
     void init();
 
-    void buffer_data(void* data, uint size_bytes, uint usage);
+    void buffer_data(void* data, uint size_bytes, axiom::usage_type usage);
 
     void buffer_subdata(void* data, uint size_bytes, uint offset);
 
@@ -398,9 +398,9 @@ struct texture {
     texture() = default;
 
     texture(const texture& t) = delete;
+    texture& operator=(texture& t) = delete;
 
     texture(texture&& t) noexcept;
-
     texture& operator=(texture&& t) noexcept;
 
     void delete_texture();
@@ -436,6 +436,7 @@ struct framebuffer {
     void bind_texture(std::shared_ptr<texture> texture_, uint attachment, int32_t binding);
 
     void bind();
+    void bind(std::vector<bool> enabled);
 
     void resize(glm::ivec2 new_size);
 
@@ -443,5 +444,9 @@ struct framebuffer {
 
     ~framebuffer();
 };
+
+void draw_points(uint start, uint num);
+void draw_lines(uint start, uint num);
+void draw_triangles(uint start, uint num);
 
 }

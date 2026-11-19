@@ -37,6 +37,7 @@ ulong window_widget::insert(std::string label, ivec2 size, ivec2 position, vec3 
 }
 
 void window_widget::handle_inputs() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     bool close_window = false;
@@ -49,11 +50,11 @@ void window_widget::handle_inputs() {
     range.z += range.x;
     range.w += range.y;
 
-    if(includes(ui_system.window->cursor_pos, range)) {
+    if(includes(render_system.ctx->cursor_pos, range)) {
         hover_close = true;
     } else hover_close = false;
 
-    if(ui_system.window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT) && hover_close) {
+    if(render_system.ctx->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT) && hover_close) {
         auto children = ui_system.get_children(self);
         children.push_back(self);
 
@@ -87,10 +88,10 @@ void window_widget::handle_inputs() {
     vec2 min_size = vec2(16, 16);
 
     auto resize_left = [&]() {
-        position.x += ui_system.window->cursor_delta.x;
-        size.x -= ui_system.window->cursor_delta.x;
+        position.x += render_system.ctx->cursor_delta.x;
+        size.x -= render_system.ctx->cursor_delta.x;
 
-        float delta_max = (ui_system.window->cursor_pos.x) - position.x;
+        float delta_max = (render_system.ctx->cursor_pos.x) - position.x;
         position.x += delta_max;
         size.x -= delta_max;
 
@@ -100,9 +101,9 @@ void window_widget::handle_inputs() {
     };
 
     auto resize_right = [&]() {
-        size.x += ui_system.window->cursor_delta.x;
+        size.x += render_system.ctx->cursor_delta.x;
 
-        float delta_max = (position.x + size.x) - (ui_system.window->cursor_pos.x);
+        float delta_max = (position.x + size.x) - (render_system.ctx->cursor_pos.x);
         size.x -= delta_max;
 
         float delta_min = glm::max(0.0f, min_size.x - size.x);
@@ -111,9 +112,9 @@ void window_widget::handle_inputs() {
 
     auto resize_top = [&]() {
         float delta_min;
-        size.y += ui_system.window->cursor_delta.y;
+        size.y += render_system.ctx->cursor_delta.y;
 
-        float delta_max = (position.y + size.y + header) - (ui_system.window->cursor_pos.y);
+        float delta_max = (position.y + size.y + header) - (render_system.ctx->cursor_pos.y);
         size.y -= delta_max;
 
         delta_min = glm::max(0.0f, min_size.y - size.y);
@@ -122,10 +123,10 @@ void window_widget::handle_inputs() {
 
     auto resize_bottom = [&]() {
         float delta_min;
-        position.y += ui_system.window->cursor_delta.y;
-        size.y -= ui_system.window->cursor_delta.y;
+        position.y += render_system.ctx->cursor_delta.y;
+        size.y -= render_system.ctx->cursor_delta.y;
 
-        float delta_max = (ui_system.window->cursor_pos.y) - position.y;
+        float delta_max = (render_system.ctx->cursor_pos.y) - position.y;
         position.y += delta_max;
         size.y -= delta_max;
 
@@ -137,7 +138,7 @@ void window_widget::handle_inputs() {
     if(ui_system.click_capture == self) {
         switch (operation) {
         case 0:
-            position += ui_system.window->cursor_delta;
+            position += render_system.ctx->cursor_delta;
             dirty = true;
             break;
         case 1:
@@ -200,10 +201,10 @@ void window_widget::handle_inputs() {
     if(operation == NULL_OPERATION && (ui_system.hover_capture == self || ui_system.click_capture == self)) {
         uint op = NULL_OPERATION;
 
-        bool left_cont = includes(ui_system.window->cursor_pos, range_left);
-        bool right_cont = includes(ui_system.window->cursor_pos, range_right);
-        bool top_cont = includes(ui_system.window->cursor_pos, range_top);
-        bool bottom_cont = includes(ui_system.window->cursor_pos, range_bottom);
+        bool left_cont = includes(render_system.ctx->cursor_pos, range_left);
+        bool right_cont = includes(render_system.ctx->cursor_pos, range_right);
+        bool top_cont = includes(render_system.ctx->cursor_pos, range_top);
+        bool bottom_cont = includes(render_system.ctx->cursor_pos, range_bottom);
 
         if(left_cont && bottom_cont) {
             ui_system.cursor.cursor_mode = axiom::cursor_mode::DRAG_BL;
@@ -231,12 +232,12 @@ void window_widget::handle_inputs() {
             op = 6;
         }
 
-        if(ui_system.window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
+        if(render_system.ctx->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
             if(op != NULL_OPERATION) {
                 operation = op;
             }
             else {
-                if(includes(ui_system.window->cursor_pos, range_move)) {
+                if(includes(render_system.ctx->cursor_pos, range_move)) {
                     operation = 0;
                 }
                 else {
@@ -523,13 +524,14 @@ void window_widget::init() {
 }
 
 capture_data window_widget::handle_capture() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     std::vector<vec4> ranges = {
         vec4(position - (float)resize_border, position + vec2(size.x, size.y + header) + (float)resize_border)};
 
     for(vec4 range : ranges) {
-        if(includes(ui_system.window->cursor_pos, range))
+        if(includes(render_system.ctx->cursor_pos, range))
             return {self, z, true, false, true};
     }
 

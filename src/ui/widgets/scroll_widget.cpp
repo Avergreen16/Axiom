@@ -5,6 +5,7 @@
 namespace axiom {
     
 void scroll_widget::init() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system* ui_system = &axiom::ecs.get_system<axiom::ui_system>();
 
     widget_constraint c;
@@ -224,6 +225,7 @@ void scroll_widget::init() {
 
 
 void scroll_widget::handle_inputs() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     float height = size.y;
@@ -234,11 +236,11 @@ void scroll_widget::handle_inputs() {
     float max_scroll = 0.0f;
     scroll_pos = glm::clamp(scroll_pos, min_scroll, max_scroll);
     if(max_scroll > min_scroll) {
-        if(ui_system.window->scroll_delta && includes(ui_system.window->cursor_pos, vec4(position, position + size))) {
+        if(render_system.ctx->scroll_delta && includes(render_system.ctx->cursor_pos, vec4(position, position + size))) {
             dirty = true;
 
             float scroll_speed = 60.0f;
-            scroll_pos += ui_system.window->scroll_delta * scroll_speed;
+            scroll_pos += render_system.ctx->scroll_delta * scroll_speed;
             scroll_pos = glm::clamp(scroll_pos, min_scroll, max_scroll);
 
             anchor_mode = 0;
@@ -269,18 +271,18 @@ void scroll_widget::handle_inputs() {
             vec2 ssize = vec2(scroll_width, scrollbar_height);
             vec2 spos = vec2(position.x + size.x - scroll_width, position.y + scrollbar_pos);
 
-            if(includes(ui_system.window->cursor_pos, {spos, spos + ssize}) && ui_system.hover_capture == self) {
+            if(includes(render_system.ctx->cursor_pos, {spos, spos + ssize}) && ui_system.hover_capture == self) {
                 ui_system.cursor.cursor_mode = ui_system.cursor.cursor_mode = axiom::cursor_mode::DRAG_T; 
                 
-                if(ui_system.window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
+                if(render_system.ctx->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
                     capture_scroll = true;
-                    scroll_anchor = ui_system.window->cursor_pos.y - position.y - scrollbar_pos;
+                    scroll_anchor = render_system.ctx->cursor_pos.y - position.y - scrollbar_pos;
                 }
             }
         }
 
         if(ui_system.click_capture == self && capture_scroll) {
-            float rel_pos = ui_system.window->cursor_pos.y - position.y - scroll_anchor;
+            float rel_pos = render_system.ctx->cursor_pos.y - position.y - scroll_anchor;
 
             scroll_pos = -(1.0f - rel_pos / (size.y - scrollbar_height)) * total_scrollable;
             scroll_pos = glm::clamp(scroll_pos, min_scroll, max_scroll);
@@ -288,7 +290,7 @@ void scroll_widget::handle_inputs() {
             ui_system.cursor.cursor_mode = ui_system.cursor.cursor_mode = axiom::cursor_mode::DRAG_T;
         }
 
-        if(!ui_system.window->input_map[axiom::input_code::MOUSE_LEFT]) capture_scroll = false;
+        if(!render_system.ctx->input_map[axiom::input_code::MOUSE_LEFT]) capture_scroll = false;
     }
 
     /*
@@ -428,6 +430,8 @@ uint64_t scroll_widget::insert(float scroll_width, bool reserve) {
 }
 
 capture_data scroll_widget::handle_capture() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
+    
     if(reserve) {
         axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
@@ -435,7 +439,7 @@ capture_data scroll_widget::handle_capture() {
             vec4(position + vec2(size.x - scroll_width, 0.0f), position + size),
         };
 
-        if(includes(ui_system.window->cursor_pos, ranges[0])) return {self, z, true, false, true};
+        if(includes(render_system.ctx->cursor_pos, ranges[0])) return {self, z, true, false, true};
     }
 
     return {self, z, false};

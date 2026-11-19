@@ -331,9 +331,9 @@ void shadow_renderer::create(uint num_cascades, float cascade_factor, float base
 
     axiom::render_system& rs = ecs.get_system<axiom::render_system>();
 
-    rs.shadow_renderers.push_back(std::move(renderer));
+    rs.shadow_renderers.push_back(std::make_unique<axiom::shadow_renderer>(std::move(renderer)));
 
-    target->shadow = &rs.shadow_renderers.back();
+    target->shadow = rs.shadow_renderers.back().get();
 } 
 
 }

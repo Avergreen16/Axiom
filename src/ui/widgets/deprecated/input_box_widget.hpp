@@ -2,6 +2,9 @@
 
 #include <ui/widget_base.hpp>
 #include <ui/text.hpp>
+#include <ui/system.hpp>
+#include <include/render.hpp>
+#include <ui/widgets/menu_widget.hpp>
 
 #include <sstream>
 
@@ -25,8 +28,9 @@ struct input_box_widget : widget {
 
 template<typename type>
 void input_box_widget<type>::handle_inputs() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
-    view_range = vec4(position, position + size);
+    vec4 view_range = vec4(position, position + size);
     
     text[0]->z = z;
 
@@ -66,7 +70,7 @@ void input_box_widget<type>::handle_inputs() {
         //text[0]->size = {a[0], a[2]};
     }
 
-    if(ui_system.window->pressed_buttons.contains(axiom::input_code::MOUSE_RIGHT) && includes(ui_system.window->cursor_pos, vec4(position, position + size))) {
+    if(render_system.ctx->pressed_buttons.contains(axiom::input_code::MOUSE_RIGHT) && includes(render_system.ctx->cursor_pos, vec4(position, position + size))) {
         std::shared_ptr<axiom::menu_node> node(new axiom::menu_node{
             "",
             {
@@ -75,10 +79,10 @@ void input_box_widget<type>::handle_inputs() {
                         axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
                         if(text[0]->select_range.x == text[0]->select_range.y) {
-                            glfwSetClipboardString(ui_system.window->window_handle, text[0]->string.c_str());
+                            //glfwSetClipboardString(render_system.ctx->window_handle, text[0]->string.c_str());
                         } else {
                             std::string str = text[0]->retrieve();
-                            glfwSetClipboardString(ui_system.window->window_handle, str.c_str());
+                            //glfwSetClipboardString(render_system.ctx->window_handle, str.c_str());
                         }
                     }
                 ),
@@ -87,13 +91,13 @@ void input_box_widget<type>::handle_inputs() {
                         axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
                         
                         if(text[0]->select_range.x == -1) {
-                            text[0]->string = glfwGetClipboardString(ui_system.window->window_handle);
-                            update = true;
+                            //text[0]->string = glfwGetClipboardString(render_system.ctx->window_handle);
+                            //update = true;
                             
                             //text[0]->dirty = true;
                             //text[0]->remesh = true;
                         } else {
-                            paste = true;
+                            //paste = true;
                         }
                     }
                 ),
@@ -103,7 +107,7 @@ void input_box_widget<type>::handle_inputs() {
         axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
         ui_system.input_reset();
 
-        ulong f = axiom::menu_widget::insert(ui_system.window->cursor_pos + vec2(0.0f, -32.0f), 0.6f, color_editor * 0.9f, 160, 16, 32, node, {});
+        ulong f = axiom::menu_widget::insert(vec2(render_system.ctx->cursor_pos) + vec2(0.0f, -32.0f), 0.6f, color_editor * 0.9f, 160, 16, 32, node.get(), {});
     }
 
     vec2 range = {glm::max(2.0f, text[0]->font->line_height * 0.5f), size.x - 4};
@@ -234,7 +238,7 @@ axiom::capture_data input_box_widget<type>::handle_capture() {
     };
 
     for(vec4 range : ranges) {
-        if(includes(ui_system.window->cursor_pos, range)) return {z, true};
+        if(includes(render_system.ctx->cursor_pos, range)) return {z, true};
     }
 
     return {z, false};

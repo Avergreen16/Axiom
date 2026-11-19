@@ -98,13 +98,14 @@ uint64_t panel_widget::insert() {
 }
 
 capture_data panel_widget::handle_capture() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     std::vector<vec4> ranges = {
         vec4(position, position + size)
     };
 
-    if(includes(ui_system.window->cursor_pos, ranges[0])) return {self, z, true, true};
+    if(includes(render_system.ctx->cursor_pos, ranges[0])) return {self, z, true, true};
 
     return {self, z, false};
 }

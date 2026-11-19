@@ -120,6 +120,26 @@ struct resize_event {
     ivec2 new_size;
 };
 
+struct touch {
+    uint identifier;
+    vec2 position;
+    vec2 delta = vec2(0.0f);
+};
+
+enum class cursor_mode{
+    DEFAULT,
+    CLICK,
+    TEXT,
+    DRAG_T,
+    DRAG_TR,
+    DRAG_R,
+    DRAG_BR,
+    DRAG_B,
+    DRAG_BL,
+    DRAG_L,
+    DRAG_TL,
+};
+
 struct context {
     struct implementation;
     std::unique_ptr<implementation> imp;
@@ -137,7 +157,7 @@ struct context {
     bool move = false;
     
     std::vector<ivec4> rs;
-    ivec2 prev_cursor_pos = ivec2(0);
+    vec2 prev_cursor_pos = vec2(0.0f);
     
     std::vector<axiom::key_event> key_events;
     std::vector<axiom::mouse_button_event> mouse_button_events;
@@ -153,9 +173,11 @@ struct context {
     float scroll_delta;
     std::string char_delta;
 
-    ivec2 cursor_pos = ivec2(0);
+    vec2 cursor_pos = vec2(0.0f);
     bool cursor_hidden = false;
     bool cursor_disabled = false;
+
+    std::unordered_map<uint, touch> touches;
 
     std::unordered_map<axiom::input_code, bool> input_map;
     std::unordered_set<axiom::input_code> pressed_buttons;
@@ -168,21 +190,28 @@ struct context {
 
     context();
     ~context();
+
+    context(context& ctx) = delete;
+    context& operator=(context& ctx) = delete;
     
     bool cursor_in_window();
 
     void hide_cursor();
     void disable_cursor();
     void show_cursor();
-
-    /*
-    void poll_events();
-
+    void set_loop(void(*loop)());
+    void create_shaders();
+    void set_cursor(cursor_mode mode);
 
     bool is_fullscreen();
     bool is_maximized();
     bool is_windowed();
     bool is_minimized();
+
+    /*
+    void poll_events();
+
+
 
     void make_fullscreen();
     void make_maximized();

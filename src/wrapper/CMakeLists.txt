@@ -1,8 +1,8 @@
 if(AXIOM_WEBGL)
     add_library(AxiomWrapper STATIC
         webgl/wrapper.cpp
-        webgl/context/input.cpp
-        webgl/context/context.cpp
+        webgl/input.cpp
+        webgl/context.cpp
     )
 elseif(AXIOM_OPENGL)
 

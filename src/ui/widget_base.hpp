@@ -119,7 +119,7 @@ struct widget {
     virtual void on_delete() {};
 
     virtual capture_data handle_capture() {
-        return {0.0f, false, false};
+        return {0, false, false};
     };
 };
 

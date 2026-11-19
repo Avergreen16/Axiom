@@ -211,8 +211,6 @@ void text::touch() {
 
         axiom::ecs.get_system<axiom::ui_system>().font_handler.touch_phase(tglyph.key);
     }
-
-    //if(lines.size() > 1) std::cout << size << "\n";
 }
 
 std::vector<ui_vertex> create_char(axiom::font& font, axiom::text_glyph& glyph) {
@@ -231,6 +229,7 @@ std::vector<ui_vertex> create_char(axiom::font& font, axiom::text_glyph& glyph) 
     ret.push_back(c);
 
     auto& phase = font.phases[glyph.key];
+
     if(phase.texture.z == 0) return {};
 
     for(ui_vertex& v : ret) {
@@ -248,6 +247,7 @@ std::vector<ui_vertex> create_char(axiom::font& font, axiom::text_glyph& glyph) 
 
 std::vector<ui_vertex> text::mesh() {
     std::vector<ui_vertex> vs = select_vertices;
+
 
     for(text_glyph& tglyph : tglyphs) {
         auto tvs = create_char(*font, tglyph);
@@ -285,13 +285,14 @@ std::string text::retrieve() {
 }
 
 void text::call() {
-    //
-
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
+
+    //
 
     text_size = 1;
 
-    if(collide(ui_system.window->cursor_pos) && ui_system.cursor_clip(clip, ui_system.window->cursor_pos)) {
+    if(collide(render_system.ctx->cursor_pos) && ui_system.cursor_clip(clip, render_system.ctx->cursor_pos)) {
         ulong current = parent;
         bool hover = false;
         while(true) {
@@ -370,8 +371,6 @@ vec2 cursor_pos(axiom::text& text, uint index) {
     range.x = std::get<1>(text.lines[line]);
     if(text.lines.size() == line + 1) range.y = text.sglyphs.size();
     else range.y = std::get<1>(text.lines[line + 1]);
-
-    std::cout << range.x << " " << range.y << "\n";
 
     for(int i = range.x; i < index; ++i) {
         shaped_glyph& glyph = text.sglyphs[i];

@@ -5,13 +5,14 @@
 namespace axiom {
  
 void text_box_widget::handle_inputs() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     //view_range = vec4(position, position + size);
 
-    if(ui_system.window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
-        //if(includes(ui_system.window->cursor_pos, view_range)) {
-            vec2 clamped_cursor = vec2(glm::clamp(ui_system.window->cursor_pos.x, text[0]->position.x + 1, text[0]->position.x + text[0]->size.x - 1), glm::clamp(ui_system.window->cursor_pos.y, text[0]->position.y + 1, text[0]->position.y + text[0]->size.y - 1));
+    if(render_system.ctx->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
+        //if(includes(render_system.ctx->cursor_pos, view_range)) {
+            vec2 clamped_cursor = vec2(glm::clamp((float)render_system.ctx->cursor_pos.x, text[0]->position.x + 1, text[0]->position.x + text[0]->size.x - 1), glm::clamp((float)render_system.ctx->cursor_pos.y, text[0]->position.y + 1, text[0]->position.y + text[0]->size.y - 1));
 
             ui_system.cursor_anchor = clamped_cursor;
 
@@ -19,9 +20,9 @@ void text_box_widget::handle_inputs() {
         //}
     }
 
-    if(ui_system.window->char_delta.size()) {
+    if(render_system.ctx->char_delta.size()) {
         bool insert = false;
-        //if(text[0]->select_range == ivec2(-1)) text[0]->string += ui_system.window->char_delta;
+        //if(text[0]->select_range == ivec2(-1)) text[0]->string += render_system.ctx->char_delta;
         //text[0]->time = get_time();
         //text[0]->select_range = ivec2(text[0]->string.size());
     }
@@ -71,7 +72,7 @@ void text_box_widget::handle_inputs() {
     }
     */
 
-    if(ui_system.window->pressed_buttons.contains(axiom::input_code::MOUSE_RIGHT) && includes(ui_system.window->cursor_pos, vec4(position, position + size))) {
+    if(render_system.ctx->pressed_buttons.contains(axiom::input_code::MOUSE_RIGHT) && includes(render_system.ctx->cursor_pos, vec4(position, position + size))) {
         axiom::menu_node* node = new axiom::menu_node{
             "",
             {
@@ -81,10 +82,10 @@ void text_box_widget::handle_inputs() {
                         
                         /*
                         if(text[0]->select_range.x == text[0]->select_range.y) {
-                            glfwSetClipboardString(ui_system.window->window_handle, text[0]->string.c_str());
+                            glfwSetClipboardString(render_system.ctx->window_handle, text[0]->string.c_str());
                         } else {
                             std::string str = text[0]->retrieve();
-                            glfwSetClipboardString(ui_system.window->window_handle, str.c_str());
+                            glfwSetClipboardString(render_system.ctx->window_handle, str.c_str());
                         }
                         */
                     }
@@ -95,7 +96,7 @@ void text_box_widget::handle_inputs() {
                         
                         /*
                         if(text[0]->select_range.x == -1) {
-                            text[0]->string = glfwGetClipboardString(ui_system.window->window_handle);
+                            text[0]->string = glfwGetClipboardString(render_system.ctx->window_handle);
                             update = true;
                             
                             //text[0]->dirty = true;
@@ -112,13 +113,13 @@ void text_box_widget::handle_inputs() {
         axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
         ui_system.input_reset();
 
-        ulong f = axiom::menu_widget::insert(ui_system.window->cursor_pos + vec2(0.0f, -32.0f), 0.6f, color_editor * 0.9f, 160, 16, 32, node, {});
+        ulong f = axiom::menu_widget::insert((vec2)render_system.ctx->cursor_pos + vec2(0.0f, -32.0f), 0.6f, color_editor * 0.9f, 160, 16, 32, node, {});
     }
 
     vec2 text_pos = position + vec2(boundary.x, boundary.y);
     text[0]->position = round(text_pos);
 
-    if(ui_system.window->pressed_buttons.contains(axiom::input_code::KEY_ENTER) && !ui_system.window->input_map[axiom::input_code::KEY_LEFT_SHIFT]) {
+    if(render_system.ctx->pressed_buttons.contains(axiom::input_code::KEY_ENTER) && !render_system.ctx->input_map[axiom::input_code::KEY_LEFT_SHIFT]) {
         callback(*this);
     }
 }
@@ -229,6 +230,7 @@ ulong text_box_widget::insert(float width, vec2 boundary, std::string start, std
 }
 
 axiom::capture_data text_box_widget::handle_capture() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     std::vector<vec4> ranges = {
@@ -236,7 +238,7 @@ axiom::capture_data text_box_widget::handle_capture() {
     };
 
     for(vec4 range : ranges) {
-        if(includes(ui_system.window->cursor_pos, range)) return {self, z, true, true};
+        if(includes(render_system.ctx->cursor_pos, range)) return {self, z, true, true};
     }
 
     return {self, z, false};

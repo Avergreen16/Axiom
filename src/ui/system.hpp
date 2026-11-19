@@ -37,6 +37,7 @@ struct text_selection {
 };
 
 struct ui_system : system {
+    ivec2 virtual_screen;
     //////////////
     
     uint32_t iter;
@@ -44,7 +45,6 @@ struct ui_system : system {
 
     // window 
 
-    axiom::window* window;
     axiom::cursor cursor;
     std::vector<text_selection> selections;
 
@@ -85,7 +85,7 @@ struct ui_system : system {
 
     //
 
-    ui_system(axiom::window* window_);
+    ui_system();
 
     void init();
     
@@ -155,6 +155,6 @@ uint64_t ui_system::insert_widget(Type widget, bool step) {
     return ret;
 }
 
-void ui_init(axiom::window* window);
+void ui_init();
 
 }

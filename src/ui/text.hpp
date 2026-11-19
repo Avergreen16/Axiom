@@ -31,8 +31,8 @@ using ulong = uint64_t;
 #include <string>
 
 #include <include/core.hpp>
+#include <ui/font/font_base.hpp>
 #include <ui/ui.hpp>
-#include <ui/font/ttf.hpp>
 
 namespace axiom {
 

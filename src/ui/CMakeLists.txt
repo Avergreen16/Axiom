@@ -21,7 +21,7 @@ add_library(AxiomUI STATIC
     widgets/drop_widget.cpp
     widgets/menu_widget.cpp
     widgets/relative_widget.cpp
-    widgets/input_box_widget.cpp
+    ##widgets/input_box_widget.cpp
     widgets/text_box_widget.cpp
     widgets/scroll_widget.cpp
     widgets/message_widget.cpp
@@ -30,7 +30,6 @@ add_library(AxiomUI STATIC
     widgets/checkbox_widget.cpp
 
     font/font_base.cpp
-    font/ttf.cpp
     font/bdf.cpp
     font/font.cpp
 )
@@ -43,13 +42,11 @@ target_include_directories(AxiomUI PUBLIC
 target_link_libraries(AxiomUI PUBLIC
     AxiomCore
     AxiomRender
-
-    glfw
-
-    atomic
 )
 
-if(WIN32)
+if(WEB) 
+
+elseif(WIN32)
     target_link_libraries(AxiomUI PRIVATE
         dwmapi
         gdi32
@@ -60,6 +57,7 @@ if(WIN32)
         wsock32
         mingw32
         mingwex 
+        glfw
         atomic
     )
 elseif(UNIX)

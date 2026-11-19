@@ -4,13 +4,14 @@
 namespace axiom {
 
 void checkbox_widget::handle_inputs() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     clicked = false;
 
-    if(includes(ui_system.window->cursor_pos, vec4(position, position + size)) && ui_system.hover_capture == self && (ui_system.click_capture == NULL_WIDGET || ui_system.click_capture == self)) {
+    if(includes(render_system.ctx->cursor_pos, vec4(position, position + size)) && ui_system.hover_capture == self && (ui_system.click_capture == NULL_WIDGET || ui_system.click_capture == self)) {
         hovered = true;
-        if(ui_system.window->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
+        if(render_system.ctx->pressed_buttons.contains(axiom::input_code::MOUSE_LEFT)) {
             clicked = true;
             checked = !checked;
         }
@@ -165,6 +166,7 @@ uint64_t checkbox_widget::insert(vec2 size, vec3 color, bool checked, std::funct
 }
 
 capture_data checkbox_widget::handle_capture() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     std::vector<vec4> ranges = {
@@ -172,7 +174,7 @@ capture_data checkbox_widget::handle_capture() {
     };
 
     for(vec4 range : ranges) {
-        if(includes(ui_system.window->cursor_pos, range)) return {self, z, true};
+        if(includes(render_system.ctx->cursor_pos, range)) return {self, z, true};
     }
 
     return {self, z, false};

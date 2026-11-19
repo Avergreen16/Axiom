@@ -1,5 +1,6 @@
 #include <render/system.hpp>
 #include <render/mesh/mesh.hpp>
+#include <include/wrapper.hpp>
 
 namespace axiom {
 
@@ -124,7 +125,7 @@ void render_system::call() {
 
     clear_framebuffer(true, true, false);
 
-    for(auto& target : targets) target.call();
+    for(auto& target : targets) target->call();
     draw_func();
 
     //
@@ -132,7 +133,7 @@ void render_system::call() {
     process_inputs();
 }
 
-/*
+#ifdef AXIOM_TAKE_SCREENSHOT
 void render_system::take_screenshot(std::string filepath) {
     ivec2 size = ctx->size;
 
@@ -151,7 +152,7 @@ void render_system::take_screenshot(std::string filepath) {
     ulong timestamp = axiom::get_timestamp();
     asset.save(filepath);
 }
-*/
+#endif
 
 void render_init(axiom::context* ctx) {
     render_system system(ctx);
@@ -177,6 +178,8 @@ void render_init(axiom::context* ctx) {
         axiom::collector collector = axiom::collector(sig);
         axiom::ecs.create_collector("texture_range_mesh", collector);
     }
+
+    ctx->create_shaders();
 }
 
 axiom::shader& get_shader(std::string id) {
