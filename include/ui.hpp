@@ -7,6 +7,9 @@
 #include <ui/widget_base.hpp>
 
 #include <ui/widgets/screen_widget.hpp>
+#include <ui/widgets/render_widget.hpp>
+
+/*
 #include <ui/widgets/panel_widget.hpp>
 #include <ui/widgets/window_widget.hpp>
 #include <ui/widgets/split_widget.hpp>
@@ -24,6 +27,7 @@
 #include <ui/widgets/text_box_widget.hpp>
 #include <ui/widgets/scroll_widget.hpp>
 #include <ui/widgets/message_widget.hpp>
-#include <ui/widgets/render_widget.hpp>
 #include <ui/widgets/match_widget.hpp>
 #include <ui/widgets/checkbox_widget.hpp>
+#include <ui/widgets/input_box_widget.hpp>
+*/

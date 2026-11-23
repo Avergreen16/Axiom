@@ -40,7 +40,7 @@ void ui_system::input_step(int delta) {
         --input_state.depth;
     }
     if(widgets[input_state.current_widget]->parent != NULL_WIDGET) {
-        input_state.attachment = widgets[input_state.current_widget]->child_attachments.back();
+        input_state.attachment = dynamic_cast<axiom::container_widget*>(widgets[input_state.current_widget].get())->child_attachments.back();
     } else {
         input_state.attachment = 0;
     }
@@ -78,21 +78,21 @@ void ui_system::make_dirty(ulong root) {
         if(path.size() == 0) break;
 
         auto& widget = widgets[path.back()];
+        auto* container = widget->container();
 
-        vec2 children_size = vec2(0.0f);
+        widget->dirty = true;
 
-        if(widget->children.size() <= child_ids.back()) {
-            widget->dirty = true;
-
+        if(container && container->children.size() <= child_ids.back() || !container) {
             // go up
             path.pop_back();
             child_ids.pop_back();
         } else {
-            path.push_back(widget->children[child_ids.back()]);
+            if(container) path.push_back(container->children[child_ids.back()]);
 
             ++child_ids.back();
             child_ids.push_back(0);
         }
+
     }
 }
 
@@ -115,18 +115,20 @@ void ui_system::measure(ulong root) {
         if(path.size() == 0) break;
 
         auto& widget = widgets[path.back()];
+        auto* container = widget->container();
+
         if(child_ids.back() == 0) {
             for(auto& f : widget->before) f.func();
         }
 
-        if(widget->children.size() <= child_ids.back()) {
+        if(container && container->children.size() <= child_ids.back() || !container) {
             for(auto& f : widget->after) f.func();
 
             // go up
             path.pop_back();
             child_ids.pop_back();
         } else {
-            path.push_back(widget->children[child_ids.back()]);
+            if(container) path.push_back(container->children[child_ids.back()]);
 
             ++child_ids.back();
             child_ids.push_back(0);
@@ -192,14 +194,16 @@ void ui_system::call() {
             if(path.size() == 0) break;
 
             auto& widget = widgets[path.back()];
+            auto* container = widget->container();
+
             if(child_ids.back() == 0) widget_ids.push_back(path.back());
 
-            if(widget->children.size() <= child_ids.back()) {
+            if(container && container->children.size() <= child_ids.back() || !container) {
                 // go up
                 path.pop_back();
                 child_ids.pop_back();
             } else {
-                path.push_back(widget->children[child_ids.back()]);
+                if(container) path.push_back(container->children[child_ids.back()]);
 
                 ++child_ids.back();
                 child_ids.push_back(0);
@@ -265,7 +269,7 @@ void ui_system::call() {
         if(render_system.ctx->input_map[axiom::input_code::MOUSE_LEFT]) {
             cursor_pos = render_system.ctx->cursor_pos;
 
-            std::vector<std::shared_ptr<axiom::text>> child_texts;
+            std::vector<axiom::text*> child_texts;
             //
 
             std::vector<uint64_t> path = {text_capture};
@@ -275,19 +279,24 @@ void ui_system::call() {
                 if(path.size() == 0) break;
 
                 auto& widget = widgets[path.back()];
+                auto* container = widget->container();
 
                 if(child_ids.back() == 0) {
-                    for(auto text : widget->text) {
-                        child_texts.push_back(text);
+                    auto* text = widget->get_text();
+                    
+                    if(text) {
+                        for(auto t : *text) {
+                            child_texts.push_back(t);
+                        }
                     }
                 }
 
-                if(widget->children.size() <= child_ids.back()) {
+                if(container && container->children.size() <= child_ids.back() || !container) {
                     // go up
                     path.pop_back();
                     child_ids.pop_back();
                 } else {
-                    path.push_back(widget->children[child_ids.back()]);
+                    if(container) path.push_back(container->children[child_ids.back()]);
 
                     ++child_ids.back();
                     child_ids.push_back(0);
@@ -343,7 +352,7 @@ void ui_system::call() {
     
     std::vector<ui_vertex> selection_vertices;
     for(text_selection& sel : selections) {
-        auto mesh = mesh_selection(*sel.text.get(), {sel.start, sel.end});
+        auto mesh = mesh_selection(*sel.text, {sel.start, sel.end});
 
         sel.text->select_vertices = mesh;
     }
@@ -372,23 +381,25 @@ void ui_system::call() {
             if(path.size() == 0) break;
 
             auto& widget = widgets[path.back()];
+            auto* container = widget->container();
 
             if(child_ids.back() == 0) {
                 c.insert(path.back());
             }
 
-            if(widget->children.size() <= child_ids.back()) {
+            if(container && container->children.size() <= child_ids.back() || !container) {
                 // go up
                 path.pop_back();
                 child_ids.pop_back();
             } else {
-                path.push_back(widget->children[child_ids.back()]);
+                if(container) path.push_back(container->children[child_ids.back()]);
 
                 ++child_ids.back();
                 child_ids.push_back(0);
             }
         }
 
+        /*
         for(auto& [key, widget] : widgets) {
             if(c.contains(key)) {
                 for(auto& text : widget->text) {
@@ -407,6 +418,7 @@ void ui_system::call() {
                 }
             }
         }
+        */
         
         if(n_focused) isolate_selection = true;
         else isolate_selection = false;
@@ -425,6 +437,7 @@ void ui_system::call() {
             if(path.size() == 0) break;
 
             auto& widget = widgets[path.back()];
+            auto* container = widget->container();
 
             vec2 children_size = vec2(0.0f);
 
@@ -434,14 +447,14 @@ void ui_system::call() {
                 vertices.insert(vertices.end(), widget->vertices_before.begin(), widget->vertices_before.end());
             }
 
-            if(widget->children.size() <= child_ids.back()) {
+            if(container && container->children.size() <= child_ids.back() || !container) {
                 vertices.insert(vertices.end(), widget->vertices_after.begin(), widget->vertices_after.end());
 
                 // go up
                 path.pop_back();
                 child_ids.pop_back();
             } else {
-                path.push_back(widget->children[child_ids.back()]);
+                if(container) path.push_back(container->children[child_ids.back()]);
 
                 ++child_ids.back();
                 child_ids.push_back(0);
@@ -497,17 +510,18 @@ std::vector<ulong> ui_system::get_children(ulong root) {
         if(path.size() == 0) break;
 
         auto& widget = widgets[path.back()];
+        auto* container = widget->container();
 
         vec2 children_size = vec2(0.0f);
 
-        if(widget->children.size() <= child_ids.back()) {
+        if(container && container->children.size() <= child_ids.back() || !container) {
             if(widget->self != root) keys.push_back(widget->self);
 
             // go up
             path.pop_back();
             child_ids.pop_back();
         } else {
-            path.push_back(widget->children[child_ids.back()]);
+            if(container) path.push_back(container->children[child_ids.back()]);
 
             ++child_ids.back();
             child_ids.push_back(0);
@@ -560,6 +574,7 @@ void ui_system::handle_capture() {
             if(path.size() == 0) break;
 
             auto& widget = widgets[path.back()];
+            auto* container = widget->container();
 
             if(child_ids.back() == 0) {
                 capture_data data = widget->handle_capture();
@@ -572,14 +587,14 @@ void ui_system::handle_capture() {
                 }
             }
 
-            if(widget->children.size() <= child_ids.back()) {
+            if(container && container->children.size() <= child_ids.back() || !container) {
                 vertices.insert(vertices.end(), widget->vertices_after.begin(), widget->vertices_after.end());
 
                 // go up
                 path.pop_back();
                 child_ids.pop_back();
             } else {
-                path.push_back(widget->children[child_ids.back()]);
+                if(container) path.push_back(container->children[child_ids.back()]);
 
                 ++child_ids.back();
                 child_ids.push_back(0);
@@ -677,16 +692,76 @@ void ui_system::handle_clip() {
             if(path.size() == 0) break;
 
             auto& widget = widgets[path.back()];
-            //for(auto& p : path) std::cout << p << " ";
-            //std::cout << "\n";
+            auto* container = widget->container();
 
-            bool d = false;
-            if(child_ids.back() == 0) {
-                if(widget->attachments.size()) {
-                    for(auto& attachment : widget->attachments) attachment.clip = 0xFFFFFFFF;
+            if(container) {
+                bool d = false;
+                if(child_ids.back() == 0) {
+                    if(container->attachments.size()) {
+                        for(auto& attachment : container->attachments) attachment.clip = 0xFFFFFFFF;
+                    }
+                    // going down
+
+                    if(container->has_clip) {
+                        clip_space space;
+                        if(path_clip.size()) space.parent = path_clip.back();
+
+                        clip_spaces.push_back(space);
+
+                        path_clip.push_back(clip_spaces.size() - 1);
+                        container->clip = path_clip.back();
+                    } else {
+                        if(path_clip.size() == 0) path_clip.push_back(0xFFFFFFFF);
+                        else path_clip.push_back(path_clip.back());
+
+                        container->clip = path_clip.back();
+                    }
+
+                    d = true;
                 }
-                // going down
 
+                if(container && container->children.size() <= child_ids.back() || !container) {
+                    // go up
+                    path.pop_back();
+                    path_clip.pop_back();
+                    child_ids.pop_back();
+
+                    if(widget->parent != NULL_WIDGET) {
+                        auto* wparent = dynamic_cast<axiom::container_widget*>(widgets[widget->parent].get());
+                        if(wparent->attachments.size() && wparent->children.size()) {
+                            path_clip.pop_back();
+                            path.pop_back();
+                        }
+                    }
+                } else {
+                    // go down
+
+                    if(container->attachments.size()) {
+                        path.push_back(container->child_attachments[child_ids.back()]);
+                        if(container->attachments[container->child_attachments[child_ids.back()]].has_clip) {
+                            if(container->attachments[container->child_attachments[child_ids.back()]].clip == 0xFFFFFFFF) {
+                                clip_space space;
+                                if(path_clip.size()) space.parent = path_clip.back();
+
+                                clip_spaces.push_back(space);
+
+                                container->attachments[container->child_attachments[child_ids.back()]].clip = clip_spaces.size() - 1;
+                            }
+
+                            path_clip.push_back(container->attachments[container->child_attachments[child_ids.back()]].clip);
+                        } else {
+                            container->attachments[container->child_attachments[child_ids.back()]].clip = path_clip.back();
+                            path_clip.push_back(path_clip.back());
+                        }
+                        
+                    }
+                    
+                    if(container) path.push_back(container->children[child_ids.back()]);
+
+                    ++child_ids.back();
+                    child_ids.push_back(0);   
+                }
+            } else {
                 if(widget->has_clip) {
                     clip_space space;
                     if(path_clip.size()) space.parent = path_clip.back();
@@ -702,50 +777,23 @@ void ui_system::handle_clip() {
                     widget->clip = path_clip.back();
                 }
 
-                d = true;
-            }
-
-            if(widget->children.size() <= child_ids.back()) {
-                // go up
                 path.pop_back();
                 path_clip.pop_back();
                 child_ids.pop_back();
 
                 if(widget->parent != NULL_WIDGET) {
-                    auto& wparent = widgets[widget->parent];
+                    auto* wparent = dynamic_cast<axiom::container_widget*>(widgets[widget->parent].get());
                     if(wparent->attachments.size() && wparent->children.size()) {
                         path_clip.pop_back();
                         path.pop_back();
                     }
                 }
-            } else {
-                // go down
-
-                if(widget->attachments.size()) {
-                    path.push_back(widget->child_attachments[child_ids.back()]);
-                    if(widget->attachments[widget->child_attachments[child_ids.back()]].has_clip) {
-                        if(widget->attachments[widget->child_attachments[child_ids.back()]].clip == 0xFFFFFFFF) {
-                            clip_space space;
-                            if(path_clip.size()) space.parent = path_clip.back();
-
-                            clip_spaces.push_back(space);
-
-                            widget->attachments[widget->child_attachments[child_ids.back()]].clip = clip_spaces.size() - 1;
-                        }
-
-                        path_clip.push_back(widget->attachments[widget->child_attachments[child_ids.back()]].clip);
-                    } else {
-                        widget->attachments[widget->child_attachments[child_ids.back()]].clip = path_clip.back();
-                        path_clip.push_back(path_clip.back());
-                    }
-                    
-                }
-                
-                path.push_back(widget->children[child_ids.back()]);
-
-                ++child_ids.back();
-                child_ids.push_back(0);   
             }
+            
+            //for(auto& p : path) std::cout << p << " ";
+            //std::cout << "\n";
+
+            
         }
         
         //std::cout << "\n";

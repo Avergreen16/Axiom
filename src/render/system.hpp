@@ -16,7 +16,7 @@
 
 #ifdef AXIOM_WEBGL
 
-#elifdef AXIOM_OPENGL
+#elif defined(AXIOM_OPENGL)
 #define AXIOM_TAKE_SCREENSHOT
 
 #endif

@@ -27,6 +27,7 @@ struct physics_system3d : system {
 
     //
 
+    float gravity_strength = 9.81f;
     vec3 gravity_aspect = vec3(1, 1, 1);
     vec3 gravity_center = vec3(0.0f);
     mat3 gravity_orientation = glm::identity<mat3>();
@@ -55,9 +56,7 @@ struct physics_system3d : system {
     debugger_frame current_frame;
     ulong frame_count = 0;
 
-    std::function<vec3(vec3)> gravity = [](vec3 pos) {
-        return vec3(0.0f, 0.0f, -30.0f);
-    };
+    std::function<vec3(vec3)> gravity;
 
     //
 

@@ -96,6 +96,7 @@ void create_offsets(out vec2[num_samples] v, ivec2 pos, float rad) {
     v[1] = vec2(-0.5, 0.5);
     v[2] = vec2(0.5, -0.5);
     v[3] = vec2(-0.5, -0.5);
+
     /*
     
     v[0] = vec2(0.0, 0.0);
@@ -370,15 +371,15 @@ void main() {
                         
                         float bias = 0.0;//texel_size * length(vec2(nslope_x, nslope_y));
 
-                        sd += (clamp(min(nslope_x * nt.x, slope_x * nt.x), -8.0, 0.0) + clamp(min(nslope_y * nt.y, slope_y * nt.y), -8.0, 0.0) - 0.01) * texel_size;
+                        sd += (min(min(nslope_x * nt.x, slope_x * nt.x), 0.0) + min(min(nslope_y * nt.y, slope_y * nt.y), 0.0) - 0.025) * texel_size;
 
                         if(target_depth + bias < sd) ++frac;
                     }
                 }
 
-                float shade = (frac) / (num_samples - null_pixels) * 2.0 - 1.0;
-                shade = clamp(shade, 0.0, 1.0);
-                if(shade != 0.0) shade = 1.0;
+                float shade = 0.0;
+                uint ss = uint(frac);
+                if(ss >= 3) shade = 1.0;
                 
                 frag_color = vec4(0.0, 0.0, 0.0, shade); 
 

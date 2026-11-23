@@ -32,10 +32,7 @@ using ulong = uint64_t;
 #include <ui/text.hpp>
 
 namespace axiom {
-    
-enum class layout_mode {
-    NONE, ROW, COLUMN, GRID
-};
+
 enum class position_mode {
     STATIC, TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT, TOP_CENTER, BOTTOM_CENTER, CENTER_LEFT, CENTER_RIGHT, CENTER, NONE
 };
@@ -59,31 +56,23 @@ struct widget_attachment {
     bool has_clip = false;
 };
 
+struct container_widget;
+
 struct widget {
     ulong self;
-    bool flag = false;
 
     vec2 position = vec2(0.0f);
     vec2 size = vec2(0.0f);
-    vec2 next_position;
-    vec2 next_size;
     vec4 buffer = vec4(0.0f);
     float z = 0.0f;
-    
-    std::vector<ui_vertex> vertices_before;
-    std::vector<ui_vertex> vertices_after;
 
     ulong parent = NULL_WIDGET;
 
     uint clip = 0xFFFFFFFF;
     bool has_clip = false;
-    std::vector<widget_attachment> attachments;
-    std::vector<ulong> children;
-    std::vector<uint> child_attachments;
+    std::vector<ui_vertex> vertices_before;
+    std::vector<ui_vertex> vertices_after;
 
-    //
-
-    axiom::layout_mode layout_mode = axiom::layout_mode::NONE;
     axiom::position_mode position_mode = axiom::position_mode::STATIC;
 
     //
@@ -99,14 +88,10 @@ struct widget {
     vec4 available_space;
     bool dirty = true;
 
-    std::vector<std::shared_ptr<axiom::text>> text;
-
     std::vector<widget_constraint> before;
     std::vector<widget_constraint> after;
-    
-    std::function<float(std::unique_ptr<widget>&)> get_height = [](std::unique_ptr<widget>& w) {
-        return w->size.y;
-    };
+
+    //
 
     virtual void handle_inputs() {};
     virtual void mesh() {};
@@ -118,9 +103,21 @@ struct widget {
     virtual void on_place() {};
     virtual void on_delete() {};
 
+    virtual std::vector<axiom::text*>* get_text() {
+        return nullptr;
+    }
+
+    container_widget* container();
+
     virtual capture_data handle_capture() {
         return {0, false, false};
     };
+};
+
+struct container_widget : widget {
+    std::vector<widget_attachment> attachments;
+    std::vector<ulong> children;
+    std::vector<uint> child_attachments;
 };
 
 }

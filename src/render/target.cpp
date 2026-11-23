@@ -65,8 +65,6 @@ render_target* render_target::create(std::function<void(render_target&)> draw_fu
     }
     target->framebuffer = std::move(axiom::framebuffer(size, std::move(params)));
 
-    std::cout << "FRAMEBUFFER CREATED " << target->framebuffer.textures[0].id << " " << target->framebuffer.textures[1].id << std::endl;
-
     return target;
 }
 

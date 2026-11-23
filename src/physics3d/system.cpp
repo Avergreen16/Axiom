@@ -8,6 +8,10 @@
 namespace axiom {
 
 void physics_system3d::call() {
+    gravity = [this](vec3 pos) {
+        return vec3(0.0f, 0.0f, -gravity_strength);
+    };
+
     if(sim_active) {
         physics_time += axiom::ecs.delta_time;
 
@@ -747,8 +751,8 @@ void physics_system3d::integrate() {
                 c_collider.acceleration += gravity_acceleration;
             }
 
-            c_collider.velocity += c_collider.acceleration * (dt * 0.5f);
-            c_collider.angular_momentum += c_collider.angular_force * (dt * 0.5f);
+            c_collider.velocity += c_collider.acceleration * (dt);
+            c_collider.angular_momentum += c_collider.angular_force * (dt);
 
             //
 
@@ -768,8 +772,8 @@ void physics_system3d::integrate() {
 
             //
             
-            c_collider.velocity += c_collider.acceleration * (dt * 0.5f);
-            c_collider.angular_momentum += c_collider.angular_force * (dt * 0.5f);
+            //c_collider.velocity += c_collider.acceleration * (dt * 0.5f);
+            //c_collider.angular_momentum += c_collider.angular_force * (dt * 0.5f);
 
             c_collider.acceleration = vec3(0.0f);
             c_collider.angular_force = vec3(0.0f);

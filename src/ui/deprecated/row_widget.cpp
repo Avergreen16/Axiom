@@ -216,7 +216,7 @@ void row_widget::init() {
         for(int i = 0; i < children.size(); ++i) {
             auto& c0 = ui_system->widgets[children[i]];
 
-            if(/*c0->min_height != c0->max_height && */c0->weight_height != 0) {
+            if(c0->min_height != c0->max_height) {
                 target_min = glm::max(target_min, c0->min_height);
                 target_max = glm::max(target_max, c0->max_height);
                 target_weight = glm::max(target_weight, c0->weight_height);

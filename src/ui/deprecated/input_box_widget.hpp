@@ -28,6 +28,7 @@ struct input_box_widget : widget {
 
 template<typename type>
 void input_box_widget<type>::handle_inputs() {
+    /*
     axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
     vec4 view_range = vec4(position, position + size);
@@ -135,6 +136,7 @@ void input_box_widget<type>::handle_inputs() {
         vec2 text_pos = position + vec2(2.0f, (size.y - text[0]->size.y) * 0.5f);
         text[0]->position = round(text_pos);
     }
+    */
 }
 
 template<typename type>
@@ -163,12 +165,8 @@ void input_box_widget<type>::mesh() {
         vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
 
         //
-
-        vec4 view_range = ui_system.get_range(self, true);
-
-        //
-        std::vector<axiom::ui_vertex> text_vs = text[0]->mesh();
-        std::vector<axiom::ui_vertex> text_select = text[0]->mesh_select();
+        std::vector<axiom::ui_vertex> text_vs = text[0]->vertices;
+        std::vector<axiom::ui_vertex> text_select = text[0]->select_vertices;
         text_vs.insert(text_vs.end(), text_select.begin(), text_select.end());
 
         for(axiom::ui_vertex& v : text_vs) {
@@ -205,7 +203,7 @@ ulong input_box_widget<type>::insert(vec2 size, type value, std::function<void(i
     text->string = "";
     text->wrap = false;
     text->alignment = axiom::text_alignment::LEFT;
-    text->font = &ui_system.fonts[0];
+    text->font = ui_system.font_handler.fonts["test"].get();
     text->selectable = true;
     text->editable = true;
 
@@ -232,6 +230,7 @@ ulong input_box_widget<type>::insert(vec2 size, type value, std::function<void(i
 template<typename type>
 axiom::capture_data input_box_widget<type>::handle_capture() {
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
 
     std::vector<vec4> ranges = {
         vec4(position, position + size)

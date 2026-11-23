@@ -53,10 +53,8 @@ void render_widget::handle_inputs() {
     axiom::set_clear_color(vec4(0.0f));
     axiom::clear_framebuffer(true, true, false);
 
-    if(target->size != ivec2(size)) {
-        std::cout << size << "\n";
-        target->set_size(ivec2(size));
-    }
+    if(target->size != ivec2(size)) target->set_size(ivec2(size));
+    
     //target->call();
     callback(this);
     
@@ -83,7 +81,6 @@ ulong render_widget::insert(axiom::render_target* target, uint texture, std::fun
 
     render_widget widget;
     widget.position_mode = axiom::position_mode::BOTTOM_LEFT;
-    widget.layout_mode = axiom::layout_mode::NONE;
     widget.target = target;
     widget.texture = texture;
 
@@ -95,8 +92,6 @@ ulong render_widget::insert(axiom::render_target* target, uint texture, std::fun
     widget.max_height = FLT_MAX;
     widget.buffer = ui_system.input_state.active_buffer;
     widget.texture = texture;
-
-    widget.flag = true;
 
     widget.size = vec2(0.0f);
     widget.position = vec2(0.0f);

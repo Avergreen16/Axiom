@@ -6,6 +6,9 @@ add_library(AxiomUI STATIC
     text.cpp
 
     widgets/screen_widget.cpp
+    widgets/render_widget.cpp
+
+    #[[
     widgets/panel_widget.cpp
     widgets/window_widget.cpp
     widgets/split_widget.cpp
@@ -25,9 +28,9 @@ add_library(AxiomUI STATIC
     widgets/text_box_widget.cpp
     widgets/scroll_widget.cpp
     widgets/message_widget.cpp
-    widgets/render_widget.cpp
     widgets/match_widget.cpp
     widgets/checkbox_widget.cpp
+    ]]
 
     font/font_base.cpp
     font/bdf.cpp

@@ -235,6 +235,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                     return HTTOP;
                 }
                 if (bottom) return HTBOTTOM;
+
+                if(win->move) return HTCAPTION;
             }
 
             return HTCLIENT;

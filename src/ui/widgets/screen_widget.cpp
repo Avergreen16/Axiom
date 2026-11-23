@@ -15,7 +15,6 @@ void screen_widget::handle_inputs() {
 
     uint ctr = 0;
 
-    /*
     if(ui_system.hover_capture == self && (ui_system.click_capture == NULL_WIDGET || ui_system.click_capture == self) && !win->decorated) {
         region = vec4(position.x + size.x - header, position.y + size.y - header, header, header);
         region.z += region.x;
@@ -73,14 +72,14 @@ void screen_widget::handle_inputs() {
                 win->move = false;
             }
         }
-    } else {*/
+    } else {
         hover_close = false;
         hover_maximize = false;
         hover_minimize = false;
 
         ++ctr;
         if(ctr > 1) win->move = false;
-    //}
+    }
 }
 
 void screen_widget::mesh() {
@@ -150,7 +149,6 @@ void screen_widget::mesh() {
 
         // icons
         
-        /*
         if(!win->decorated) {
             vec3 hover_color = clamp(color + 0.15f, 0.0f, 1.0f);
             vec3 col;
@@ -228,7 +226,6 @@ void screen_widget::mesh() {
             }
             vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
         }
-        */
         
         // panel
         ret = {a, b, d, a, d, c};
@@ -297,11 +294,9 @@ ulong screen_widget::insert(std::string name, vec3 color, axiom::context* win) {
     axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
 
     screen_widget widget;
-    widget.flag = true;
     widget.label = name;
     widget.color = color;
     
-    widget.layout_mode = axiom::layout_mode::NONE;
     widget.position_mode = axiom::position_mode::STATIC;
 
     widget.win = win;
@@ -310,7 +305,7 @@ ulong screen_widget::insert(std::string name, vec3 color, axiom::context* win) {
     widget.attachments[0].has_clip = true;
     widget.attachments[1].has_clip = true;
 
-    return ui_system.insert_widget(widget, true);
+    return ui_system.insert_widget(widget);
 }
 
 capture_data screen_widget::handle_capture() {

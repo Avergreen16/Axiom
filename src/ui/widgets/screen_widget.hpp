@@ -6,7 +6,7 @@
 
 namespace axiom {
 
-struct screen_widget : widget {
+struct screen_widget : container_widget {
     uint header = 24;
     uint shadow_width = 10;
     uint border_width = 1;

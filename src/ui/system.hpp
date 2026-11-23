@@ -30,7 +30,7 @@ struct widget_input_state {
 };
 
 struct text_selection {
-    std::shared_ptr<axiom::text> text;
+    axiom::text* text;
     int start;
     int end;
     vec2 origin;
@@ -98,7 +98,7 @@ struct ui_system : system {
     void input_z(float z);
 
     template<typename Type>
-    ulong insert_widget(Type widget, bool step = false);
+    ulong insert_widget(Type widget);
     void position(axiom::position_mode mode);
     void buffer(vec4 buffer);
     void make_dirty(ulong root);
@@ -119,18 +119,19 @@ struct ui_system : system {
 };
 
 template<typename Type>
-uint64_t ui_system::insert_widget(Type widget, bool step) {
+uint64_t ui_system::insert_widget(Type widget) {
     widget.parent = input_state.current_widget;
     widget.self = input_state.next_id;
 
     widget.z = input_state.z;
 
     if(input_state.current_widget != NULL_WIDGET) {
-        widgets[input_state.current_widget]->children.push_back(input_state.next_id);
-        widgets[input_state.current_widget]->child_attachments.push_back(input_state.attachment);
+        widgets[input_state.current_widget]->container()->children.push_back(input_state.next_id);
+        widgets[input_state.current_widget]->container()->child_attachments.push_back(input_state.attachment);
     }
 
-    if(step) {
+    auto* container = widget.container();
+    if(container) {
         ++input_state.depth;
         input_state.current_widget = input_state.next_id;
         
@@ -144,10 +145,17 @@ uint64_t ui_system::insert_widget(Type widget, bool step) {
     uint64_t ret = input_state.next_id;
 
     input_state.last_widget = ret;
+    
+    auto* wtext = widget.get_text();
+    if(wtext) {
+        std::vector<axiom::text*> tt;
+        for(axiom::text* t : *wtext) {
+            t->parent = input_state.next_id;
+            text.push_back(std::shared_ptr<axiom::text>(t));
+            tt.push_back(text.back().get());
+        }
 
-    for(std::shared_ptr<axiom::text>& t : widget.text) {
-        t->parent = input_state.next_id;
-        text.push_back(t);
+        *wtext = tt;
     }
 
     ++input_state.next_id;
