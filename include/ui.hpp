@@ -6,8 +6,8 @@
 #include <ui/ui.hpp>
 #include <ui/widget_base.hpp>
 
-#include <ui/widgets/screen_widget.hpp>
-#include <ui/widgets/render_widget.hpp>
+
+#include <ui/widgets/umbrella.hpp>
 
 /*
 #include <ui/widgets/panel_widget.hpp>

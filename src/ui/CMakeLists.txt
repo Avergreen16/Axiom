@@ -1,12 +1,23 @@
+file(GLOB HEADER_FILES CONFIGURE_DEPENDS RELATIVE "${AXIOM_ROOT}/src" "widgets/*.hpp")
+file(GLOB CPP_FILES CONFIGURE_DEPENDS "widgets/*.cpp")
+
+# 2. Start the generated file content
+set(GENERATED_CONTENT "#pragma once\n\n")
+
+# 3. Loop through the globbed list and append each #include
+foreach(HEADER ${HEADER_FILES})
+    string(APPEND GENERATED_CONTENT "#include \"${HEADER}\"\n")
+endforeach()
+
+# 4. Write the content to a file in the build directory
+file(WRITE "${AXIOM_ROOT}/src/ui/widgets/umbrella.hpp" "${GENERATED_CONTENT}")
+
 add_library(AxiomUI STATIC
     ui.cpp
     system.cpp
     widget_base.cpp
     cursor.cpp
     text.cpp
-
-    widgets/screen_widget.cpp
-    widgets/render_widget.cpp
 
     #[[
     widgets/panel_widget.cpp
@@ -36,6 +47,8 @@ add_library(AxiomUI STATIC
     font/bdf.cpp
     font/font.cpp
 )
+
+target_sources(AxiomUI PRIVATE ${CPP_FILES})
 
 target_include_directories(AxiomUI PUBLIC
     ${AXIOM_ROOT}/src

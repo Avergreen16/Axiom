@@ -2,7 +2,7 @@
 
 #include <wrapper/opengl/context.hpp>
 
-#include <graphicsh.hpp>
+#include <wrapper/opengl/graphicsh.hpp>
 
 #define GLM_FORCE_SWIZZLE
 #define GLM_FORCE_RADIANS
@@ -33,6 +33,10 @@ using uint = unsigned int;
 
 namespace axiom {
     
+
+void handle_window_platform(context& win) {
+}
+
 void copy_to_clipboard(GLFWwindow* window, std::string str) {
     glfwSetClipboardString(window, str.data());
 }
@@ -90,6 +94,32 @@ ivec2 get_cursor_pos(GLFWwindow* window) {
     glfwGetCursorPos(window, &mouse_x, &mouse_y);
 
     return {mouse_x + window_range.x, mouse_y + window_range.y};
+}
+
+
+bool context::cursor_in_window() {
+    double x, y;
+    int wx, wy;
+    int width, height;
+    glfwGetCursorPos(window_handle, &x, &y);
+    glfwGetWindowSize(window_handle, &width, &height);
+
+    wx = 0;
+    wy = 0;
+
+    /*
+    if(!decorated && is_windowed()) {
+        int border = GetSystemMetrics(SM_CYSIZEFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER);
+        wy += border;
+    }
+    */
+
+    return x >= wx && x < width && y >= wy && y < height;
+}
+
+
+void window_platform_destruct(context& window) {
+    //delete reinterpret_cast<win32_window*>(window.platform_data);
 }
 
 }

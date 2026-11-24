@@ -38,7 +38,9 @@ void render_system::call() {
 
     clear_framebuffer(true, true, false);
 
-    for(auto& target : targets) target->call();
+    for(auto& target : targets) {
+        target->call();
+    }
 
     //
     

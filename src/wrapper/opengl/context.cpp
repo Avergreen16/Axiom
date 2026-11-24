@@ -102,7 +102,7 @@ context::context(ivec2 position, ivec2 size, float border, std::string name, boo
     //glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
 
     //
-
+    
     window_handle = glfwCreateWindow(size.x, size.y, name.c_str(), NULL, NULL);
 
     glfwMakeContextCurrent(window_handle);

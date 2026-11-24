@@ -12,7 +12,9 @@ struct render_target {
     
     // resources
     framebuffer framebuffer;
-    std::function<void(render_target&)> draw;
+    std::function<void(render_target&)> draw = [](render_target& r) {
+
+    };
 
     shadow_renderer* shadow = nullptr;
 
