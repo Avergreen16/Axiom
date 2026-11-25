@@ -24,8 +24,8 @@ layout(location = 1) out vec4 base_color;
 layout(location = 2) out vec4 text_color;
 
 float sdf(vec2 pos, clip_space clip) {
-    vec2 center = (clip.range.xy + clip.range.zw) * 0.5;
-    vec2 half_size = clip.range.zw - center;
+    vec2 center = (round(clip.range.xy) + round(clip.range.zw)) * 0.5;
+    vec2 half_size = round(clip.range.zw) - center;
 
     vec2 d = abs(pos - center) - half_size;// + abs(clip.radius);
     float c = min(max(d.x, d.y), 0.0) + length(max(d, 0.0));// - abs(clip.radius);

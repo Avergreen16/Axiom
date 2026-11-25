@@ -103,8 +103,8 @@ struct widget {
     virtual void on_place() {};
     virtual void on_delete() {};
 
-    virtual std::vector<axiom::text*>* get_text() {
-        return nullptr;
+    virtual std::vector<axiom::text*> get_text() {
+        return {};
     }
 
     container_widget* container();

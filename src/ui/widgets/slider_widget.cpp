@@ -1,0 +1,170 @@
+#include <ui/widgets/slider_widget.hpp>
+#include <ui/system.hpp>
+
+namespace axiom {
+
+void slider_widget::handle_inputs() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
+    axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
+    
+    if(ui_system.hover_capture == self && ui_system.click_capture == NULL_WIDGET || ui_system.click_capture == self) {
+        ui_system.cursor.cursor_mode = axiom::cursor_mode::DRAG_L;
+        hovered = true;
+    } else hovered = false;
+    
+    if(ui_system.click_capture == self) {
+        pressed = true;
+
+        float p = render_system.ctx->cursor_pos.x - position.x - slider_width * 0.5f;
+
+        float frac = p / (size.x - slider_width);
+        frac = glm::clamp(frac, 0.0f, 1.0f);
+
+        float value = frac * (range.y - range.x);
+        if(step != 0.0f) value = round(value / step) * step;
+        value += range.x;
+
+        current_value = value;
+    } else pressed = false;
+    
+    callback(*this);
+}
+
+void slider_widget::mesh() {
+    axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
+
+    if(dirty) {
+        dirty = false;
+
+        std::vector<ui_vertex> text_vertices = text.mesh();
+
+        ui_vertex a = {vec3(0.0f, 0.0f, 0.0f), vec2(0.0f, 0.0f), vec4(1.0f)};
+        ui_vertex b = {vec3(1.0f, 0.0f, 0.0f), vec2(1.0f, 0.0f), vec4(1.0f)};
+        ui_vertex c = {vec3(0.0f, 1.0f, 0.0f), vec2(0.0f, 1.0f), vec4(1.0f)};
+        ui_vertex d = {vec3(1.0f, 1.0f, 0.0f), vec2(1.0f, 1.0f), vec4(1.0f)};
+
+        float slider_pos = (size.x - slider_width) * ((current_value - range.x) / (range.y - range.x));
+        
+        vec4 base_color = vec4(color, 1.0f);
+        if(hovered || pressed) base_color = vec4(color + 0.25f, 1.0f);
+        // panel
+        float border = 3.0f;
+        std::vector<vec4> ranges = {
+            vec4(0.0f, border, size.x, size.y - border * 2.0f),
+            vec4(slider_pos, 0.0f, slider_width, size.y),
+        };
+        std::vector<vec4> colors = {
+            vec4(0.0f, 0.0f, 0.0f, 0.5f),
+            base_color,
+        };
+
+        std::vector<float> clips = {
+            -1.0f,
+            3.0f
+        };
+
+        //
+        
+        vertices_before.clear();
+
+        for(int i = 0; i < ranges.size(); ++i) {
+            std::vector<ui_vertex> ret = {a, b, d, a, d, c};
+            vec4 range = ranges[i];
+            vec4 color = colors[i];
+            float clip_rad = clips[i];
+            
+            if(clip_rad >= 0.0f) {
+                clip_space space;
+                space.range = vec4(position + range.xy(), position + range.xy() + range.zw());
+                space.radius = clip_rad;
+                space.parent = clip;
+                
+                ui_system.clip_spaces.push_back(space);
+            }
+
+            for(ui_vertex& v : ret) {
+                v.pos = vec3(position + range.xy() + v.pos.xy() * range.zw(), z);
+                v.tex_pos = vec2(1.0f, 63.0f);
+                v.color = color;
+                v.data = 0x1;
+
+                if(clip_rad >= 0.0f) {
+                    v.clip_space = ui_system.clip_spaces.size() - 1;
+                } else {
+                    v.clip_space = clip;
+                }
+            }
+            vertices_before.insert(vertices_before.end(), ret.begin(), ret.end());
+        }
+
+        vec2 text_pos = position + (size - text.size) * 0.5f;
+
+        std::vector<ui_vertex> vs = text_vertices;
+        for(ui_vertex& v : vs) {
+            v.pos += vec3(round(text_pos), 0.0f);
+            
+            v.clip_space = clip;
+        }
+        vertices_before.insert(vertices_before.end(), vs.begin(), vs.end());
+    }
+}
+
+void slider_widget::init() {
+    //ui_system* ui_system = &ecs.get_system<ui_system>();
+}
+
+uint64_t slider_widget::insert(vec2 size, float slider_width, vec3 color, vec2 range, float step, float start, std::string str, std::function<void(slider_widget&)> callback)  {
+    axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
+
+    slider_widget widget;
+
+    widget.text.string = str;
+    widget.text.wrap = false;
+    widget.text.font = ui_system.font_handler.fonts["test"].get();
+
+    //
+    
+    widget.buffer = ui_system.input_state.active_buffer;
+    widget.position_mode = ui_system.input_state.active_position;
+    widget.callback = callback;
+    widget.label = str;
+    widget.color = color;
+
+    widget.range = range;
+    widget.step = step;
+    widget.current_value = start;
+    widget.slider_width = slider_width;
+
+    widget.size = size;
+    widget.min_width = size.x;
+    widget.max_width = size.x;
+    widget.min_height = size.y;
+    widget.max_height = size.y;
+
+    return ui_system.insert_widget(widget);
+}
+
+capture_data slider_widget::handle_capture() {
+    axiom::render_system& render_system = axiom::ecs.get_system<axiom::render_system>();
+    axiom::ui_system& ui_system = axiom::ecs.get_system<axiom::ui_system>();
+
+    bool clip_cursor = ui_system.cursor_clip(clip, render_system.ctx->cursor_pos);
+
+    if(clip_cursor) {
+        std::vector<vec4> ranges = {
+            vec4(position, position + size)
+        };
+
+        for(vec4 range : ranges) {
+            if(includes(render_system.ctx->cursor_pos, range)) return {self, z, true};
+        }
+    }
+
+    return {self, z, false};
+}
+
+std::vector<axiom::text*> slider_widget::get_text() {
+    return {&text};
+}
+
+}

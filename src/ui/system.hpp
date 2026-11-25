@@ -61,7 +61,6 @@ struct ui_system : system {
 
     std::map<ulong, std::unique_ptr<widget>> widgets;
     std::vector<axiom::texture*> target_textures;
-    std::vector<std::shared_ptr<axiom::text>> text;
     std::vector<clip_space> clip_spaces;
 
     // interaction
@@ -146,16 +145,11 @@ uint64_t ui_system::insert_widget(Type widget) {
 
     input_state.last_widget = ret;
     
-    auto* wtext = widget.get_text();
-    if(wtext) {
-        std::vector<axiom::text*> tt;
-        for(axiom::text* t : *wtext) {
+    auto wtext = widget.get_text();
+    if(wtext.size()) {
+        for(axiom::text* t : wtext) {
             t->parent = input_state.next_id;
-            text.push_back(std::shared_ptr<axiom::text>(t));
-            tt.push_back(text.back().get());
         }
-
-        *wtext = tt;
     }
 
     ++input_state.next_id;

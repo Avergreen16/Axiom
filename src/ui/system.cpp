@@ -217,6 +217,13 @@ void ui_system::call() {
             }
         }
     }
+
+    std::vector<axiom::text*> text;
+
+    for(auto& [ulong, w] : widgets) {
+        auto t = w->get_text();
+        text.insert(text.end(), t.begin(), t.end());
+    }
     
     for(auto& t : text) {
         t->call();
@@ -225,7 +232,7 @@ void ui_system::call() {
 
     //
 
-    for(int i = 0; i < 8; ++i) {
+    for(int i = 0; i < 16; ++i) {
         solve_constraints();
         
         for(auto& t : text) {
@@ -282,12 +289,10 @@ void ui_system::call() {
                 auto* container = widget->container();
 
                 if(child_ids.back() == 0) {
-                    auto* text = widget->get_text();
+                    auto text = widget->get_text();
                     
-                    if(text) {
-                        for(auto t : *text) {
-                            child_texts.push_back(t);
-                        }
+                    for(auto t : text) {
+                        child_texts.push_back(t);
                     }
                 }
 
@@ -481,6 +486,7 @@ void ui_system::call() {
 
     // text
 
+    /*
     std::vector<uint32_t> delete_indices;
 
     uint32_t i = 0;
@@ -496,6 +502,7 @@ void ui_system::call() {
 
         text.erase(text.begin() + i);
     }
+    */
 }
 
 std::vector<ulong> ui_system::get_children(ulong root) {
@@ -812,8 +819,6 @@ float clip_sdf(clip_space& space, vec2 point) {
 }
 
 bool ui_system::cursor_clip(uint clip, vec2 cursor) {
-    return true;
-    /*
     uint current_clip = clip;
     while(current_clip != 0xFFFFFFFF) {
         auto& space = clip_spaces[current_clip];
@@ -825,7 +830,6 @@ bool ui_system::cursor_clip(uint clip, vec2 cursor) {
         current_clip = space.parent;
     }
     return true;
-    */
 }
 
 void ui_system::input_attach(ulong a) {

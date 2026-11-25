@@ -100,7 +100,7 @@ void font_handler::touch_texture() {
         
         axiom::texture_asset asset = axiom::texture_asset::load(bytes, {width, img_size.y}, 4);
 
-        //texture.load(asset, axiom::texture_format::RGBA8, 0);
+        texture.load(asset, axiom::texture_format::RGBA8, 0);
     }
 
     fonts["test"]->active_phases.clear();
